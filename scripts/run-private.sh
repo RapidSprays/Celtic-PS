@@ -74,6 +74,20 @@ if [[ "$SERVER_ONLY" == 1 ]]; then
   exit 0
 fi
 
+# Steam must have finished signing in. A game started while Steam still shows "Refresh sign-in" makes Steam shut
+# itself down after the sign-in, and the client dies with "fatal stalled cross-thread pipe" (Steam's IPC).
+steam_signed_in() {
+  local log="$HOME/Library/Application Support/Steam/logs/connection_log.txt"
+  [[ -f "$log" ]] || return 0 # can't tell; don't block
+  grep -a -o '\[\(Logged On\|Logged Off\|Logging On\|Logging Off\|Connecting\|Disconnected\)[^]]*\]' "$log" | tail -1 | grep -q '^\[Logged On'
+}
+if ! steam_signed_in; then
+  echo "Waiting for Steam to finish signing in (sign in in the Steam window if it asks)..."
+  for _ in $(seq 1 120); do steam_signed_in && break; sleep 1; done
+  steam_signed_in || { echo "Steam is not signed in; sign in to Steam, then run this again." >&2; exit 1; }
+  sleep 3 # let Steam settle after signing in
+fi
+
 # steam_appid.txt in the working directory identifies the game to the running Steam client.
 (cd "$CLIENT_DIR" && exec "CelticHeroes.app/Contents/MacOS/Celtic Heroes") > "$LOGS/client-stdout-$STAMP.log" 2>&1 &
 CLIENT=$!
