@@ -1,4 +1,4 @@
-# Multiplayer notes: build 24928510 (researched 2026-10-12, not yet implemented)
+# Multiplayer notes: build 24928510 (researched and implemented 2026-10-12: `GameServer.Players.cs`, tested with two fake clients)
 
 From the decompiled client. NM = NetworkManager.cs. Labels: everything here is **statically inferred** until implemented and tested with two clients.
 

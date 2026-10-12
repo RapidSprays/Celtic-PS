@@ -15,6 +15,7 @@ public sealed class ServerHost : IAsyncDisposable
         Directory.CreateDirectory(options.DataDirectory);
         Options = options;
         _store = new GameStore(options.DatabasePath);
+        foreach (var gm in options.GmAccounts) _store.SetGm(_store.GetOrCreateAccount(gm).Username, true);
         _frames = new FrameLog(options.LogDirectory);
         Balance = CH.Server.Game.Balance.Load(options.BalancePath);
         logs.CreateLogger("main").LogInformation("Balance data: {State}", Balance.IsLoaded

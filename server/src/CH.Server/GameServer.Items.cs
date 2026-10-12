@@ -97,13 +97,16 @@ public sealed partial class GameServer
     /// AppearanceOnlyUpdate (12009, NetworkManager.cs:5404): appearance block, varint pvpRating, varint pvpLevel. Redraws the
     /// local player's model, including mounting/dismounting (EquipItemReply doesn't redraw while slot 21 or 22 is filled).
     /// </summary>
-    private void SendOwnAppearance(Session s) =>
+    private void SendOwnAppearance(Session s)
+    {
         Send(s, Opcode.AppearanceOnlyUpdate, b =>
         {
             s.Sheet!.Appearance().Write(b);
             b.WriteVariableInt32(0);
             b.WriteVariableInt32(0);
         });
+        BroadcastAppearance(s);
+    }
 
     /// <summary>UpdateCharacterOptions (12010, NetworkManager.cs:5749): byte showHeadgear, byte showFashion.</summary>
     private void OnDisplayOptions(Session s, bool showHeadgear, bool showFashion)

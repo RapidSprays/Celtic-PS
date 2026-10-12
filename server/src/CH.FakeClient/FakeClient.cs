@@ -84,9 +84,9 @@ public sealed class FakeClient : IDisposable
         return VersionCheckReply.Read(Expect(Opcode.VersionCheckReply));
     }
 
-    public LoginReply Login(string username)
+    public LoginReply Login(string username, string password = "FAKE-HASH")
     {
-        var request = new LoginRequest(false, username, "FAKE-HASH", "fake,0,0,mac", 143, "", "fake-device", 0, "", "EN_UK", "", 10032, "GB", "6.15.0", 0);
+        var request = new LoginRequest(false, username, password, "fake,0,0,mac", 143, "", "fake-device", 0, "", "EN_UK", "", 10032, "GB", "6.15.0", 0);
         Send(Opcode.Login, request.Write);
         var reply = LoginReply.Read(Expect(Opcode.LoginReply));
         if (reply.Status == CommandStatus.Accepted) _session = reply.SessionId;

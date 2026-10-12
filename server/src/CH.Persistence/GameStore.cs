@@ -1,8 +1,18 @@
+using System.Security.Cryptography;
 using Microsoft.Data.Sqlite;
 
 namespace CH.Persistence;
 
-public sealed record Account(long Id, string Username);
+public sealed record Account(long Id, string Username, bool IsGm = false);
+
+/// <summary>Outcome of checking a login secret against an account.</summary>
+public enum PasswordCheck
+{
+    /// <summary>The account had no password: this one now claims it.</summary>
+    Claimed,
+    Matched,
+    Wrong,
+}
 
 public sealed record CharacterRecord(
     long Id,
@@ -177,7 +187,14 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, spawn_point_id)
         );
         """,
+        """
+        ALTER TABLE accounts ADD COLUMN password_hash BLOB;
+        ALTER TABLE accounts ADD COLUMN password_salt BLOB;
+        ALTER TABLE accounts ADD COLUMN is_gm INTEGER NOT NULL DEFAULT 0;
+        """,
     ];
+
+    private const int PasswordIterations = 100_000;
 
     private readonly SqliteConnection _db;
 
@@ -206,10 +223,45 @@ public sealed class GameStore : IDisposable
     {
         if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("username is required", nameof(username));
         Exec("INSERT INTO accounts(username) VALUES ($u) ON CONFLICT(username) DO NOTHING", null, ("$u", username));
-        using var cmd = Command("SELECT id, username FROM accounts WHERE username = $u", null, ("$u", username));
+        using var cmd = Command("SELECT id, username, is_gm FROM accounts WHERE username = $u", null, ("$u", username));
         using var r = cmd.ExecuteReader();
         r.Read();
-        return new Account(r.GetInt64(0), r.GetString(1));
+        return new Account(r.GetInt64(0), r.GetString(1), r.GetInt64(2) != 0);
+    }
+
+    /// <summary>
+    /// Checks the login secret the client sends (already a hash on the client side) against the account's stored
+    /// PBKDF2-SHA256 hash of it. An account without a password is claimed by the first secret it sees.
+    /// </summary>
+    public PasswordCheck CheckPassword(long accountId, string secret)
+    {
+        using (var cmd = Command("SELECT password_hash, password_salt FROM accounts WHERE id = $id", null, ("$id", accountId)))
+        using (var r = cmd.ExecuteReader())
+        {
+            if (r.Read() && !r.IsDBNull(0))
+            {
+                var stored = (byte[])r[0];
+                var hash = Rfc2898DeriveBytes.Pbkdf2(secret, (byte[])r[1], PasswordIterations, HashAlgorithmName.SHA256, stored.Length);
+                return CryptographicOperations.FixedTimeEquals(hash, stored) ? PasswordCheck.Matched : PasswordCheck.Wrong;
+            }
+        }
+        var salt = RandomNumberGenerator.GetBytes(16);
+        var claimed = Rfc2898DeriveBytes.Pbkdf2(secret, salt, PasswordIterations, HashAlgorithmName.SHA256, 32);
+        Exec("UPDATE accounts SET password_hash = $h, password_salt = $s WHERE id = $id", null, ("$h", claimed), ("$s", salt), ("$id", accountId));
+        return PasswordCheck.Claimed;
+    }
+
+    /// <summary>Forgets an account's password, so its next login sets a new one. False if there is no such account.</summary>
+    public bool ResetPassword(string username) =>
+        ExecCount("UPDATE accounts SET password_hash = NULL, password_salt = NULL WHERE username = $u", ("$u", username)) == 1;
+
+    public bool SetGm(string username, bool isGm) =>
+        ExecCount("UPDATE accounts SET is_gm = $g WHERE username = $u", ("$g", isGm ? 1 : 0), ("$u", username)) == 1;
+
+    private int ExecCount(string sql, params (string Name, object Value)[] args)
+    {
+        using var cmd = Command(sql, null, args);
+        return cmd.ExecuteNonQuery();
     }
 
     public bool CharacterNameTaken(string name) =>

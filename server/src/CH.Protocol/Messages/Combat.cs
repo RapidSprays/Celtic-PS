@@ -428,6 +428,8 @@ public sealed record ChatMessage(ChatChannel Channel, string Sender, string Text
 {
     public static ChatMessage ReadFromClient(NetBuffer b) => new((ChatChannel)b.ReadVariableInt32(), "", b.ReadString());
 
+    public static ChatMessage ReadFromServer(NetBuffer b) => new((ChatChannel)b.ReadVariableInt32(), b.ReadString(), b.ReadString());
+
     public void WriteToClient(NetBuffer b)
     {
         b.WriteVariableInt32((int)Channel);

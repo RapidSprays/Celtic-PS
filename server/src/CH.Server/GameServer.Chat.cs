@@ -34,7 +34,17 @@ public sealed partial class GameServer
         ".heal | .learn <skill id>",
         ".respawn - respawn every mob in the zone",
         ".zones - list zones | .goto <zone id or name> [leystone] - travel there",
-        ".leystones - discover every leystone (for map fast travel)");
+        ".leystones - discover every leystone (for map fast travel)",
+        ".who - who is online | .gm <account> [off] - grant or remove GM | .resetpassword <account> - forget a password");
+
+    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones"];
+
+    private static readonly string PlayerHelp = string.Join("\n",
+        "Commands:",
+        ".who - who is online",
+        ".where - your zone and position",
+        ".zones - list the zones",
+        "Chat: w Name, message - whisper | g message - party | s message - zone");
 
     private void OnChat(Session s, ChatMessage chat)
     {
@@ -52,9 +62,28 @@ public sealed partial class GameServer
             return;
         }
 
-        // The client sends its channel prefixes ("s ", "c ", "g ") as part of the text.
+        // The client sends its channel prefixes as part of the text (CInGameTextBox): "s " zone, "g " party, "c " clan,
+        // "w Name, " whisper.
         var channel = chat.Channel;
-        if (channel is ChatChannel.Zone or ChatChannel.Clan or ChatChannel.Group && text.Length > 2 && text[1] == ' ') text = text[2..];
+        var prefix = text.Length > 2 && text[1] == ' ' ? char.ToLowerInvariant(text[0]) : '\0';
+        if (prefix == 'w' && (channel is ChatChannel.WhisperOutgoing or ChatChannel.Local) && text.Contains(','))
+        {
+            Whisper(s, text[2..]);
+            return;
+        }
+        if (prefix != '\0' && channel is ChatChannel.Zone or ChatChannel.Clan or ChatChannel.Group or ChatChannel.WhisperOutgoing) text = text[2..];
+        switch (channel)
+        {
+            case ChatChannel.Group:
+                PartyChat(s, text);
+                return;
+            case ChatChannel.Clan:
+                Tell(s, "Clans aren't available on this server.");
+                return;
+            case ChatChannel.Global or ChatChannel.Trade:
+                WorldChat(s, channel, text);
+                return;
+        }
         if (channel is not (ChatChannel.Local or ChatChannel.Zone)) channel = ChatChannel.Local;
         if (!_zones.TryGetValue(s.Position.Zone, out var zone)) return;
         Broadcast(zone, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
@@ -78,12 +107,51 @@ public sealed partial class GameServer
         var zone = ZoneFor(s.Position.Zone);
         var now = NetTime.Now;
         var (zoneId, x, y, z, dir) = s.Position;
-        _log.LogInformation("GM {Name}: .{Command}", s.Name, command);
+        var verb = parts[0].ToLowerInvariant();
+        if (!s.IsGm && !PlayerCommands.Contains(verb))
+        {
+            Tell(s, "That command is for GMs. Commands: .help, .who, .where, .zones");
+            return;
+        }
+        _log.LogInformation("{Role} {Name}: .{Command}", s.IsGm ? "GM" : "Player", s.Name, command);
 
-        switch (parts[0].ToLowerInvariant())
+        switch (verb)
         {
             case "help":
-                Tell(s, Help);
+                Tell(s, s.IsGm ? Help : PlayerHelp);
+                break;
+
+            case "who":
+            {
+                var online = Online.OrderBy(p => p.Name).Select(p => $"{p.Name} (level {p.Sheet!.Level}, {ZoneName(p.Position.Zone)})").ToList();
+                Tell(s, $"{online.Count} online: {string.Join(", ", online)}");
+                break;
+            }
+
+            case "gm":
+            {
+                if (args.Length == 0)
+                {
+                    Tell(s, "Usage: .gm <account> [off]");
+                    break;
+                }
+                var on = !(args.Length > 1 && args[1].Equals("off", StringComparison.OrdinalIgnoreCase));
+                if (!_store.SetGm(args[0], on))
+                {
+                    Tell(s, $"No account called {args[0]}.");
+                    break;
+                }
+                foreach (var p in _sessions.Values.Where(p => p.Account?.Username.Equals(args[0], StringComparison.OrdinalIgnoreCase) == true))
+                    p.IsGm = on || (_options.LocalGm && System.Net.IPAddress.IsLoopback(p.Connection.RemoteEndPoint.Address));
+                Tell(s, on ? $"{args[0]} is now a GM." : $"{args[0]} is no longer a GM.");
+                break;
+            }
+
+            case "resetpassword":
+                if (args.Length == 0) Tell(s, "Usage: .resetpassword <account>");
+                else Tell(s, _store.ResetPassword(args[0])
+                    ? $"{args[0]}'s password is cleared: their next login sets a new one."
+                    : $"No account called {args[0]}.");
                 break;
 
             case "zones":

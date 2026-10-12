@@ -53,6 +53,12 @@ public sealed class ServerOptions
     /// <summary>Zone exits (scripts/extract-zone-points.py), read from beside the balance JSON.</summary>
     public string? ZonePointsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-points.json");
 
+    /// <summary>Players connecting from this machine (the host) get GM commands. Others need <c>.gm &lt;name&gt;</c>.</summary>
+    public bool LocalGm { get; set; } = true;
+
+    /// <summary>Accounts made GM at start-up (<c>--gm name</c>, repeatable).</summary>
+    public List<string> GmAccounts { get; } = new();
+
     public void Validate()
     {
         if (!IPAddress.IsLoopback(BindAddress) && !AllowRemote)
@@ -75,6 +81,8 @@ public sealed class ServerOptions
                 case "--allow-remote": o.AllowRemote = true; break;
                 case "--balance": o.BalancePath = Path.GetFullPath(Next()); break;
                 case "--no-balance": o.BalancePath = null; break;
+                case "--gm": o.GmAccounts.Add(Next()); break;
+                case "--no-local-gm": o.LocalGm = false; break;
                 default: throw new ArgumentException($"unknown option {args[i]}");
             }
         }

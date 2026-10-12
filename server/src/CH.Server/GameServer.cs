@@ -27,6 +27,8 @@ public sealed partial class GameServer : IDisposable
     private Thread? _pump;
     private volatile bool _stopping;
 
+    private const int MaxFailedLogins = 5;
+
     public GameServer(ServerOptions options, GameStore store, FrameLog frames, Balance balance, ILogger log)
     {
         _options = options;
@@ -117,7 +119,11 @@ public sealed partial class GameServer : IDisposable
                 }
                 else if (status == NetConnectionStatus.Disconnected)
                 {
-                    if (_sessions.TryGetValue(msg.SenderConnection, out var leaving) && leaving.InZone) LeaveZone(leaving);
+                    if (_sessions.TryGetValue(msg.SenderConnection, out var leaving))
+                    {
+                        if (leaving.InZone) LeaveZone(leaving);
+                        LeaveParty(leaving);
+                    }
                     _sessions.Remove(msg.SenderConnection);
                     _log.LogInformation("Disconnected {Endpoint}: {Reason}", msg.SenderEndPoint, msg.ReadString());
                 }
@@ -200,7 +206,15 @@ public sealed partial class GameServer : IDisposable
                 break;
 
             case Opcode.StopAttackingNPC:
-                s.AttackTarget = null;
+                SetAttackTarget(s, null);
+                break;
+
+            case Opcode.CharacterPlayingEmote:
+                if (InWorld(s)) OnEmote(s, EmoteRequest.Read(msg));
+                break;
+
+            case Opcode.PartyMessage:
+                if (InWorld(s)) OnPartyMessage(s, msg);
                 break;
 
             case Opcode.UseSkillOnNPC:
@@ -308,7 +322,32 @@ public sealed partial class GameServer : IDisposable
             Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Rejected, Reason: "Please create an account.").Write);
             return;
         }
-        s.Account = _store.GetOrCreateAccount(login.Username.Trim());
+        if (string.IsNullOrEmpty(login.PasswordHash))
+        {
+            Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Rejected, Reason: "This server needs a username and password login.").Write);
+            return;
+        }
+        if (s.FailedLogins >= MaxFailedLogins)
+        {
+            s.Connection.Disconnect("Too many wrong passwords.");
+            return;
+        }
+        var account = _store.GetOrCreateAccount(login.Username.Trim());
+        // The client sends a hash of the password; the server stores only a salted PBKDF2 hash of that.
+        switch (_store.CheckPassword(account.Id, login.PasswordHash))
+        {
+            case PasswordCheck.Wrong:
+                s.FailedLogins++;
+                _log.LogWarning("Wrong password for {Account} from {Endpoint}", account.Username, s.Connection.RemoteEndPoint);
+                Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Rejected, Reason: "Wrong password for this account.").Write);
+                return;
+            case PasswordCheck.Claimed:
+                _log.LogInformation("Account {Account} claimed with its first password", account.Username);
+                break;
+        }
+        s.Account = account;
+        // GM: accounts marked with .gm, and anyone playing on the server's own machine (the host).
+        s.IsGm = account.IsGm || (_options.LocalGm && IPAddress.IsLoopback(s.Connection.RemoteEndPoint.Address));
         s.SessionId = NewSessionId();
         // The reply itself still goes out unsessioned: the client only learns the id from this message.
         Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Accepted, s.SessionId).Write, sessionId: 0);
@@ -353,6 +392,9 @@ public sealed partial class GameServer : IDisposable
             return;
         }
 
+        KickDuplicate(s, character.Id);
+        if (s.InZone) LeaveZone(s); // a second StartGame on this connection
+        LeaveParty(s);
         s.Character = character;
         s.Position = (character.Zone, character.X, character.Y, character.Z, character.Direction);
         GrantKitIfNeeded(character);
@@ -387,6 +429,8 @@ public sealed partial class GameServer : IDisposable
         // PlayerMove carries no zone id: ignore moves from the old scene until the new zone has loaded.
         if (s.Character is null || !s.InZone) return;
         s.Position = (s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
+        s.MoveSpeed = move.Speed;
+        s.LastMoveAt = NetTime.Now;
         _store.SavePosition(s.Character.Id, s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
         DiscoverLeystones(s);
     }
@@ -452,6 +496,14 @@ public sealed partial class GameServer : IDisposable
         public CharacterSheet? Sheet { get; set; }
         public int? LastChestTemplate { get; set; }
         public HashSet<int> Teleports { get; } = new();
+        public bool IsGm { get; set; }
+        public int FailedLogins { get; set; }
+
+        // Multiplayer (GameServer.Players.cs)
+        public float MoveSpeed { get; set; }
+        public double LastMoveAt { get; set; } = double.MinValue;
+        public Party? Party { get; set; }
+        public HashSet<int> PartyInvites { get; } = new();
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";

@@ -26,6 +26,7 @@ public sealed partial class GameServer
         public required int Id { get; init; }
         public Dictionary<uint, Mob> Mobs { get; } = new();
         public List<Session> Players { get; } = new();
+        public double NextBatchAt { get; set; }
     }
 
     private readonly Dictionary<int, Zone> _zones = new();
@@ -86,25 +87,28 @@ public sealed partial class GameServer
     private void EnterZone(Session s)
     {
         var zone = ZoneFor(s.Position.Zone);
-        if (!zone.Players.Contains(s)) zone.Players.Add(s);
+        var wasPresent = zone.Players.Contains(s);
+        if (!wasPresent) zone.Players.Add(s);
         s.InZone = true;
         var now = NetTime.Now;
         var (_, x, y, z, _) = s.Position;
-        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z).Write);
+        var others = Others(zone, s).Select(Basic).ToList();
+        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z) { Players = others }.Write);
         var alive = zone.Mobs.Values.Where(m => m.State != MobState.Dead).ToList();
         if (alive.Count > 0) Send(s, Opcode.BatchZoneMonsterUpdate, b => MobSpawn.WriteBatch(b, alive.Select(m => ToWire(m, now)).ToList()));
         var moving = alive.Where(m => m.IsMoving(now)).Select(m => Leg(m, returning: m.State == MobState.Returning)).ToList();
         if (moving.Count > 0) Send(s, Opcode.mobPatrolUpdate, new MobPatrol(moving).Write);
         Send(s, Opcode.AllZoningMessagesSent, _ => { });
+        AnnounceArrival(zone, s, wasPresent);
     }
 
     /// <summary>Leaves the current zone on disconnect or zone change (buffs survive a zone change).</summary>
     private void LeaveZone(Session s, bool changingZone = false)
     {
         if (!_zones.TryGetValue(s.Position.Zone, out var zone)) return;
-        zone.Players.Remove(s);
+        SetAttackTarget(s, null);
+        if (zone.Players.Remove(s)) AnnounceDeparture(zone, s);
         s.InZone = false;
-        s.AttackTarget = null;
         s.Casts.Clear();
         if (!changingZone) s.Effects.Clear();
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s))) StartReturn(zone, mob, NetTime.Now);
@@ -135,6 +139,7 @@ public sealed partial class GameServer
     {
         foreach (var mob in zone.Mobs.Values.ToList()) TickMob(zone, mob, now);
         foreach (var s in zone.Players.ToList()) TickPlayer(zone, s, now);
+        TickPositions(zone, now);
     }
 
     private void TickMob(Zone zone, Mob mob, double now)
@@ -284,7 +289,7 @@ public sealed partial class GameServer
 
         if (s.AttackTarget is { } target)
         {
-            if (target.State == MobState.Dead || !zone.Mobs.ContainsKey(target.ServerId)) s.AttackTarget = null;
+            if (target.State == MobState.Dead || !zone.Mobs.ContainsKey(target.ServerId)) SetAttackTarget(s, null);
             else if (now >= s.NextSwingAt)
             {
                 var sheet = s.Sheet!;
@@ -339,7 +344,7 @@ public sealed partial class GameServer
     {
         if (req.TargetType != TargetType.Mob || !_zones.TryGetValue(s.Position.Zone, out var zone)) return;
         if (!zone.Mobs.TryGetValue(req.TargetId, out var mob) || mob.IsNpc || mob.State == MobState.Dead) return;
-        s.AttackTarget = mob;
+        SetAttackTarget(s, mob);
         s.NextSwingAt = Math.Max(s.NextSwingAt, NetTime.Now + 0.3);
         BreakStealth(s);
     }
@@ -404,7 +409,7 @@ public sealed partial class GameServer
             s.Health = Math.Min(s.MaxHealth, s.Health + heal);
             var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, s.CharacterId, AttackKind.Skill, cast.Skill.Id,
                 -heal, s.Health, Reaction.SkillHitPositive, ++_damageId, false);
-            Send(s, Opcode.CombatDamageMessage, new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Player, s.CharacterId, s.Health)]).Write);
+            SendPlayerDamage(zone, s, entry);
         }
     }
 
@@ -470,7 +475,7 @@ public sealed partial class GameServer
         target.Health = Math.Max(0, target.Health - (damage - absorbed));
         var entry = new DamageEntry(DamageDirection.MobToPlayer, (int)mob.ServerId, target.CharacterId, AttackKind.Attack, 0, damage, target.Health,
             miss ? Reaction.Miss : Reaction.Hit, ++_damageId, false);
-        Send(target, Opcode.CombatDamageMessage, new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Player, target.CharacterId, target.Health)]).Write);
+        SendPlayerDamage(zone, target, entry);
         if (target.Health <= 0)
         {
             PlayerDies(zone, target, now);
@@ -493,7 +498,7 @@ public sealed partial class GameServer
         mob.StopAt(now);
         mob.RemoveAt = now + MobCorpseSeconds;
         mob.RespawnAt = now + Math.Max(MobCorpseSeconds + 1, mob.RespawnSeconds);
-        foreach (var p in zone.Players.Where(p => ReferenceEquals(p.AttackTarget, mob))) p.AttackTarget = null;
+        foreach (var p in zone.Players.Where(p => ReferenceEquals(p.AttackTarget, mob)).ToList()) SetAttackTarget(p, null);
         Reward(killer, mob);
     }
 
@@ -521,6 +526,7 @@ public sealed partial class GameServer
         var newLevel = AddXp(s, xp, out var sheet);
         Send(s, Opcode.WonCombat, new WonCombat(mob.Template.Id, (int)mob.ServerId, s.CharacterId, xp, sheet.XpPercent, coins, loot, sheet.InventoryWithMoney()).Write);
         if (newLevel > progress.Level) AnnounceLevel(s, newLevel);
+        SharePartyXp(s, xp);
     }
 
     /// <summary>Adds XP, levelling up as many times as it covers. Returns the new level.</summary>
@@ -546,6 +552,8 @@ public sealed partial class GameServer
         s.Energy = int.MaxValue;
         Send(s, Opcode.LevelUp, new LevelUp(level).Write);
         SendProgress(s); // new maximums, attribute and skill points, raised skill rank caps
+        BroadcastAppearance(s); // the level shown to others
+        if (s.Party is { } party) SendRoster(party);
         _log.LogInformation("{Name} is now level {Level}", s.Name, level);
     }
 
@@ -585,6 +593,12 @@ public sealed partial class GameServer
         _store.SavePosition(s.Character!.Id, zoneId, x, y, z, dir);
         _store.SaveVitals(s.Character.Id, s.Health, s.Energy);
         Send(s, Opcode.RespawnPlayer, new RespawnPlayer([((uint)s.CharacterId, x, y, z, s.Health)]).Write);
+        // Other clients hold other players' health out of 50.
+        if (_zones.TryGetValue(zoneId, out var here))
+        {
+            SendToOthers(here, s, Opcode.RespawnPlayer, new RespawnPlayer([((uint)s.CharacterId, x, y, z, 50)]).Write);
+            here.NextBatchAt = 0;
+        }
         SendEffects(s); // clears buff icons and resends full stats
     }
 }

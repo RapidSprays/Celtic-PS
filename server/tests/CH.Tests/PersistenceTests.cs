@@ -13,8 +13,8 @@ public sealed class PersistenceTests : IDisposable
     [Fact]
     public void Migrations_apply_once_and_record_schema_version()
     {
-        using (var store = new GameStore(Db)) Assert.Equal(7, store.SchemaVersion);
-        using (var again = new GameStore(Db)) Assert.Equal(7, again.SchemaVersion);
+        using (var store = new GameStore(Db)) Assert.Equal(8, store.SchemaVersion);
+        using (var again = new GameStore(Db)) Assert.Equal(8, again.SchemaVersion);
     }
 
     [Fact]
@@ -82,17 +82,27 @@ public sealed class PersistenceTests : IDisposable
     }
 
     [Fact]
-    public void Schema_has_no_credential_columns()
+    public void Only_a_salted_password_verifier_is_stored()
     {
         using var store = new GameStore(Db);
+        var account = store.GetOrCreateAccount("niamh");
+        Assert.Equal(PasswordCheck.Claimed, store.CheckPassword(account.Id, "CLIENT-SECRET"));
+        Assert.Equal(PasswordCheck.Matched, store.CheckPassword(account.Id, "CLIENT-SECRET"));
+        Assert.Equal(PasswordCheck.Wrong, store.CheckPassword(account.Id, "client-secret"));
+
         using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={Db}");
         conn.Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT group_concat(name) FROM pragma_table_info('accounts')";
         var columns = (string)cmd.ExecuteScalar()!;
-        Assert.DoesNotContain("pass", columns, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("steam", columns, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("device", columns, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("id,username,created_at,password_hash,password_salt,is_gm", columns);
+        cmd.CommandText = "SELECT password_hash FROM accounts";
+        var hash = (byte[])cmd.ExecuteScalar()!;
+        Assert.Equal(32, hash.Length);
+        Assert.DoesNotContain("CLIENT-SECRET", System.Text.Encoding.UTF8.GetString(hash));
+
+        Assert.True(store.ResetPassword("niamh"));
+        Assert.Equal(PasswordCheck.Claimed, store.CheckPassword(account.Id, "NEW"));
     }
 
     public void Dispose()
