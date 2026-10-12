@@ -16,6 +16,16 @@ public sealed class ServerOptions
     /// <summary>Lidgren UDP game server port. 0 picks a free port (tests).</summary>
     public int GamePort { get; set; } = 5556;
 
+    /// <summary>
+    /// Tailscale mode (<c>--tailscale</c>): listen on every interface but accept only this machine and Tailscale
+    /// addresses, and advertise this machine's Tailscale IP.
+    /// </summary>
+    public bool TailscaleOnly { get; set; }
+
+    /// <summary>Whether a connection from <paramref name="address"/> is accepted at all.</summary>
+    public bool IsAllowedClient(IPAddress? address) =>
+        address is not null && (!TailscaleOnly || NetworkAccess.IsLocalMachine(address) || NetworkAccess.IsTailscale(address));
+
     /// <summary>Address written into the world list for the client to connect to.</summary>
     public string PublicHost { get; set; } = "127.0.0.1";
 
@@ -79,6 +89,14 @@ public sealed class ServerOptions
                 case "--public-host": o.PublicHost = Next(); break;
                 case "--data": o.DataDirectory = Path.GetFullPath(Next()); break;
                 case "--allow-remote": o.AllowRemote = true; break;
+                case "--tailscale":
+                    var ts = NetworkAccess.TailscaleAddress()
+                        ?? throw new ArgumentException("--tailscale: this machine has no Tailscale address. Start Tailscale and log in first.");
+                    o.TailscaleOnly = true;
+                    o.AllowRemote = true;
+                    o.BindAddress = IPAddress.Any;
+                    o.PublicHost = ts.ToString();
+                    break;
                 case "--balance": o.BalancePath = Path.GetFullPath(Next()); break;
                 case "--no-balance": o.BalancePath = null; break;
                 case "--gm": o.GmAccounts.Add(Next()); break;

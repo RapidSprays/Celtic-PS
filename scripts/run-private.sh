@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Start the private server and launch the patched pinned client against it.
 #
-#   scripts/run-private.sh            server + client; Ctrl+C stops both
-#   scripts/run-private.sh --server   server only
+#   scripts/run-private.sh               server + client; Ctrl+C stops both
+#   scripts/run-private.sh --server      server only
+#   scripts/run-private.sh --tailscale   also let friends on your tailnet join (docs/friends.md); combine with --server
 #
 # Requires: Steam running, scripts/pin-client.sh done, CH.Patcher applied (patch-state.json present).
 set -euo pipefail
@@ -13,6 +14,15 @@ CLIENT_DIR="$HOME/CelticHeroesAnalysis/client/$BUILD"
 DATA="$HOME/CelticHeroesAnalysis/server-data"
 LOGS="$HOME/CelticHeroesAnalysis/logs"
 STAMP="$(date +%Y%m%d-%H%M%S)"
+SERVER_ONLY=0
+SERVER_ARGS=()
+for arg in "$@"; do
+  case "$arg" in
+    --server) SERVER_ONLY=1 ;;
+    --tailscale) SERVER_ARGS+=(--tailscale) ;;
+    *) echo "unknown option $arg" >&2; exit 2 ;;
+  esac
+done
 export DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 
 [[ -f "$CLIENT_DIR/patch-state.json" ]] || { echo "pinned client is not patched: run CH.Patcher first" >&2; exit 1; }
@@ -34,7 +44,7 @@ EXTRACTED="$HOME/CelticHeroesAnalysis/extracted/$BUILD"
 
 mkdir -p "$LOGS"
 dotnet build -c Release "$REPO/server/src/CH.Server" >/dev/null
-dotnet "$REPO/server/src/CH.Server/bin/Release/net8.0/CH.Server.dll" --data "$DATA" > "$LOGS/server-$STAMP.log" 2>&1 &
+dotnet "$REPO/server/src/CH.Server/bin/Release/net8.0/CH.Server.dll" --data "$DATA" ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"} > "$LOGS/server-$STAMP.log" 2>&1 &
 SERVER=$!
 CLIENT=""
 cleanup() {
@@ -53,7 +63,9 @@ done
 curl -sf -o /dev/null "http://127.0.0.1:5555/ping" || { echo "Server did not answer within 30s; see $LOGS/server-$STAMP.log" >&2; exit 1; }
 echo "Server up (pid $SERVER). Log: $LOGS/server-$STAMP.log"
 
-if [[ "${1:-}" == "--server" ]]; then
+TS_HOST="$(grep -o 'Tailscale address [0-9.]*' "$LOGS/server-$STAMP.log" | cut -d' ' -f3 || true)"
+[[ -n "$TS_HOST" ]] && echo "Friends join at $TS_HOST over Tailscale (docs/friends.md)."
+if [[ "$SERVER_ONLY" == 1 ]]; then
   wait "$SERVER"
   exit 0
 fi

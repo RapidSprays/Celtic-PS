@@ -142,7 +142,7 @@ public sealed partial class GameServer
                     break;
                 }
                 foreach (var p in _sessions.Values.Where(p => p.Account?.Username.Equals(args[0], StringComparison.OrdinalIgnoreCase) == true))
-                    p.IsGm = on || (_options.LocalGm && System.Net.IPAddress.IsLoopback(p.Connection.RemoteEndPoint.Address));
+                    p.IsGm = on || (_options.LocalGm && NetworkAccess.IsLocalMachine(p.Connection.RemoteEndPoint.Address));
                 Tell(s, on ? $"{args[0]} is now a GM." : $"{args[0]} is no longer a GM.");
                 break;
             }

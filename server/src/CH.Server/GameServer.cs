@@ -53,6 +53,7 @@ public sealed partial class GameServer : IDisposable
             ConnectionTimeout = 90f, // the client's fork uses 90 s
         };
         config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
+        config.EnableMessageType(NetIncomingMessageType.ConnectionApproval);
         _server = new NetServer(config);
     }
 
@@ -66,6 +67,8 @@ public sealed partial class GameServer : IDisposable
         _pump = new Thread(PumpLoop) { IsBackground = true, Name = "game-server" };
         _pump.Start();
         _log.LogInformation("Game server (Lidgren \"{App}\") listening on udp {Address}:{Port}", Envelope.AppIdentifier, _options.BindAddress, Port);
+        if (_options.TailscaleOnly)
+            _log.LogInformation("Tailscale mode: friends join at Tailscale address {Host}; other networks are refused", _options.PublicHost);
     }
 
     private void PumpLoop()
@@ -104,7 +107,17 @@ public sealed partial class GameServer : IDisposable
     {
         switch (msg.MessageType)
         {
+            case NetIncomingMessageType.ConnectionApproval:
+                if (_options.IsAllowedClient(msg.SenderEndPoint?.Address)) msg.SenderConnection?.Approve();
+                else
+                {
+                    _log.LogWarning("Refused connection from {Endpoint}", msg.SenderEndPoint);
+                    msg.SenderConnection?.Deny("Not allowed on this server.");
+                }
+                break;
+
             case NetIncomingMessageType.DiscoveryRequest:
+                if (!_options.IsAllowedClient(msg.SenderEndPoint?.Address)) break;
                 var response = _server.CreateMessage();
                 Discovery.WriteResponse(response);
                 _server.SendDiscoveryResponse(response, msg.SenderEndPoint);
@@ -347,7 +360,7 @@ public sealed partial class GameServer : IDisposable
         }
         s.Account = account;
         // GM: accounts marked with .gm, and anyone playing on the server's own machine (the host).
-        s.IsGm = account.IsGm || (_options.LocalGm && IPAddress.IsLoopback(s.Connection.RemoteEndPoint.Address));
+        s.IsGm = account.IsGm || (_options.LocalGm && NetworkAccess.IsLocalMachine(s.Connection.RemoteEndPoint.Address));
         s.SessionId = NewSessionId();
         // The reply itself still goes out unsessioned: the client only learns the id from this message.
         Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Accepted, s.SessionId).Write, sessionId: 0);

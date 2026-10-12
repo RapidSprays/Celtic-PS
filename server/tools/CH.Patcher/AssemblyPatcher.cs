@@ -20,18 +20,21 @@ public sealed class AssemblyPatcher
 
     private readonly ModuleDefinition _module;
     private readonly int _httpPort;
+    private readonly string _host;
     private readonly List<PatchResult> _results = new();
     private readonly HashSet<MethodDefinition> _edited = new();
 
-    public AssemblyPatcher(ModuleDefinition module, int httpPort)
+    /// <param name="host">the private server's address: 127.0.0.1 on the host's own machine, its Tailscale IP for friends</param>
+    public AssemblyPatcher(ModuleDefinition module, int httpPort, string host = "127.0.0.1")
     {
         _module = module;
         _httpPort = httpPort;
+        _host = host;
     }
 
     public IReadOnlyList<PatchResult> Results => _results;
 
-    private string Local(string path) => $"http://127.0.0.1:{_httpPort}/{path}";
+    private string Local(string path) => $"http://{_host}:{_httpPort}/{path}";
 
     public void ApplyAll()
     {
@@ -97,7 +100,7 @@ public sealed class AssemblyPatcher
             il.InsertAfter(ins, il.Create(OpCodes.Ldstr, value));
             sites++;
         }
-        Record(id, $"{typeName}: reads of {string.Join(", ", values.Keys)} replaced with localhost URLs", sites, expectedSites);
+        Record(id, $"{typeName}: reads of {string.Join(", ", values.Keys)} replaced with private-server URLs", sites, expectedSites);
     }
 
     private void RewriteLiveUrlLiterals(string id, int expectedSites)
@@ -110,7 +113,7 @@ public sealed class AssemblyPatcher
             ins.Operand = Local($"external/{uri.Host}{uri.PathAndQuery}");
             sites++;
         }
-        Record(id, "live URL literals rewritten to http://127.0.0.1:<port>/external/<host><path>", sites, expectedSites);
+        Record(id, $"live URL literals rewritten to http://{_host}:<port>/external/<host><path>", sites, expectedSites);
     }
 
     private void RewriteLiteral(string id, string typeName, string methodName, string from, string to, int expectedSites)

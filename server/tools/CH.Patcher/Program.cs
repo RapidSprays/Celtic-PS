@@ -1,6 +1,7 @@
 // CH.Patcher: builds the private client from the pinned copy (docs/patch-manifest.md).
 //
-//   dotnet run --project tools/CH.Patcher -- [--build 24928510] [--http-port 5555] [--dry-run] [--discover] [--inspect OUT.dll]
+//   dotnet run --project tools/CH.Patcher -- [--build 24928510] [--http-port 5555] [--host 127.0.0.1] [--dry-run] [--discover] [--inspect OUT.dll]
+//   CH.Patcher setup [--host <server address>] [--steam-dir DIR] [--dest DIR]   (friends: see docs/friends.md)
 //
 // Always patches from the pristine, hash-verified snapshot DLL, so running it twice gives the same result. Writes only
 // inside ~/CelticHeroesAnalysis/client/<build>/; the Steam install is never touched.
@@ -10,7 +11,10 @@ using System.Text.Json;
 using CH.Patcher;
 using Mono.Cecil;
 
+if (args.Length > 0 && args[0] == "setup") return FriendSetup.Run(args[1..]);
+
 var build = "24928510";
+var host = "127.0.0.1";
 var httpPort = 5555;
 var dryRun = false;
 var discover = false;
@@ -21,6 +25,7 @@ for (var i = 0; i < args.Length; i++)
     {
         case "--build": build = args[++i]; break;
         case "--http-port": httpPort = int.Parse(args[++i]); break;
+        case "--host": host = args[++i]; break;
         case "--dry-run": dryRun = true; break;
         case "--discover": discover = dryRun = true; break;
         case "--inspect": inspectPath = Path.GetFullPath(args[++i]); dryRun = true; break;
@@ -53,7 +58,7 @@ try
     var resolver = new DefaultAssemblyResolver();
     resolver.AddSearchDirectory(Path.GetDirectoryName(pristineDll)!);
     using var module = ModuleDefinition.ReadModule(pristineDll, new ReaderParameters { AssemblyResolver = resolver });
-    var patcher = new AssemblyPatcher(module, httpPort) { Discover = discover };
+    var patcher = new AssemblyPatcher(module, httpPort, host) { Discover = discover };
     patcher.ApplyAll();
     foreach (var r in patcher.Results) Console.WriteLine($"  {r.Id,-4} {r.Sites,2} site(s)  {r.Description}");
     var remaining = patcher.RemainingLiveUrls();
@@ -111,6 +116,7 @@ try
         build,
         patchedUtc = DateTime.UtcNow,
         httpPort,
+        host,
         bundleId = privateBundleId,
         pristineSha256 = expected,
         patchedSha256 = Sha256(clientDll),
@@ -120,7 +126,7 @@ try
     File.WriteAllText(Path.Combine(clientDir, "patch-state.json"), JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true }));
     Console.WriteLine($"Patched {clientApp}");
     Console.WriteLine($"  Assembly-CSharp.dll sha256 {state.patchedSha256}");
-    Console.WriteLine($"  bundle id {privateBundleId}, environment URL http://127.0.0.1:{httpPort}/patchserver/PatchServerURL.aspx");
+    Console.WriteLine($"  bundle id {privateBundleId}, environment URL http://{host}:{httpPort}/patchserver/PatchServerURL.aspx");
     return 0;
 }
 catch (Exception ex) when (ex is PatchException or InvalidOperationException or IOException)

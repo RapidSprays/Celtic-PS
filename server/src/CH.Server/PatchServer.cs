@@ -36,6 +36,16 @@ public sealed class PatchServer : IAsyncDisposable
         builder.Logging.ClearProviders();
         builder.WebHost.ConfigureKestrel(k => k.Listen(_options.BindAddress, _options.HttpPort));
         _app = builder.Build();
+        _app.Use(async (ctx, next) =>
+        {
+            if (!_options.IsAllowedClient(ctx.Connection.RemoteIpAddress))
+            {
+                _log.LogWarning("Refused HTTP request from {Address}", ctx.Connection.RemoteIpAddress);
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                return;
+            }
+            await next();
+        });
         _app.MapGet("/patchserver/{page}", (HttpContext ctx, string page) => Handle(ctx, page));
         _app.MapGet("/patchserver/balancefiles/{version}/balance-client.json", (string version) =>
         {
