@@ -238,6 +238,10 @@ public sealed partial class GameServer : IDisposable
                 if (InWorld(s)) OnTradeMessage(s, msg);
                 break;
 
+            case Opcode.BankingMessage:
+                if (InWorld(s)) OnBankMessage(s, msg);
+                break;
+
             case Opcode.RequestShop:
             case Opcode.PurchaseItem:
             case Opcode.SellItem:

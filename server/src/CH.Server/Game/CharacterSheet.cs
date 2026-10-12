@@ -169,7 +169,7 @@ public sealed class CharacterSheet
             Attack = Attack, Defence = Defence, AttackSpeed = AttackSpeed, WeaponDamage = WeaponDamage, ArmourValue = Armour,
             Vitality = vit, Strength = str, Focus = foc, Dexterity = dex, Encumbrance = Encumbrance,
             SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
-            AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
+            AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, SoloBankItemLimit = BankSlots, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
             CompiledAbilities = Abilities(),
             // Small SkillBonuses are rank bonuses (large ones are flat damage); the client indexes Levels[compiled], so clamp.
             CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, Math.Clamp(
@@ -235,6 +235,9 @@ public sealed class CharacterSheet
     /// travel free.
     /// </summary>
     public const int FastTravelItemLimit = 10000;
+
+    /// <summary>Personal bank capacity (stats block soloBankItemLimit). <b>Approximated.</b></summary>
+    public const int BankSlots = 100;
 
     public StartGameReply StartGame(int worldId, IReadOnlyList<int>? teleports = null, IReadOnlyList<int>? completedQuests = null,
         IReadOnlyList<ActiveQuest>? activeQuests = null) => new()

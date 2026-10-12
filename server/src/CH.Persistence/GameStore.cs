@@ -46,6 +46,9 @@ public sealed record CharacterRecord(
 public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Quantity, int Slot, bool Bound, int Charges, bool Favourite)
 {
     public const int Backpack = -1;
+
+    /// <summary>Personal bank (vault) storage.</summary>
+    public const int Bank = -2;
 }
 
 /// <summary>Progress and vitals. Health/energy of -1 mean "full"; attributes of -1 mean "race base, nothing spent".</summary>

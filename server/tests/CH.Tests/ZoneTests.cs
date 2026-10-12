@@ -328,4 +328,50 @@ public sealed class ZoneTests : IDisposable
         Assert.Equal(bought.Coins + cheapest.Sell, sold.Coins);
         Assert.True(cheapest.Sell < cheapest.Buy);
     }
+
+    [Fact]
+    public async Task The_bank_stores_and_returns_items()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("saver");
+        var id = client.CreateCharacter("Aodh").CharacterId;
+        var start = client.StartGame(id, "Aodh");
+        client.FinishZoning();
+        var potions = start.Inventory.First(i => i.TemplateId == CH.Server.Game.ClassKit.MinorHealthPotion);
+
+        (List<ItemSlot> Backpack, List<ItemSlot> Bank) Reply()
+        {
+            var m = client.Expect(Opcode.BankingMessageReply);
+            Assert.Equal(1, m.ReadByte());
+            List<ItemSlot> Read() => Enumerable.Range(0, m.ReadVariableInt32()).Select(_ => ItemSlot.Read(m)).ToList();
+            return (Read(), Read());
+        }
+
+        client.Send(Opcode.BankingMessage, b => b.Write((byte)0));
+        Assert.Empty(Reply().Bank);
+
+        client.Send(Opcode.BankingMessage, b =>
+        {
+            b.Write((byte)1); b.Write((byte)1);
+            b.WriteVariableInt32(potions.ServerInventoryId); b.WriteVariableInt32(potions.TemplateId); b.WriteVariableInt32(2);
+        });
+        var deposited = Reply();
+        Assert.Equal(potions.Quantity - 2, deposited.Backpack.Single(i => i.TemplateId == potions.TemplateId).Quantity);
+        var banked = deposited.Bank.Single();
+        Assert.Equal((potions.TemplateId, 2), (banked.TemplateId, banked.Quantity));
+
+        client.Send(Opcode.BankingMessage, b =>
+        {
+            b.Write((byte)1); b.Write((byte)0);
+            b.WriteVariableInt32(banked.ServerInventoryId); b.WriteVariableInt32(banked.TemplateId); b.WriteVariableInt32(1);
+        });
+        var withdrawn = Reply();
+        Assert.Equal(potions.Quantity - 1, withdrawn.Backpack.Single(i => i.TemplateId == potions.TemplateId).Quantity);
+        Assert.Equal(1, withdrawn.Bank.Single().Quantity);
+    }
 }
