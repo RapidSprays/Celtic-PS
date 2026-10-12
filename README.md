@@ -43,3 +43,11 @@ The client log is at `~/Library/Logs/One Thumb Mobile Ltd/Celtic Heroes/Player.l
 ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit
 ```
 The hook blocks client binaries, databases, decompiled code, files over 5 MB, and token-like strings.
+
+## Stage B tools
+```bash
+export DOTNET_ROOT=$HOME/.dotnet
+B=24928510; M=~/CelticHeroesAnalysis/snapshots/$B/Contents/Resources/Data/Managed
+ilspycmd -p -r "$M" -o ~/CelticHeroesAnalysis/decompiled/$B/Assembly-CSharp "$M/Assembly-CSharp.dll"
+dotnet run -c Release --project scripts/tools/AsmIndex -- "$M/Assembly-CSharp.dll" ~/CelticHeroesAnalysis/indexes/$B/Assembly-CSharp
+```

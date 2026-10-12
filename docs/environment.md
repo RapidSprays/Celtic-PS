@@ -13,8 +13,8 @@ Audited 2026-10-12 (read-only).
 | Homebrew | 7.0.9 | `brew --version` |
 | Python | 3.9.6 (system) | `python3 --version` |
 | Java | **missing** (needed only for Ghidra) | `java -version` |
-| ILSpy (`ilspycmd`) | **missing**, to install in Stage B | `command -v` |
-| REA | **missing**, to install in Stage B | `command -v` |
+| ILSpy (`ilspycmd`) | 9.1.0.7988 (installed 2026-10-12; latest 11.x needs a newer .NET). Needs `export DOTNET_ROOT=$HOME/.dotnet` | `ilspycmd --version` |
+| REA | 6.4.0 via `npx -y rea-agents@latest` (CLI works; Claude Code MCP registration waits for owner confirmation) | `rea doctor` |
 | Wireshark | missing, not needed | `command -v` |
 | Steam | running, library at `~/Library/Application Support/Steam` | `pgrep`, `libraryfolders.vdf` |
 
@@ -27,3 +27,5 @@ Audited 2026-10-12 (read-only).
 | Pinned client copy | `~/CelticHeroesAnalysis/client/<buildid>/CelticHeroes.app` |
 | Client log | `~/Library/Logs/One Thumb Mobile Ltd/Celtic Heroes/Player.log` (shared by Steam install and pinned copy; overwritten each launch) |
 | Saved logs | `~/CelticHeroesAnalysis/logs/` |
+| Decompiled source (outside git) | `~/CelticHeroesAnalysis/decompiled/<buildid>/<assembly>/` |
+| Assembly indexes (outside git) | `~/CelticHeroesAnalysis/indexes/<buildid>/<assembly>/` |
