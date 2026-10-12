@@ -105,6 +105,7 @@ public sealed partial class GameServer
     /// <summary>Leaves the current zone on disconnect or zone change (buffs survive a zone change).</summary>
     private void LeaveZone(Session s, bool changingZone = false)
     {
+        if (s.Trade is { } trade) CancelTrade(trade, s);
         if (!_zones.TryGetValue(s.Position.Zone, out var zone)) return;
         SetAttackTarget(s, null);
         if (zone.Players.Remove(s)) AnnounceDeparture(zone, s);
@@ -535,6 +536,11 @@ public sealed partial class GameServer
         var xp = MobStats.Xp(mob.Level, mob.Template.Power);
         var coins = MobStats.Coins(mob.Level, mob.Template.Power);
         var loot = new List<(int, int)>();
+        foreach (var drop in _loot.Roll(mob.Level, mob.Template.Power, (CharacterClass)c.Class, Random.Shared))
+        {
+            loot.Add((drop, 1));
+            GrantItem(c.Id, drop, 1);
+        }
         if (RollChestDrop() is { } chestDrop)
         {
             loot.Add((chestDrop, 1));

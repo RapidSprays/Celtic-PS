@@ -256,6 +256,14 @@ public sealed record InventoryWithMoney(int Coins, IReadOnlyList<ItemSlot> Items
         b.WriteVariableInt32(Items.Count);
         foreach (var item in Items) item.Write(b);
     }
+
+    public static InventoryWithMoney Read(NetBuffer b)
+    {
+        var coins = b.ReadVariableInt32();
+        var items = new List<ItemSlot>();
+        for (int i = 0, n = b.ReadVariableInt32(); i < n; i++) items.Add(ItemSlot.Read(b));
+        return new InventoryWithMoney(coins, items);
+    }
 }
 
 /// <summary>WonCombat (13017), server → client (reader 2508). The mob template id must exist in the client balance data.</summary>

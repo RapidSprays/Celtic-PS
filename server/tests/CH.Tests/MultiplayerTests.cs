@@ -272,4 +272,82 @@ public sealed class MultiplayerTests : IDisposable
         Assert.Equal((5, aId, 3), (lost.ReadVariableInt32(), lost.ReadVariableUInt32(), lost.ReadVariableInt32()));
         Assert.Equal(0, b.Expect(Opcode.PlayerHateList).ReadVariableInt32());
     }
+
+    [Fact]
+    public async Task Trading_swaps_offered_coins_and_items_when_both_confirm()
+    {
+        if (!File.Exists(BalancePath)) return;
+        await using var host = await ServerHost.StartAsync(
+            new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath }, NullLoggerFactory.Instance);
+        var a = new Client();
+        a.Connect("127.0.0.1", host.Game.Port);
+        a.VersionCheck();
+        a.Login("aine");
+        var aId = a.CreateCharacter("Aine").CharacterId;
+        var aStart = a.StartGame(aId, "Aine");
+        using var _a = a;
+        a.FinishZoning();
+        var (b, bId) = Join(host, "ronan", "Ronan");
+        using var _b = b;
+        b.FinishZoning();
+        var kitPotion = aStart.Inventory.First(i => i.TemplateId == CH.Server.Game.ClassKit.MinorHealthPotion);
+        // Starter-kit items are bound; a GM-given Health Potion (17) stack is tradeable.
+        Say(a, ChatChannel.Local, ".give 17 5");
+        var potion = InventoryWithMoney.Read(a.Expect(Opcode.InventoryUpdate)).Items.First(i => i.TemplateId == 17);
+
+        a.Send(Opcode.TradeMessage, m => { m.WriteVariableInt32(0); m.WriteVariableInt32((int)bId); m.Write((byte)0); });
+        var ask = b.Expect(Opcode.TradeMessage);
+        Assert.Equal((1, (int)aId), (ask.ReadVariableInt32(), ask.ReadVariableInt32()));
+        b.Send(Opcode.TradeMessage, m => { m.WriteVariableInt32(0); m.WriteVariableInt32((int)aId); m.Write((byte)1); });
+        foreach (var (c, other) in new[] { (a, bId), (b, aId) })
+        {
+            var open = c.Expect(Opcode.TradeMessage);
+            Assert.Equal((10, (int)other), (open.ReadVariableInt32(), open.ReadVariableInt32()));
+            c.Expect(Opcode.TradeMessage); // first screen
+        }
+
+        // Aine offers 30 coins and 2 potions; Ronan sees them as "their offer".
+        a.Send(Opcode.TradeMessage, m => { m.WriteVariableInt32(4); m.Write((byte)1); m.WriteVariableInt32(30); });
+        a.Expect(Opcode.TradeMessage);
+        b.Expect(Opcode.TradeMessage);
+        a.Send(Opcode.TradeMessage, m =>
+        {
+            m.WriteVariableInt32(4); m.Write((byte)0); m.Write((byte)1);
+            m.WriteVariableInt32(kitPotion.TemplateId); m.WriteVariableInt32(kitPotion.ServerInventoryId); m.WriteVariableInt32(1);
+        });
+        var refused = a.Expect(Opcode.TradeMessage);
+        Assert.Equal((5, (byte)0, "That item can't be traded."), (refused.ReadVariableInt32(), refused.ReadByte(), refused.ReadString()));
+        b.Expect(Opcode.TradeMessage);
+        a.Send(Opcode.TradeMessage, m =>
+        {
+            m.WriteVariableInt32(4); m.Write((byte)0); m.Write((byte)1);
+            m.WriteVariableInt32(potion.TemplateId); m.WriteVariableInt32(potion.ServerInventoryId); m.WriteVariableInt32(2);
+        });
+        a.Expect(Opcode.TradeMessage);
+        var screen = b.Expect(Opcode.TradeMessage);
+        Assert.Equal((5, (byte)1), (screen.ReadVariableInt32(), screen.ReadByte()));
+        InventoryWithMoney.Read(screen);                       // own backpack
+        Assert.Empty(InventoryWithMoney.Read(screen).Items);   // own offer
+        var theirs = InventoryWithMoney.Read(screen);
+        Assert.Equal(30, theirs.Coins);
+        Assert.Equal((potion.TemplateId, 2), (theirs.Items.Single().TemplateId, theirs.Items.Single().Quantity));
+
+        // Both ready, both confirm: the trade completes for both.
+        foreach (var c in new[] { a, b }) c.Send(Opcode.TradeMessage, m => { m.WriteVariableInt32(6); m.Write((byte)1); });
+        a.Send(Opcode.TradeMessage, m => { m.WriteVariableInt32(9); m.WriteVariableInt32((int)bId); });
+        b.Send(Opcode.TradeMessage, m => { m.WriteVariableInt32(9); m.WriteVariableInt32((int)aId); });
+        InventoryWithMoney Done(Client c)
+        {
+            NetIncomingMessage m;
+            do m = c.Expect(Opcode.TradeMessage);
+            while (m.ReadVariableInt32() != 8);
+            return InventoryWithMoney.Read(m);
+        }
+        var aAfter = Done(a);
+        var bAfter = Done(b);
+        Assert.Equal(aStart.Coins - 30, aAfter.Coins);
+        Assert.Equal(potion.Quantity - 2, aAfter.Items.Single(i => i.TemplateId == potion.TemplateId).Quantity);
+        Assert.Equal(aStart.Coins + 30, bAfter.Coins); // both started with the starter kit's coins
+        Assert.Equal(2, bAfter.Items.Single(i => i.TemplateId == potion.TemplateId).Quantity); // Ronan had none
+    }
 }

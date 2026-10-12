@@ -84,6 +84,12 @@ public sealed record ItemInfo(
     public float ProcSkillChance { get; init; }
     public int EquipSkillId { get; init; }
     public int StarLevel { get; init; }
+
+    /// <summary>Tradeable (1) in the client data; untradeable items are quest, bound or premium items.</summary>
+    public bool Tradeable { get; init; }
+
+    /// <summary>ImportantItem: quest and key items the client asks about before selling.</summary>
+    public bool ImportantItem { get; init; }
     public int ModelId { get; init; }
 
     public int Requirement(string type) => Requirements.Where(r => r.Type == type).Select(r => r.Amount).DefaultIfEmpty(0).Max();
@@ -208,6 +214,8 @@ public sealed class Balance
                 ProcSkillChance = Float(e, "ProcSkillChance"),
                 EquipSkillId = Int(e, "EquipSkillID"),
                 StarLevel = Int(e, "StarLevel"),
+                Tradeable = Int(e, "Tradeable") == 1,
+                ImportantItem = Int(e, "ImportantItem") == 1,
                 ModelId = Int(e, "ModelID"),
             };
         }

@@ -370,6 +370,27 @@ public sealed class GameStore : IDisposable
         else Exec("UPDATE items SET quantity = $q WHERE id = $id", null, ("$q", quantity), ("$id", itemId));
     }
 
+    /// <summary>Gives a whole item row (keeping its charges and binding) to another character's backpack.</summary>
+    public void GiveItem(long itemId, long toCharacterId) =>
+        Exec("UPDATE items SET character_id = $c, slot = $s, favourite = 0 WHERE id = $id", null,
+            ("$c", toCharacterId), ("$s", ItemRecord.Backpack), ("$id", itemId));
+
+    /// <summary>Runs <paramref name="work"/> as one SQLite transaction: all of it or none of it.</summary>
+    public void Atomically(Action work)
+    {
+        Exec("BEGIN IMMEDIATE");
+        try
+        {
+            work();
+            Exec("COMMIT");
+        }
+        catch
+        {
+            Exec("ROLLBACK");
+            throw;
+        }
+    }
+
     public void SetItemFavourite(long itemId, bool favourite) =>
         Exec("UPDATE items SET favourite = $f WHERE id = $id", null, ("$f", favourite ? 1 : 0), ("$id", itemId));
 

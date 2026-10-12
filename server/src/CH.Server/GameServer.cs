@@ -21,6 +21,7 @@ public sealed partial class GameServer : IDisposable
     private readonly Balance _balance;
     private readonly IReadOnlyDictionary<int, GeneratedCamp[]> _generatedCamps;
     private readonly ZoneTravel _travel;
+    private readonly LootTable _loot;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -40,6 +41,7 @@ public sealed partial class GameServer : IDisposable
         if (balance.IsLoaded) log.LogInformation("Chest catalogue: {Count} chests in {Ms} ms", _chestCatalog.Chests.Count, started.ElapsedMilliseconds);
         _generatedCamps = ZonePopulation.LoadGenerated(options.PopulationPath);
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
+        _loot = new LootTable(balance);
         if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
             log.LogInformation("Generated monster camps for {Zones} zones ({Mobs} monsters)", _generatedCamps.Count, _generatedCamps.Values.Sum(z => z.Sum(c => c.Count)));
@@ -225,6 +227,10 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.PVPMessage:
                 if (InWorld(s)) OnPvpMessage(s, msg);
+                break;
+
+            case Opcode.TradeMessage:
+                if (InWorld(s)) OnTradeMessage(s, msg);
                 break;
 
             case Opcode.CharacterPlayingEmote:
@@ -526,6 +532,8 @@ public sealed partial class GameServer : IDisposable
         public Session? PvpTarget { get; set; }
         public Duel? Duel { get; set; }
         public HashSet<int> DuelInvites { get; } = new();
+        public Trade? Trade { get; set; }
+        public HashSet<int> TradeRequests { get; } = new();
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";
