@@ -1,3 +1,4 @@
+using CH.Server.Game;
 using CH.Protocol;
 using CH.Protocol.Messages;
 using CH.Server;
@@ -31,7 +32,7 @@ public sealed class StarterKitTests : IAsyncDisposable
         var start = client.StartGame(created.CharacterId, "Conall");
         Assert.Equal(CommandStatus.Accepted, start.Status);
         Assert.Equal([1, 47, 2, 3], start.Skills.Select(k => k.SkillId));
-        Assert.All(start.Skills, k => Assert.Equal((0, 4), (k.Level, k.MaxLevel)));
+        Assert.All(start.Skills, k => Assert.Equal((0, SkillLevels.Ranks - 1), (k.Level, k.MaxLevel))); // no rank caps
         Assert.Equal(10000, start.Equipment[0].TemplateId); // Tempered Small Sword
         Assert.Equal(10005, start.Equipment[5].TemplateId); // Training Buckler
         Assert.Equal(10000, start.Character.Equipment[0]);   // appearance uses template ids

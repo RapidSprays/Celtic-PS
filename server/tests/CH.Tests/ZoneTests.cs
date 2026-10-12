@@ -567,7 +567,7 @@ public sealed class ZoneTests : IDisposable
         Assert.Contains((Pets.MountedEffect, 1), effects); // level index 1 = +10%
         Assert.True(CharacterStats.Read(m).MaxSpeed > 5.4f);
 
-        // Several ranks in one purchase, clamped to the free points and the rank cap.
+        // Several ranks in one purchase, limited only by the free points (no rank caps).
         Say(".level 12");
         client.Expect(Opcode.LevelUp);
         var skill = start.Skills.First().SkillId;
@@ -577,7 +577,7 @@ public sealed class ZoneTests : IDisposable
         reply.ReadVariableInt32();
         var skills = Enumerable.Range(0, reply.ReadVariableInt32())
             .Select(_ => new SkillEntry(reply.ReadVariableInt32(), reply.ReadVariableInt32(), reply.ReadVariableInt32(), reply.ReadFloat())).ToList();
-        Assert.True(skills.First(k => k.SkillId == skill).Level >= 3, "several ranks bought at once");
+        Assert.Equal(11, skills.First(k => k.SkillId == skill).Level); // all 11 points of a level-12 character
 
         // Consumables recharge in 3 s; elixirs have no cooldown.
         float Recharge(string name)

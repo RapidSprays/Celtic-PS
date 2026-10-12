@@ -192,7 +192,7 @@ public sealed class CombatTests : IAsyncDisposable
         Assert.Equal((19, 57), (stats.SkillPoints, stats.AttributePoints));
         var skills = ReadSkillList(client.Expect(Opcode.SkillListUpdate), out var skillPoints);
         Assert.Equal(19, skillPoints);
-        Assert.Equal(9, skills.Single(k => k.SkillId == 1).MaxLevel); // ranks 5-9 open at level 15
+        Assert.Equal(SkillLevels.Ranks - 1, skills.Single(k => k.SkillId == 1).MaxLevel); // no rank caps (SkillLevels)
 
         // +5 strength, +3 vitality: more attack and health, 49 points left.
         client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(5); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(3); b.WriteVariableUInt32(49); });

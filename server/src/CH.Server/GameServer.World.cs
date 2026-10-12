@@ -309,7 +309,7 @@ public sealed partial class GameServer
                     var ranged = sheet.AttackRange > 3 ? Modifiers(s).RangedDamage : 0;
                     var damage = sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged;
                     PlayerHits(zone, s, target, AttackKind.Attack, 0, damage, now);
-                    s.NextSwingAt = now + stats.AttackSpeed / 1000.0 + 0.1;
+                    s.NextSwingAt = now + stats.AttackSpeed / 1000.0;
                 }
                 else
                 {

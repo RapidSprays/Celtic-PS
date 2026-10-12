@@ -133,7 +133,7 @@ public sealed class CharacterSheet
 
     public InventoryWithMoney InventoryWithMoney() => new(Progress.Coins, BackpackSlots());
 
-    /// <summary>The highest rank this character may train a skill to now (rises at levels 15 and 30).</summary>
+    /// <summary>The highest rank a skill can reach: the end of its (extended, ungated) level table (see <see cref="SkillLevels"/>).</summary>
     public int MaxRank(int skillId) => _balance.Skills.TryGetValue(skillId, out var skill) && skill.Levels.Count > 0 ? skill.MaxRank(Level) : SkillMaxLevelAtStart;
 
     public IReadOnlyList<SkillEntry> SkillEntries() =>

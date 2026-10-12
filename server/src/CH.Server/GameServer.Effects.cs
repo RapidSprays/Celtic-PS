@@ -41,10 +41,15 @@ public sealed partial class GameServer
             ArmourValue = Math.Max(0, stats.ArmourValue + m.Armour),
             Defence = Math.Max(0, stats.Defence + m.Defence),
             Attack = Math.Max(0, stats.Attack + m.Attack),
-            AttackSpeed = Math.Max(300, stats.AttackSpeed * 100 / (100 + Math.Max(-50, m.AttackSpeedPercent))),
-            MaxSpeed = stats.MaxSpeed * (100 + Math.Clamp(m.RunSpeedPercent, -80, 200)) / 100f, // riding: the Mounted effect
+            AttackSpeed = AttackSpeedWith(stats.AttackSpeed, m.AttackSpeedPercent),
+            MaxSpeed = RunSpeedWith(stats.MaxSpeed, m.RunSpeedPercent), // riding: the Mounted effect
         };
     }
+
+    // Owner's rule: no ceilings on attack or run speed. Only slows keep their floors (half attack speed, 20% run speed).
+    public static int AttackSpeedWith(int milliseconds, int percent) => Math.Max(1, milliseconds * 100 / (100 + Math.Max(-50, percent)));
+
+    public static float RunSpeedWith(float speed, int percent) => speed * (100 + Math.Max(-80, percent)) / 100f;
 
     private void SendLiveStats(Session s) => Send(s, Opcode.StatsUpdate, LiveStats(s).Write);
 

@@ -234,6 +234,7 @@ public sealed class Balance
             var levels = e.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array
                 ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"), Int(l, "TemplateLevel"), Int(l, "MinLevel"))).ToList()
                 : [];
+            if (SkillLevels.IsPlayerSkill(Int(e, "AbilityId"), levels.Count)) levels = SkillLevels.Extend(levels);
             skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels);
         }
 

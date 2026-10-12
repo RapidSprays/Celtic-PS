@@ -62,6 +62,7 @@ Patched client running at the main menu: `lsof -a -p <pid> -i TCP` shows only `1
 - **Hook:** the start of `CItemManager.Init(BalanceClient)` calls `CHPrivateMods.CustomItems.Register(balance)`, guarded like P10.
 - **What it does:** for each entry in `server/content/custom-items.json`, the mod copies the base `ItemTemplate` (MemberwiseClone) under the new ID, Name and Description, and adds it to the client's template dictionary before the shop cache is built. Model, icon, class rules and animations come from the base.
 - **Where the list comes from:** CH.Patcher writes it next to the mod as `CHPrivateMods.items.txt`. The server applies the same file (`Game/CustomItems.cs`).
+- **Skill ranks, same hook:** `CHPrivateMods.SkillRanks.Extend` first extends every player skill's `Levels` and `PvpLevels` (ability ≥ 0, more than one rank) to 260 ranks and clears their `MinLevel`. That removes the rank caps without a bounds error in `HUDSkillButtons` / `NetworkManager` (both index `Levels[rank]`). The rule matches the server's `Game/SkillLevels.cs`.
 - Expected: 1 site.
 
 ## P12: rainbow weapons

@@ -214,7 +214,7 @@ public sealed partial class GameServer
         var stats = LiveStats(s);
         var ranged = sheet.AttackRange > 3 ? Modifiers(s).RangedDamage : 0;
         PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged, now);
-        s.NextSwingAt = now + stats.AttackSpeed / 1000.0 + 0.1;
+        s.NextSwingAt = now + stats.AttackSpeed / 1000.0;
     }
 
     /// <summary>Damage between duelling players: the target's armour and defence apply as against monsters.</summary>

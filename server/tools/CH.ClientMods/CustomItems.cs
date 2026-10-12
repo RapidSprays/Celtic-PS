@@ -56,9 +56,10 @@ namespace CHPrivateMods
             return Rainbow.Contains(templateId);
         }
 
-        /// <summary>Called at the start of CItemManager.Init(BalanceClient) (patch P11).</summary>
+        /// <summary>Called at the start of CItemManager.Init(BalanceClient) (patch P11). Also extends the skill rank tables.</summary>
         public static void Register(object balanceClient)
         {
+            SkillRanks.Extend(balanceClient);
             try
             {
                 Load();
