@@ -238,6 +238,14 @@ public sealed partial class GameServer : IDisposable
                 if (InWorld(s)) OnTradeMessage(s, msg);
                 break;
 
+            case Opcode.LearnAbility:
+                if (InWorld(s))
+                {
+                    var abilityId = msg.ReadVariableInt32();
+                    OnLearnAbility(s, abilityId, msg.ReadVariableInt32());
+                }
+                break;
+
             case Opcode.BankingMessage:
                 if (InWorld(s)) OnBankMessage(s, msg);
                 break;

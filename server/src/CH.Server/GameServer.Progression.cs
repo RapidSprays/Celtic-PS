@@ -55,6 +55,37 @@ public sealed partial class GameServer
     }
 
     /// <summary>Everything the client shows about progression: base attributes, full stats (with points) and skills.</summary>
+    /// <summary>
+    /// LearnAbility (16005, a trainer's LEARN_ABILITY action): <c>vi abilityId, vi coins</c>; the price comes from the
+    /// conversation. Reply 16006: <c>byte status; ok: vi abilityId, vi newCoins, AvailLists</c>.
+    /// </summary>
+    private void OnLearnAbility(Session s, int abilityId, int price)
+    {
+        var sheet = s.Sheet!;
+        var coins = _store.GetProgress(s.Character!.Id).Coins;
+        string? problem = abilityId < 0 || price < 0 ? "The trainer can't teach that."
+            : sheet.Kit.Abilities.Contains(abilityId) || sheet.LearnedAbilities.Contains(abilityId) ? "You already know that."
+            : price > coins ? "You don't have enough gold."
+            : null;
+        if (problem is not null)
+        {
+            Send(s, Opcode.LearnAbilityReply, b => { b.Write((byte)0); b.Write(problem); });
+            Tell(s, problem);
+            return;
+        }
+        _store.AddCurrency(s.Character.Id, -price, 0);
+        _store.LearnAbility(s.Character.Id, abilityId);
+        RefreshSheet(s);
+        Send(s, Opcode.LearnAbilityReply, b =>
+        {
+            b.Write((byte)1);
+            b.WriteVariableInt32(abilityId);
+            b.WriteVariableInt32(coins - price);
+            WriteQuestLists(b, s);
+        });
+        SendLiveStats(s); // the stats block carries the ability list
+    }
+
     private void SendProgress(Session s)
     {
         var sheet = s.Sheet!;

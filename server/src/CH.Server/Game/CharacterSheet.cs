@@ -181,9 +181,12 @@ public sealed class CharacterSheet
     }
 
     /// <summary>Ability levels: class abilities at 1, plus equipment AbilityBonuses (also for abilities the class lacks).</summary>
+    /// <summary>Abilities learnt from trainers, on top of the class's own.</summary>
+    public IReadOnlyList<int> LearnedAbilities { get; init; } = [];
+
     public IReadOnlyList<IdValue> Abilities()
     {
-        var levels = Kit.Abilities.ToDictionary(a => a, _ => 1);
+        var levels = Kit.Abilities.Concat(LearnedAbilities).Distinct().ToDictionary(a => a, _ => 1);
         foreach (var (id, amount) in Gear.SelectMany(g => g.AbilityBonuses)) levels[id] = levels.GetValueOrDefault(id) + amount;
         return levels.Select(kv => new IdValue(kv.Key, kv.Value)).ToList();
     }

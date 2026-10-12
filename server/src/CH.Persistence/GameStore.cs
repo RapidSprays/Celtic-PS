@@ -211,6 +211,13 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, quest_id)
         );
         """,
+        """
+        CREATE TABLE abilities (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            ability_id   INTEGER NOT NULL,
+            PRIMARY KEY (character_id, ability_id)
+        );
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -465,6 +472,19 @@ public sealed class GameStore : IDisposable
             ON CONFLICT(character_id, quest_id) DO UPDATE SET completed = $done, stages = $s, tracked = $t
             """, null, ("$c", characterId), ("$q", quest.QuestId), ("$done", quest.Completed ? 1 : 0), ("$s", stages), ("$t", quest.Tracked ? 1 : 0));
     }
+
+    /// <summary>Abilities learnt from trainers (LEARN_ABILITY).</summary>
+    public IReadOnlyList<int> ListAbilities(long characterId)
+    {
+        using var cmd = Command("SELECT ability_id FROM abilities WHERE character_id = $c ORDER BY ability_id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<int>();
+        while (r.Read()) list.Add(r.GetInt32(0));
+        return list;
+    }
+
+    public void LearnAbility(long characterId, int abilityId) =>
+        Exec("INSERT OR IGNORE INTO abilities(character_id, ability_id) VALUES ($c, $a)", null, ("$c", characterId), ("$a", abilityId));
 
     public void DeleteQuest(long characterId, int questId) =>
         Exec("DELETE FROM quests WHERE character_id = $c AND quest_id = $q", null, ("$c", characterId), ("$q", questId));

@@ -374,4 +374,28 @@ public sealed class ZoneTests : IDisposable
         Assert.Equal(potions.Quantity - 1, withdrawn.Backpack.Single(i => i.TemplateId == potions.TemplateId).Quantity);
         Assert.Equal(1, withdrawn.Bank.Single().Quantity);
     }
+
+    [Fact]
+    public async Task A_trainer_teaches_an_ability_once_for_its_price()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("learner");
+        var id = client.CreateCharacter("Cian", @class: 1).CharacterId;
+        var start = client.StartGame(id, "Cian");
+        client.FinishZoning();
+        var ability = Enumerable.Range(1, 60).First(a => !ClassKit.For(1).Abilities.Contains(a));
+
+        client.Send(Opcode.LearnAbility, b => { b.WriteVariableInt32(ability); b.WriteVariableInt32(10); });
+        var learnt = client.Expect(Opcode.LearnAbilityReply);
+        Assert.Equal((1, ability, start.Coins - 10), (learnt.ReadByte(), learnt.ReadVariableInt32(), learnt.ReadVariableInt32()));
+
+        client.Send(Opcode.LearnAbility, b => { b.WriteVariableInt32(ability); b.WriteVariableInt32(10); });
+        var again = client.Expect(Opcode.LearnAbilityReply);
+        Assert.Equal((0, "You already know that."), (again.ReadByte(), again.ReadString()));
+    }
 }
