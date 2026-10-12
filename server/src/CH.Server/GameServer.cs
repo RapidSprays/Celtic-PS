@@ -1,0 +1,325 @@
+using System.Net;
+using System.Security.Cryptography;
+using CH.Persistence;
+using CH.Protocol;
+using CH.Protocol.Messages;
+using Lidgren.Network;
+using Microsoft.Extensions.Logging;
+
+namespace CH.Server;
+
+/// <summary>
+/// Lidgren UDP game server speaking the client's protocol (docs/protocol-notes.md). All message handling runs on one
+/// pump thread, so session state needs no locking.
+/// </summary>
+public sealed class GameServer : IDisposable
+{
+    private readonly ServerOptions _options;
+    private readonly GameStore _store;
+    private readonly FrameLog _frames;
+    private readonly ILogger _log;
+    private readonly NetServer _server;
+    private readonly Dictionary<NetConnection, Session> _sessions = new();
+    private Thread? _pump;
+    private volatile bool _stopping;
+
+    public GameServer(ServerOptions options, GameStore store, FrameLog frames, ILogger log)
+    {
+        _options = options;
+        _store = store;
+        _frames = frames;
+        _log = log;
+        var config = new NetPeerConfiguration(Envelope.AppIdentifier)
+        {
+            LocalAddress = options.BindAddress,
+            Port = options.GamePort,
+            AcceptIncomingConnections = true,
+            MaximumConnections = 64,
+            ConnectionTimeout = 90f, // the client's fork uses 90 s
+        };
+        config.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
+        _server = new NetServer(config);
+    }
+
+    public int Port => _server.Port;
+
+    public int ConnectionCount => _sessions.Count;
+
+    public void Start()
+    {
+        _server.Start();
+        _pump = new Thread(PumpLoop) { IsBackground = true, Name = "game-server" };
+        _pump.Start();
+        _log.LogInformation("Game server (Lidgren \"{App}\") listening on udp {Address}:{Port}", Envelope.AppIdentifier, _options.BindAddress, Port);
+    }
+
+    private void PumpLoop()
+    {
+        while (!_stopping)
+        {
+            _server.MessageReceivedEvent.WaitOne(20);
+            NetIncomingMessage? msg;
+            while ((msg = _server.ReadMessage()) is not null)
+            {
+                try
+                {
+                    Handle(msg);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogError(ex, "Error handling {Type} from {Endpoint}", msg.MessageType, msg.SenderEndPoint);
+                }
+                finally
+                {
+                    _server.Recycle(msg);
+                }
+            }
+        }
+    }
+
+    private void Handle(NetIncomingMessage msg)
+    {
+        switch (msg.MessageType)
+        {
+            case NetIncomingMessageType.DiscoveryRequest:
+                var response = _server.CreateMessage();
+                Discovery.WriteResponse(response);
+                _server.SendDiscoveryResponse(response, msg.SenderEndPoint);
+                break;
+
+            case NetIncomingMessageType.StatusChanged:
+                var status = (NetConnectionStatus)msg.ReadByte();
+                if (status == NetConnectionStatus.Connected)
+                {
+                    _sessions[msg.SenderConnection] = new Session(msg.SenderConnection);
+                    _log.LogInformation("Connected {Endpoint}", msg.SenderEndPoint);
+                }
+                else if (status == NetConnectionStatus.Disconnected)
+                {
+                    _sessions.Remove(msg.SenderConnection);
+                    _log.LogInformation("Disconnected {Endpoint}: {Reason}", msg.SenderEndPoint, msg.ReadString());
+                }
+                break;
+
+            case NetIncomingMessageType.Data:
+                if (_sessions.TryGetValue(msg.SenderConnection, out var session))
+                    HandleData(session, msg);
+                break;
+
+            case NetIncomingMessageType.WarningMessage:
+            case NetIncomingMessageType.ErrorMessage:
+                _log.LogWarning("Lidgren: {Text}", msg.ReadString());
+                break;
+        }
+    }
+
+    private void HandleData(Session s, NetIncomingMessage msg)
+    {
+        var raw = msg.Data.AsSpan(0, msg.LengthBytes).ToArray();
+        var header = Envelope.ReadClientHeader(msg, s.SessionId != 0);
+        _frames.Inbound(s.Connection.RemoteUniqueIdentifier, header.Opcode, raw);
+        if (header.SessionId is { } sid && sid != s.SessionId)
+        {
+            _log.LogWarning("Session id mismatch on {Opcode}: got {Got}, expected {Expected}", header.Opcode, sid, s.SessionId);
+            return;
+        }
+
+        switch (header.Opcode)
+        {
+            case Opcode.VersionCheck:
+                var check = VersionCheck.Read(msg);
+                // OK means "your balance is current": the client keeps its bundled balance and never downloads one.
+                Send(s, Opcode.VersionCheckReply, new VersionCheckReply(true, _options.ProtocolVersion, check.BalanceVersion).Write);
+                break;
+
+            case Opcode.Login:
+            case Opcode.LoginAdvanced:
+                OnLogin(s, LoginRequest.Read(msg, header.Opcode == Opcode.LoginAdvanced));
+                break;
+
+            case Opcode.RequestCharacterList:
+                if (RequireAccount(s)) SendCharacterList(s);
+                break;
+
+            case Opcode.CreateCharacter:
+                if (RequireAccount(s)) OnCreateCharacter(s, CreateCharacterRequest.Read(msg));
+                break;
+
+            case Opcode.RequestTweak:
+                Send(s, Opcode.TweakReply, new TweakReply([]).Write);
+                break;
+
+            case Opcode.StartGame:
+                if (RequireAccount(s)) OnStartGame(s, StartGameRequest.Read(msg));
+                break;
+
+            case Opcode.FinishedZoning:
+                OnFinishedZoning(s);
+                break;
+
+            case Opcode.PlayerMove:
+                OnPlayerMove(s, PlayerMove.Read(msg));
+                break;
+
+            case Opcode.ClientErrorMessage:
+                _log.LogWarning("Client error report: {Text}", ClientErrorMessage.Read(msg).Text);
+                break;
+
+            // Sent by the client during login and zone load; replies are optional (docs/protocol-notes.md §4).
+            case Opcode.DailyRewardMessage:
+            case Opcode.RequestSpecialOffers:
+            case Opcode.RequestAccurateQuestData:
+            case Opcode.MapEnterStatsMessage:
+            case Opcode.ClientBackgrounded:
+            case Opcode.ClientResumed:
+                _log.LogDebug("Ignored {Opcode}", header.Opcode);
+                break;
+
+            default:
+                _log.LogWarning("Unhandled opcode {Opcode} ({Value}), {Bytes} bytes", header.Opcode, (uint)header.Opcode, raw.Length);
+                break;
+        }
+    }
+
+    private void OnLogin(Session s, LoginRequest login)
+    {
+        _log.LogInformation("{Login}", login);
+        if (string.IsNullOrWhiteSpace(login.Username))
+        {
+            Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Rejected, Reason: "Please create an account.").Write);
+            return;
+        }
+        s.Account = _store.GetOrCreateAccount(login.Username.Trim());
+        s.SessionId = NewSessionId();
+        // The reply itself still goes out unsessioned: the client only learns the id from this message.
+        Send(s, Opcode.LoginReply, new LoginReply(CommandStatus.Accepted, s.SessionId).Write, sessionId: 0);
+        _log.LogInformation("Account {Account} logged in, session {Session}", s.Account.Username, s.SessionId);
+    }
+
+    private void SendCharacterList(Session s)
+    {
+        var characters = _store.ListCharacters(s.Account!.Id).Select(ToSummary).ToList();
+        var last = characters.Count > 0 ? (int)characters[^1].CharacterId : -1;
+        Send(s, Opcode.RequestCharacterListReply, new CharacterListReply(CommandStatus.Accepted, _options.MaxCharacterSlots, last, characters).Write);
+    }
+
+    private void OnCreateCharacter(Session s, CreateCharacterRequest req)
+    {
+        var name = req.Name.Trim();
+        string? problem = name.Length is < 3 or > 16 ? "Names must be 3 to 16 characters."
+            : !name.All(char.IsLetter) ? "Names may only contain letters."
+            : _store.CharacterNameTaken(name) ? "That name is taken."
+            : _store.ListCharacters(s.Account!.Id).Count >= _options.MaxCharacterSlots ? "No free character slots."
+            : null;
+        if (problem is not null)
+        {
+            Send(s, Opcode.CreateCharacterReply, new CreateCharacterReply(CommandStatus.Rejected, Reason: problem).Write);
+            return;
+        }
+
+        var a = req.Appearance;
+        var spawn = _options.DefaultSpawn;
+        var created = _store.CreateCharacter(s.Account!.Id, new NewCharacter(name, a.Race, a.Face, a.Skin, a.SkinColour, a.Hair, a.HairColour,
+            a.FaceAccessory, a.FaceAccessoryColour, a.Scale, a.Gender, req.Class, spawn.Zone, spawn.X, spawn.Y, spawn.Z, spawn.Direction));
+        _log.LogInformation("Created character {Name} ({Id}) for {Account}", created.Name, created.Id, s.Account.Username);
+        Send(s, Opcode.CreateCharacterReply, new CreateCharacterReply(CommandStatus.Accepted, (uint)created.Id, created.Name).Write);
+    }
+
+    private void OnStartGame(Session s, StartGameRequest req)
+    {
+        var character = _store.GetCharacter(req.CharacterId);
+        if (character is null || character.AccountId != s.Account!.Id)
+        {
+            Send(s, Opcode.StartGameReply, new StartGameReply { Status = CommandStatus.Rejected, RejectLog = "unknown character", RejectReason = "Character not found.", Character = null! }.Write);
+            return;
+        }
+
+        s.Character = character;
+        s.Position = (character.Zone, character.X, character.Y, character.Z, character.Direction);
+        var reply = new StartGameReply
+        {
+            Character = ToSummary(character),
+            Level = character.Level,
+            X = character.X,
+            Y = character.Y,
+            Z = character.Z,
+            Direction = character.Direction,
+            KnownZones = [character.Zone],
+        };
+        Send(s, Opcode.StartGameReply, reply.Write);
+        _log.LogInformation("{Name} entering zone {Zone} at ({X:F1}, {Y:F1}, {Z:F1})", character.Name, character.Zone, character.X, character.Y, character.Z);
+    }
+
+    private void OnFinishedZoning(Session s)
+    {
+        if (s.Character is null) return;
+        var (_, x, y, z, _) = s.Position;
+        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z).Write);
+        Send(s, Opcode.AllZoningMessagesSent, _ => { });
+    }
+
+    private void OnPlayerMove(Session s, PlayerMove move)
+    {
+        if (s.Character is null) return;
+        s.Position = (s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
+        _store.SavePosition(s.Character.Id, s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
+    }
+
+    private bool RequireAccount(Session s)
+    {
+        if (s.Account is not null) return true;
+        _log.LogWarning("Message before login from {Endpoint}", s.Connection.RemoteEndPoint);
+        return false;
+    }
+
+    private CharacterSummary ToSummary(CharacterRecord c) => new(
+        CharacterId: (uint)c.Id,
+        ServerCharacterId: (uint)c.Id,
+        WorldId: _options.WorldId,
+        Name: c.Name,
+        GmFlag: 0,
+        Clan: "",
+        Appearance: new Appearance(c.Race, c.Face, c.Skin, c.SkinColour, c.Hair, c.HairColour, c.FaceAccessory, c.FaceAccessoryColour, c.Scale, c.Gender),
+        Equipment: CharacterSummary.NoEquipment(),
+        Zone: c.Zone,
+        Level: c.Level,
+        FishingLevel: 1,
+        CookingLevel: 1,
+        Class: c.Class,
+        AttackRange: 2f,
+        AttackSpeed: 100,
+        PvpLevel: 0,
+        PvpRating: 0,
+        Dismounted: false);
+
+    private void Send(Session s, Opcode opcode, Action<NetBuffer> write, uint? sessionId = null, NetDeliveryMethod delivery = NetDeliveryMethod.ReliableOrdered)
+    {
+        var msg = Envelope.CreateServerMessage(_server, opcode, sessionId ?? s.SessionId);
+        write(msg);
+        _frames.Outbound(s.Connection.RemoteUniqueIdentifier, opcode, msg.Data.AsSpan(0, msg.LengthBytes).ToArray());
+        _server.SendMessage(msg, s.Connection, delivery);
+    }
+
+    private static uint NewSessionId()
+    {
+        uint id;
+        do id = BitConverter.ToUInt32(RandomNumberGenerator.GetBytes(4)); while (id == 0);
+        return id;
+    }
+
+    public void Dispose()
+    {
+        _stopping = true;
+        _server.Shutdown("server stopping");
+        _pump?.Join(TimeSpan.FromSeconds(2));
+    }
+
+    private sealed class Session(NetConnection connection)
+    {
+        public NetConnection Connection { get; } = connection;
+        public uint SessionId { get; set; }
+        public Account? Account { get; set; }
+        public CharacterRecord? Character { get; set; }
+        public (int Zone, float X, float Y, float Z, float Direction) Position { get; set; }
+    }
+}

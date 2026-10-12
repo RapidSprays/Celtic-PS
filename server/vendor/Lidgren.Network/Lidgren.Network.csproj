@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Vendored upstream lidgren-network-gen3 (MIT), see VENDOR.md. Unmodified source, SDK-style project. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Always compile like a release build (no DEBUG): the client ships its fork that way, and upstream's
+         DEBUG-only asserts throw on benign races during shutdown. -->
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+    <DefineConstants>TRACE</DefineConstants>
+    <NoWarn>$(NoWarn);CS0618;CS0649;CS0169;CS0414;CS1591;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0045;SYSLIB0039</NoWarn>
+    
+  </PropertyGroup>
+</Project>

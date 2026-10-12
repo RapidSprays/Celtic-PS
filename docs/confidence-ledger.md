@@ -28,3 +28,6 @@ Labels: **O** observed · **SI** statically inferred · **EC** experimentally co
 | 22 | The live PlayerPrefs (shared with the pinned copy) hold USER, PASS and REFRESH_TOKEN | O | high | key names in the plist (values not read) | — |
 | 23 | A stock Lidgren gen3 NetServer can talk to the client fork | SI | medium | the fork's diffs are client-side; header and message types match | Hidden wire changes → test in Stage D |
 | 24 | `st-services-unity` is the SharedTech services layer (Firebase analytics, Crashlytics, messaging) | O | high | `st/SharedTech/Services.cs:68-111` | (resolves #7) |
+| 25 | Upstream lidgren-network-gen3 matches the client fork's wire code (message types, constants, packet header encode, handshake, ping/pong) | O | high | side-by-side diff 2026-10-12 (`vendor/Lidgren.Network/VENDOR.md`) | Non-wire differences only (address family, Deny, null-check fix) |
+| 26 | Our server and fake client interoperate through the full login → world → move → restart flow | EC | high | `EndToEndTests` (6 consecutive green runs) | Shows self-consistency only; the real client is the final check (E-a) |
+| 27 | LoginReply must go out without the session flag (the client's session id is still 0 when it arrives) | SI | high | `NetworkManager.cs:747-757` + `770-778` | — |

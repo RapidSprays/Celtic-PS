@@ -1,0 +1,71 @@
+using System.Net;
+
+namespace CH.Server;
+
+public sealed class ServerOptions
+{
+    /// <summary>Address both listeners bind to. Loopback unless <see cref="AllowRemote"/> is set.</summary>
+    public IPAddress BindAddress { get; set; } = IPAddress.Loopback;
+
+    /// <summary>Required to bind a non-loopback address (docs/decisions.md: wider exposure is a separate decision).</summary>
+    public bool AllowRemote { get; set; }
+
+    /// <summary>HTTP "patch server" port. 0 picks a free port (tests).</summary>
+    public int HttpPort { get; set; } = 5555;
+
+    /// <summary>Lidgren UDP game server port. 0 picks a free port (tests).</summary>
+    public int GamePort { get; set; } = 5556;
+
+    /// <summary>Address written into the world list for the client to connect to.</summary>
+    public string PublicHost { get; set; } = "127.0.0.1";
+
+    public string DataDirectory { get; set; } = Path.Combine(AppContext.BaseDirectory, "data");
+
+    public string DatabasePath => Path.Combine(DataDirectory, "private-server.db");
+
+    public string LogDirectory => Path.Combine(DataDirectory, "logs");
+
+    public int WorldId { get; set; } = 2; // the client auto-selects the first world with id > 1
+
+    public string WorldName { get; set; } = "Private";
+
+    public uint MaxCharacterSlots { get; set; } = 6;
+
+    /// <summary>Reported patch level; anything ≤ the client's (143) means "no patching".</summary>
+    public int PatchLevel { get; set; } = 0;
+
+    /// <summary>Client network protocol version (EnvironmentSetup networkProtocolVersion = 1).</summary>
+    public int ProtocolVersion { get; set; } = 1;
+
+    /// <summary>
+    /// Where new characters start: zone 2 "Lir's Reach", spawn point 2003 "Highshore Village", taken from the client
+    /// balance data (Zones["2"].PlayerSpawnPoints). The original server's choice is unknown, so this is approximated.
+    /// </summary>
+    public (int Zone, float X, float Y, float Z, float Direction) DefaultSpawn { get; set; } = (2, -109.51f, -3.7f, -16.86f, 0f);
+
+    public void Validate()
+    {
+        if (!IPAddress.IsLoopback(BindAddress) && !AllowRemote)
+            throw new InvalidOperationException($"Refusing to bind {BindAddress}: not loopback. Pass --allow-remote to expose the server deliberately.");
+    }
+
+    public static ServerOptions FromArgs(string[] args)
+    {
+        var o = new ServerOptions();
+        for (var i = 0; i < args.Length; i++)
+        {
+            string Next() => i + 1 < args.Length ? args[++i] : throw new ArgumentException($"{args[i]} needs a value");
+            switch (args[i])
+            {
+                case "--http-port": o.HttpPort = int.Parse(Next()); break;
+                case "--game-port": o.GamePort = int.Parse(Next()); break;
+                case "--bind": o.BindAddress = IPAddress.Parse(Next()); break;
+                case "--public-host": o.PublicHost = Next(); break;
+                case "--data": o.DataDirectory = Path.GetFullPath(Next()); break;
+                case "--allow-remote": o.AllowRemote = true; break;
+                default: throw new ArgumentException($"unknown option {args[i]}");
+            }
+        }
+        return o;
+    }
+}

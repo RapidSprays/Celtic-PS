@@ -13,3 +13,5 @@
 | 2026-10-12 | The private client gets its own bundle id (P1) | The live PlayerPrefs hold the owner's real credentials; the private client must never read or send them. |
 | 2026-10-12 | The server won't verify the client HMAC or password hashes, and won't embed the client's static keys | They add nothing on a private server. This keeps the client's secrets out of our code. |
 | 2026-10-12 | Plan change: there's no anti-cheat to strip (no detectors run). The patch set is P1–P7 in `patch-manifest.md` | Stage B evidence. |
+| 2026-10-12 | Vendor upstream lidgren-network-gen3 at f99b006 rather than use a NuGet fork | Wire-identical to the client fork in a direct diff, MIT-licensed and auditable. Local changes: DestoreMessage null check (matches the client fork), and always compiled without DEBUG (release, like the client). |
+| 2026-10-12 | New characters spawn at zone 2 (Lir's Reach), point 2003 Highshore Village | From the client balance data; the live server's real choice is unknown (approximated). |

@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup Condition="!$(MSBuildProjectDirectory.Contains('vendor'))">
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

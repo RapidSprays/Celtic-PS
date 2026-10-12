@@ -8,7 +8,7 @@ The aim is a private, non-commercial Celtic Heroes server that a pinned, modifie
 | A: Inventory and pinned client | **done**: build 24928510 inventoried, snapshot taken, pinned copy launches |
 | B: Client map | **done**: [client-architecture.md](docs/client-architecture.md) |
 | C: Protocol and boot sequence | **first pass done**: [boot-sequence.md](docs/boot-sequence.md), [protocol-notes.md](docs/protocol-notes.md), [opcode-map.md](docs/opcode-map.md). Unknowns U1–U4 are resolved during D/E |
-| D: Server foundation | next |
+| D: Server foundation | **done**: HTTP patch server + Lidgren game server + SQLite, fake client, 20 tests (see below) |
 | E: Real client on the private server | patch set drafted: [patch-manifest.md](docs/patch-manifest.md) |
 
 ## Layout
@@ -51,3 +51,16 @@ B=24928510; M=~/CelticHeroesAnalysis/snapshots/$B/Contents/Resources/Data/Manage
 ilspycmd -p -r "$M" -o ~/CelticHeroesAnalysis/decompiled/$B/Assembly-CSharp "$M/Assembly-CSharp.dll"
 dotnet run -c Release --project scripts/tools/AsmIndex -- "$M/Assembly-CSharp.dll" ~/CelticHeroesAnalysis/indexes/$B/Assembly-CSharp
 ```
+
+## Server (Stage D)
+```bash
+cd server
+export DOTNET_ROOT=$HOME/.dotnet
+dotnet test                                    # 20 tests: wire format, persistence, redaction, loopback guard, end-to-end
+dotnet run --project src/CH.Server -- --data ~/CelticHeroesAnalysis/server-data
+```
+- Listens on `127.0.0.1` only: HTTP patch server on 5555, Lidgren UDP game server on 5556. `--bind` with a non-loopback address is refused unless `--allow-remote` is given.
+- Data goes to `--data`: `private-server.db` (SQLite; accounts keyed by username, **no passwords, device ids or Steam ids**) and `logs/frames-*.jsonl` (every message in and out; login bodies redacted).
+- Implemented: environment, world list, account-conflict, privacy and patch pages; discovery; VersionCheck; Login; character list and create; RequestTweak; StartGame with full character data; FinishedZoning → EnteringNewZoneUpdate + AllZoningMessagesSent; PlayerMove (persisted).
+- New characters start in Lir's Reach (zone 2) at the Highshore Village spawn, taken from the client balance data (approximated).
+- `server/vendor/Lidgren.Network`: upstream lidgren-network-gen3 (MIT), wire-compared with the client's fork. See its `VENDOR.md` for the two local changes.
