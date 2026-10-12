@@ -1,12 +1,23 @@
 {
-  "_comment": "Our own items. Each clones an existing client item template ('base': model, icon, slot, class rules) under a new id. Read by the server (Game/CustomItems.cs) and, via CH.Patcher, by the client mod (CHPrivateMods.CustomItems). Ids start at 90001 (the client's highest is 78974).",
+  "_comment": "Our own items. Each clones an existing client item template ('base': icon, slot, class rules, animations) under a new id. Optional: 'stats' copies another item's combat stats and requirements; 'model' clones a weapon model under a new model id with extra particle effects (fashion particle ids from ParticleFileConfigs: 100 bats_glow, 101 bats, 104 snowflake, 695 snowing_flakes; offsets are along the weapon bone, -1.17 is a spear's head). Read by the server (Game/CustomItems.cs) and, via CH.Patcher, by the client mod (CHPrivateMods.CustomItems). Ids start at 90001.",
   "items": [
     {
       "id": 90001,
       "base": 21526,
+      "stats": 72448,
       "name": "Rainbow Trident",
-      "description": "A Greater Black Trident caught in the light of every colour at once. It shimmers through the rainbow as you fight.",
-      "effect": "rainbow"
+      "description": "A trident that never settles on one colour, shimmering through the whole rainbow while snow drifts from its tines and bats wheel about its head. At the expense of cold resistance, grants the Deathborne Sunder skill that deals 7000 cold damage and reduces armour in an area, and a chance to unleash additional cold damage.",
+      "effect": "rainbow",
+      "model": {
+        "id": 90001,
+        "base": 2789,
+        "particles": [
+          { "effect": 100, "bone": "RightWeapon", "offset": [-1.17, 0.0, 0.02], "scale": 1.0 },
+          { "effect": 101, "bone": "RightWeapon", "offset": [-1.17, 0.0, 0.02], "scale": 1.0 },
+          { "effect": 104, "bone": "RightWeapon", "offset": [-1.17, 0.0, 0.02], "scale": 1.0 },
+          { "effect": 695, "bone": "RightWeapon", "offset": [-1.17, 0.0, 0.02], "scale": 1.2 }
+        ]
+      }
     }
   ]
 }

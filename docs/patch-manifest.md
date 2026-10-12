@@ -71,3 +71,8 @@ Patched client running at the main menu: `lsof -a -p <pid> -i TCP` shows only `1
   - the additive glow mesh through `_TintColor`.
 - This is a script-driven effect on the existing shaders. A real new shader would need the matching Unity Editor (6000.3.10f1) to compile it per platform.
 - Expected: 1 site.
+
+## P13: custom item models
+- **Hook:** the start of `CModelIDTemplateManager.Init(BalanceClient)` calls `CHPrivateMods.CustomItems.RegisterModels(balance)`, guarded. The model manager initialises before the item manager, so models can't wait for P11.
+- **What it does:** for items whose JSON has a `model`, the mod copies the base weapon model (`EquipmentModelIDTemplates[Weapon][base]`) under the new model id. It appends particle components built like the game's fashion particles (`ModelIDParticleComponent`: effect id, bone, offset, scale). The item's `ModelID` points at it. The client then attaches the particles itself, as it does for fashion.
+- Expected: 1 site.

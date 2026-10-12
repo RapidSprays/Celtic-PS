@@ -601,9 +601,15 @@ public sealed class ZoneTests : IDisposable
         var content = Path.Combine(AppContext.BaseDirectory, "content", "custom-items.json");
         var b = Balance.Load(BalancePath, content);
         var trident = b.Items[90001];
-        var source = b.Items[21526];
+        var looks = b.Items[21526];   // Greater Black Trident: slot, spear animations, icon
+        var stats = b.Items[72448];   // Accursed Spear of Entropy: level 230 stats
         Assert.Equal("Rainbow Trident", trident.Name);
-        Assert.Equal((source.Slot, source.Subtype, source.ModelId, source.Damage), (trident.Slot, trident.Subtype, trident.ModelId, trident.Damage));
-        Assert.Contains("90001|21526|rainbow|Rainbow Trident|", string.Join("\n", CH.Patcher.ClientMods.ItemLines()));
+        Assert.Equal((looks.Slot, looks.Subtype), (trident.Slot, trident.Subtype));
+        Assert.Equal((stats.Damage, stats.Speed, stats.LevelRequirement, stats.EquipSkillId, stats.ProcSkillId), (trident.Damage, trident.Speed, trident.LevelRequirement, trident.EquipSkillId, trident.ProcSkillId));
+        Assert.Equal(230, trident.LevelRequirement);
+        Assert.Equal(90001, trident.ModelId);
+        var line = Assert.Single(CH.Patcher.ClientMods.ItemLines());
+        Assert.StartsWith("90001|21526|rainbow|Rainbow Trident|", line);
+        Assert.EndsWith("|72448|2789|90001|100:RightWeapon:-1.17,0,0.02:1;101:RightWeapon:-1.17,0,0.02:1;104:RightWeapon:-1.17,0,0.02:1;695:RightWeapon:-1.17,0,0.02:1.2", line);
     }
 }

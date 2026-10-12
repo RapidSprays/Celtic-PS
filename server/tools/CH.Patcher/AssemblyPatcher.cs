@@ -72,6 +72,9 @@ public sealed class AssemblyPatcher
         // P11: our own items (server/content/custom-items.json) join the client's item templates.
         InjectModCall("P11", "CItemManager", "Init", argument: 1, modType: "CustomItems", modMethod: "Register", after: null);
 
+        // P13: custom items' own models (a weapon model plus fashion particle effects), before the client builds its model list.
+        InjectModCall("P13", "CModelIDTemplateManager", "Init", argument: 1, modType: "CustomItems", modMethod: "RegisterModels", after: null);
+
         // P12: the rainbow effect on weapons, once a character model has finished loading.
         InjectModCall("P12", "CMD5_Model", "checkDownloadComplete", argument: 0, modType: "RainbowWeapons", modMethod: "OnModelLoaded",
             after: ins => ins.OpCode == OpCodes.Stfld && ins.Operand is FieldReference { Name: "m_isFullyLoaded" } && ins.Previous?.OpCode == OpCodes.Ldc_I4_1);
