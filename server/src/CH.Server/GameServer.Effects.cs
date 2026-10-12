@@ -42,7 +42,7 @@ public sealed partial class GameServer
             Defence = Math.Max(0, stats.Defence + m.Defence),
             Attack = Math.Max(0, stats.Attack + m.Attack),
             AttackSpeed = Math.Max(300, stats.AttackSpeed * 100 / (100 + Math.Max(-50, m.AttackSpeedPercent))),
-            MaxSpeed = (Dismounted(s) && sheet.Mount is not null ? 5f : stats.MaxSpeed) * (100 + Math.Clamp(m.RunSpeedPercent, -80, 200)) / 100f,
+            MaxSpeed = stats.MaxSpeed * (100 + Math.Clamp(m.RunSpeedPercent, -80, 200)) / 100f, // riding: the Mounted effect
         };
     }
 

@@ -30,20 +30,26 @@ public sealed partial class GameServer
     }
 
     /// <summary>BuySkill (writer NetworkManager.cs:2466): skill id and the rank being bought (one above the current one).</summary>
+    /// <summary>
+    /// BuySkill (16010): <c>vi skillId, vi newRank</c>. Several ranks at once (the client's +/− and number field, or the
+    /// Max button, which asks for a very high rank): the server raises the skill as far as the requested rank, the
+    /// level's rank cap and the free skill points (one per rank) allow.
+    /// </summary>
     private void OnBuySkill(Session s, int skillId, int newRank)
     {
         var sheet = s.Sheet!;
         var known = sheet.Skills.FirstOrDefault(k => k.SkillId == skillId);
+        var target = known == default ? 0 : Math.Min(Math.Min(newRank, sheet.MaxRank(skillId)), known.Level + sheet.SkillPoints);
         string? problem = known == default ? "You don't know that skill."
-            : newRank != known.Level + 1 ? "You can only raise a skill one rank at a time."
-            : newRank > sheet.MaxRank(skillId) ? "You need a higher level to train that skill further."
-            : sheet.SkillPoints < Game.Progression.SkillPointsPerLevel ? "You have no skill points."
+            : newRank <= known.Level ? "That skill is already at that rank."
+            : sheet.SkillPoints <= 0 ? "You have no skill points."
+            : target <= known.Level ? "You need a higher level to train that skill further."
             : null;
         if (problem is null)
         {
-            _store.SetSkillLevel(s.Character!.Id, skillId, newRank);
+            _store.SetSkillLevel(s.Character!.Id, skillId, target);
             sheet = RefreshSheet(s);
-            _log.LogInformation("{Name} raised skill {Skill} to rank {Rank}", s.Name, skillId, newRank + 1);
+            _log.LogInformation("{Name} raised skill {Skill} by {Ranks} to rank {Rank}", s.Name, skillId, target - known.Level, target + 1);
         }
         else
         {

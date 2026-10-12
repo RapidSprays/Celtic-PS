@@ -208,7 +208,7 @@ public sealed class CombatTests : IAsyncDisposable
         client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(100); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); });
         Assert.Contains("49 attribute points", NextSystemLine(client));
 
-        // Rank Pummel up once; skipping a rank is refused.
+        // Rank Pummel up once, then several ranks in one purchase.
         client.Send(Opcode.BuySkill, b => { b.WriteVariableInt32(1); b.WriteVariableInt32(1); });
         var bought = client.Expect(Opcode.BuySkillReply);
         var points = bought.ReadVariableInt32();
@@ -217,7 +217,18 @@ public sealed class CombatTests : IAsyncDisposable
         Assert.Equal(18, points);
         Assert.Equal(1, list.Single(k => k.SkillId == 1).Level);
         client.Send(Opcode.BuySkill, b => { b.WriteVariableInt32(1); b.WriteVariableInt32(3); });
-        Assert.Contains("one rank at a time", NextSystemLine(client));
+        var jumped = client.Expect(Opcode.BuySkillReply);
+        Assert.Equal(16, jumped.ReadVariableInt32());
+        jumped.ReadVariableInt32();
+        var after3 = Enumerable.Range(0, jumped.ReadVariableInt32()).Select(_ => new SkillEntry(jumped.ReadVariableInt32(), jumped.ReadVariableInt32(), jumped.ReadVariableInt32(), jumped.ReadFloat())).ToList();
+        Assert.Equal(3, after3.Single(k => k.SkillId == 1).Level);
+    }
+
+    private static float SpeedFromEffects(CH.FakeClient.FakeClient c)
+    {
+        var m = c.Expect(Opcode.StatusEffectUpdate, TimeSpan.FromSeconds(5));
+        for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) { m.ReadVariableInt32(); m.ReadVariableInt32(); m.ReadVariableInt32(); m.ReadFloat(); m.ReadFloat(); }
+        return CharacterStats.Read(m).MaxSpeed;
     }
 
     private static (List<ItemSlot> Equipment, List<ItemSlot> Backpack) ReadEquipReply(NetIncomingMessage m)
@@ -289,12 +300,13 @@ public sealed class CombatTests : IAsyncDisposable
         Chat(client, ".mount wolf");
         var equipped = ReadEquipReply(client.Expect(Opcode.EquipItemReply)).Equipment;
         Assert.True(equipped[22].TemplateId > 0);
-        Assert.Equal(7f, CharacterStats.Read(client.Expect(Opcode.StatsUpdate)).MaxSpeed);
         client.Expect(Opcode.AppearanceOnlyUpdate); // what makes the client build the mount
+        // Riding speed comes with the "Mounted" status effect (at the mount's own rate), which carries the stats.
+        Assert.True(SpeedFromEffects(client) > 5f);
 
         Chat(client, ".mount off");
         Assert.Equal(-1, ReadEquipReply(client.Expect(Opcode.EquipItemReply)).Equipment[22].TemplateId);
-        Assert.Equal(5f, CharacterStats.Read(client.Expect(Opcode.StatsUpdate)).MaxSpeed);
+        Assert.Equal(5f, SpeedFromEffects(client));
 
         // Resists from a level-225 kit reach the stats block as client BonusType ids (0-8 resists).
         Chat(client, ".level 225");

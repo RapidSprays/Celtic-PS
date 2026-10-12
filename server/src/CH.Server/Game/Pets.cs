@@ -36,6 +36,27 @@ public static class Pets
         [8150] = 5977, [8176] = 6000, [8321] = 6137, [8361] = 6172, [8365] = 6178, [8430] = 6271, [8467] = 6304, [7900] = NewFedEffect,
     };
 
+    /// <summary>"Mounted" (ChangeRunSpeed, levels +5…+100%) and the fast steeds' movement effect (+22…+140%).</summary>
+    public const int MountedEffect = 5421, FastSteedEffect = 6263;
+    public static readonly int[] MountEffects = [MountedEffect, FastSteedEffect];
+
+    /// <summary>A mount's run-speed bonus from its description ("your movement speed is increased by 10%").</summary>
+    public static int MountSpeedPercent(ItemInfo mount)
+    {
+        var m = Regex.Match(mount.Description, @"increased by (\d+)%");
+        return m.Success ? int.Parse(m.Groups[1].Value) : 10;
+    }
+
+    /// <summary>The Mounted effect level whose speed is closest to the mount's (fast steeds above +100%).</summary>
+    public static (int Effect, int Level) MountedFor(ItemInfo mount, Balance balance)
+    {
+        var speed = MountSpeedPercent(mount);
+        var effect = speed > 100 ? FastSteedEffect : MountedEffect;
+        if (!balance.StatusEffects.TryGetValue(effect, out var info) || info.Levels.Count == 0) return (effect, 0);
+        var level = Enumerable.Range(0, info.Levels.Count).MinBy(i => Math.Abs(info.Levels[i].Amount - speed));
+        return (effect, level);
+    }
+
     public static IEnumerable<int> AllPetEffects => Families.Values.SelectMany(f => new[] { f.Hungry, f.Fed }).Append(NewFedEffect);
 
     public static bool IsFedEffect(int id) => id == NewFedEffect || Families.Values.Any(f => f.Fed == id);

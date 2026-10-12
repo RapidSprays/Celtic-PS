@@ -27,12 +27,31 @@ public sealed partial class GameServer
             ? new ActiveEffect { Info = info, LevelIndex = Math.Clamp(levelIndex, 0, Math.Max(0, info.Levels.Count - 1)), ExpiresAt = expiresAt, NextTickAt = double.MaxValue }
             : null;
 
-    /// <summary>Keeps exactly the right pet effect on the player: the pet's Well Fed, else its Hungry; none without a pet.</summary>
+    /// <summary>Permanent effects (riding) are shown for 30 days and renewed whenever they're re-applied.</summary>
+    private const double PermanentSeconds = 30 * 24 * 3600;
+
+    /// <summary>
+    /// The "Mounted" buff while riding: run speed at the mount's own rate (its description), shown as the client's
+    /// Mounted icon. Gone while Dismounted or without a mount.
+    /// </summary>
+    private void UpdateMountEffect(Session s)
+    {
+        var mount = s.Sheet?.Mount;
+        var wanted = mount is not null && !Dismounted(s) ? Pets.MountedFor(mount, _balance) : ((int, int)?)null;
+        var current = s.Effects.FirstOrDefault(e => Pets.MountEffects.Contains(e.Info.Id));
+        if (current is not null && wanted is { } w && current.Info.Id == w.Item1 && current.LevelIndex == w.Item2) return;
+        s.Effects.RemoveAll(e => Pets.MountEffects.Contains(e.Info.Id));
+        if (wanted is { } add && NewEffect(add.Item1, add.Item2, NetTime.Now + PermanentSeconds) is { } effect) s.Effects.Add(effect);
+    }
+
+    /// <summary>Keeps exactly the right pet effect on the player: the pet's Well Fed, else its Hungry; none without a pet. Also the mount's.</summary>
     private void UpdatePetEffects(Session s, bool send = true)
     {
         var now = NetTime.Now;
         var pet = EquippedPet(s);
-        var before = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id)).Select(e => e.Info.Id).OrderBy(i => i).ToList();
+        var before = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id) || Pets.MountEffects.Contains(e.Info.Id))
+            .Select(e => (e.Info.Id, e.LevelIndex)).OrderBy(i => i).ToList();
+        UpdateMountEffect(s);
         if (pet is null)
         {
             s.Effects.RemoveAll(e => Pets.AllPetEffects.Contains(e.Info.Id));
@@ -52,7 +71,8 @@ public sealed partial class GameServer
             if (s.Effects.Any(e => Pets.IsFedEffect(e.Info.Id))) s.Effects.RemoveAll(e => e.Info.Id == hungry);
             else if (s.Effects.All(e => e.Info.Id != hungry) && NewEffect(hungry, 0, now + HungryShownSeconds) is { } h) s.Effects.Add(h);
         }
-        var after = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id)).Select(e => e.Info.Id).OrderBy(i => i).ToList();
+        var after = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id) || Pets.MountEffects.Contains(e.Info.Id))
+            .Select(e => (e.Info.Id, e.LevelIndex)).OrderBy(i => i).ToList();
         if (send && !before.SequenceEqual(after)) SendEffects(s);
         SendSkillToggles(s);
     }
@@ -95,7 +115,7 @@ public sealed partial class GameServer
         if (NewEffect(fedEffect, level, now + Math.Min(MaxFedSeconds, Math.Max(0, remaining) + Pets.FedSeconds(food))) is { } fed) s.Effects.Add(fed);
         _store.SetItemQuantity(item.Id, item.Quantity - 1);
         var sheet = RefreshSheet(s);
-        Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", 3f, sheet.InventoryWithMoney()));
+        Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", ConsumableRechargeSeconds, sheet.InventoryWithMoney()));
         UpdatePetEffects(s, send: false);
         SendEffects(s);
         return true;
@@ -106,11 +126,13 @@ public sealed partial class GameServer
     {
         if (s.Sheet?.Mount is null || Dismounted(s)) return;
         if (NewEffect(Pets.DismountedEffect, 0, NetTime.Now + Pets.DismountedSeconds) is { } e) s.Effects.Add(e);
+        UpdateMountEffect(s); // the Mounted speed buff goes with the mount
     }
 
     private bool Remount(Session s)
     {
         if (s.Effects.RemoveAll(e => e.Info.Id == Pets.DismountedEffect) == 0) return false;
+        UpdateMountEffect(s);
         SendEffects(s);
         SendSkillToggles(s);
         return true;

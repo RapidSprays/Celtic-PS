@@ -88,11 +88,8 @@ public sealed class CharacterSheet
     /// <summary>The equipped mount (slot 22), if any. The client shows the player riding it (MountsManager.CheckForMount).</summary>
     public ItemInfo? Mount => Equipped.FirstOrDefault(i => i.Slot == (int)EquipSlot.Mount) is { } m ? _balance.Items.GetValueOrDefault(m.TemplateId) : null;
 
-    /// <summary>
-    /// Run-speed bonus while mounted. The client data doesn't link mounts to their speed effects (server-only), so this is
-    /// <b>approximated</b>: 40%.
-    /// </summary>
-    public int MountSpeedPercent => Mount is null ? 0 : 40;
+    /// <summary>Run speed comes from the "Mounted" status effect while riding (GameServer.Pets), not from the sheet.</summary>
+    public int MountSpeedPercent => 0;
 
     /// <summary>Templates of everything equipped.</summary>
     public IReadOnlyList<ItemInfo> Gear { get; }

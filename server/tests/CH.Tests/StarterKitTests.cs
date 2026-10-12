@@ -72,7 +72,7 @@ public sealed class StarterKitTests : IAsyncDisposable
         client.Send(Opcode.UseItem, new UseItemRequest(potion.ServerInventoryId, TargetType.Self, 0).Write);
         var used = client.Expect(Opcode.UseItemReply);
         Assert.Equal((byte)CommandStatus.Accepted, used.ReadByte());
-        Assert.Equal(10f, used.ReadFloat());
+        Assert.Equal(3f, used.ReadFloat()); // consumables recharge in 3 s
         used.ReadVariableInt32(); // coins
         var backpack = Enumerable.Range(0, used.ReadVariableInt32()).Select(_ => ItemSlot.Read(used)).ToList();
         Assert.Equal(4, backpack.Single(i => i.TemplateId == 10040).Quantity);

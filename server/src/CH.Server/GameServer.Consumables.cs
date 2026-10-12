@@ -17,6 +17,12 @@ namespace CH.Server;
 public sealed partial class GameServer
 {
     private const int ResetSkillsSkill = 10000, ResetStatsSkill = 10001;
+    private const float ConsumableRechargeSeconds = 3f;
+
+    /// <summary>Item-shop style consumables with no cooldown: elixirs (and the elixir skills), flights. Chests never had one.</summary>
+    private static bool IsPremium(ItemInfo item, SkillInfo skill) =>
+        item.Name.Contains("Elixir", StringComparison.OrdinalIgnoreCase) || skill.Name.Contains("Elixir", StringComparison.OrdinalIgnoreCase)
+        || item.Name.Contains("Flight of", StringComparison.OrdinalIgnoreCase);
 
     private void UseSkillItem(Session s, ItemRecord item, ItemInfo info, UseItemRequest req)
     {
@@ -66,10 +72,10 @@ public sealed partial class GameServer
         }
 
         if (info.MaxCharges != -1) _store.SetItemQuantity(item.Id, item.Quantity - 1);
-        // Skill recharge; healing/energy potions without one get a 10 s potion cooldown (approximated) so they can't be spammed.
-        var restores = amount < 0 || energyGain > 0;
-        var recharge = level.RechargeTime > 0 ? level.RechargeTime : restores ? 10f : 1f;
-        s.Cooldowns[skill.Id] = now + recharge;
+        // Owner's rule: consumables recharge in 3 s; premium items (elixirs, flights) have no cooldown at all.
+        var recharge = IsPremium(info, skill) ? 0f : ConsumableRechargeSeconds;
+        if (recharge > 0) s.Cooldowns[skill.Id] = now + recharge;
+        else s.Cooldowns.Remove(skill.Id);
         var sheet = RefreshSheet(s);
         Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", recharge, sheet.InventoryWithMoney()));
         if (skill.Id is ResetStatsSkill or ResetSkillsSkill) SendProgress(s);

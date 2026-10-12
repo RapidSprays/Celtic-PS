@@ -617,7 +617,7 @@ public sealed partial class GameServer
         s.Dead = true;
         s.AttackTarget = null;
         s.Casts.Clear();
-        s.Effects.RemoveAll(e => !Pets.AllPetEffects.Contains(e.Info.Id)); // death ends buffs, not the pet's meal
+        s.Effects.RemoveAll(e => !Pets.AllPetEffects.Contains(e.Info.Id) && !Pets.MountEffects.Contains(e.Info.Id)); // death ends buffs, not the pet's meal or the ride
         DismountOnDeath(s);
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s)).ToList()) StartReturn(zone, mob, now);
         SendEffects(s);

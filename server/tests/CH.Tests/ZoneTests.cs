@@ -538,4 +538,59 @@ public sealed class ZoneTests : IDisposable
         var key = Give("Weeping Key");
         Assert.Equal((0, "That only works on something special."), Use(key, TargetType.Mob, wolf));
     }
+
+    [Fact]
+    public async Task Riding_shows_the_mounted_buff_skills_take_many_ranks_and_cooldowns_follow_the_rules()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("rider");
+        var id = client.CreateCharacter("Fergus", @class: 1).CharacterId;
+        var start = client.StartGame(id, "Fergus");
+        client.FinishZoning();
+        void Say(string text) => client.Send(Opcode.GeneralChat, new ChatMessage(ChatChannel.Local, "", text).WriteFromClient);
+
+        // A Tame Brown War Wolf (+10% speed in its description): the Mounted buff at its +10% level, and faster running.
+        Say(".wear Tame Brown War Wolf");
+        Lidgren.Network.NetIncomingMessage m;
+        List<(int Id, int Level)> effects;
+        do
+        {
+            m = client.Expect(Opcode.StatusEffectUpdate, TimeSpan.FromSeconds(5));
+            effects = new();
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) { effects.Add((m.ReadVariableInt32(), m.ReadVariableInt32())); m.ReadVariableInt32(); m.ReadFloat(); m.ReadFloat(); }
+        } while (!effects.Any(e => e.Id == Pets.MountedEffect));
+        Assert.Contains((Pets.MountedEffect, 1), effects); // level index 1 = +10%
+        Assert.True(CharacterStats.Read(m).MaxSpeed > 5.4f);
+
+        // Several ranks in one purchase, clamped to the free points and the rank cap.
+        Say(".level 12");
+        client.Expect(Opcode.LevelUp);
+        var skill = start.Skills.First().SkillId;
+        client.Send(Opcode.BuySkill, b => { b.WriteVariableInt32(skill); b.WriteVariableInt32(99); });
+        var reply = client.Expect(Opcode.BuySkillReply);
+        reply.ReadVariableInt32(); // points left
+        reply.ReadVariableInt32();
+        var skills = Enumerable.Range(0, reply.ReadVariableInt32())
+            .Select(_ => new SkillEntry(reply.ReadVariableInt32(), reply.ReadVariableInt32(), reply.ReadVariableInt32(), reply.ReadFloat())).ToList();
+        Assert.True(skills.First(k => k.SkillId == skill).Level >= 3, "several ranks bought at once");
+
+        // Consumables recharge in 3 s; elixirs have no cooldown.
+        float Recharge(string name)
+        {
+            var template = Data.Value.Items.Values.First(i => i.Name == name && i.Usable).Id;
+            Say($".give {template}");
+            var item = InventoryWithMoney.Read(client.Expect(Opcode.InventoryUpdate)).Items.Last(i => i.TemplateId == template);
+            client.Send(Opcode.UseItem, new UseItemRequest(item.ServerInventoryId, TargetType.Self, 0).Write);
+            var used = client.Expect(Opcode.UseItemReply);
+            Assert.Equal(1, used.ReadByte());
+            return used.ReadFloat();
+        }
+        Assert.Equal(3f, Recharge("Gruel"));
+        Assert.Equal(0f, Recharge("Elixir of Defence"));
+    }
 }
