@@ -77,3 +77,17 @@ Patched client running at the main menu: `lsof -a -p <pid> -i TCP` shows only `1
 - **Hook:** the start of `CModelIDTemplateManager.Init(BalanceClient)` calls `CHPrivateMods.CustomItems.RegisterModels(balance)`, guarded. The model manager initialises before the item manager, so models can't wait for P11.
 - **What it does:** for items whose JSON has a `model`, the mod copies the base weapon model (`EquipmentModelIDTemplates[Weapon][base]`) under the new model id. It appends particle components built like the game's fashion particles (`ModelIDParticleComponent`: effect id, bone, offset, scale). The item's `ModelID` points at it. The client then attaches the particles itself, as it does for fashion.
 - Expected: 1 site.
+
+## P14: passive tree messages
+- **Hook:** the start of `NetworkManager.processCommand(NetIncomingMessage)` calls `CHPrivateMods.PassiveTree.OnMessage(msg)`, guarded.
+- **What it does:** the mod peeks at the opcode and then puts the read position back, so the client's own switch is unaffected. For the server's own TreeLayout (31000) and TreeState (31001) it reads the payload and draws or refreshes the passive tree panel. The client's switch then reaches `default` and only logs "unknown received message".
+- The panel is a separate overlay canvas built by the mod (uGUI, TextMeshPro with the game's own font). While it is open it sets `GUIManager.htmlWindowOpen`, the flag the HTML window uses, so the world ignores input. It sends `.tree …` chat commands through the game's public `sendChatMessage`. Layout and rules come from the server, so tuning the tree needs no re-patch (docs/passive-tree.md).
+- Expected: 1 site.
+
+## P15: "Passives" menu button
+- **Hook:** `HUDOptionsScreen.Init`, after its last line (`freePlatButton.onClick.AddListener(...)`), calls `CHPrivateMods.PassiveTree.AttachMenuButton(this)`, guarded.
+- **What it does:**
+  - If the free-platinum button is active, the mod takes it over, since free platinum offers don't exist on a private server.
+  - Otherwise it copies the Stats button next to it.
+  - Either way it strips the localisation component, relabels the button "Passives", and replaces the click handler with `.tree open`.
+- Expected: 1 site.

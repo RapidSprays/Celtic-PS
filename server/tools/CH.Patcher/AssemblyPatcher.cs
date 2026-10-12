@@ -79,6 +79,15 @@ public sealed class AssemblyPatcher
         InjectModCall("P12", "CMD5_Model", "checkDownloadComplete", argument: 0, modType: "RainbowWeapons", modMethod: "OnModelLoaded",
             after: ins => ins.OpCode == OpCodes.Stfld && ins.Operand is FieldReference { Name: "m_isFullyLoaded" } && ins.Previous?.OpCode == OpCodes.Ldc_I4_1);
 
+        // P14: the passive tree panel reads the server's own messages (TreeLayout/TreeState) before the client's switch.
+        InjectModCall("P14", "NetworkManager", "processCommand", argument: 1, modType: "PassiveTree", modMethod: "OnMessage", after: null);
+
+        // P15: a "Passives" button in the HUD options menu, after Init's last line (free platinum's click listener), so the
+        // game's own listeners are all in place before the mod takes a button over.
+        InjectModCall("P15", "Assets.Main.HUD.HUDOptionsScreen", "Init", argument: 0, modType: "PassiveTree", modMethod: "AttachMenuButton",
+            after: ins => ins.OpCode == OpCodes.Callvirt && ins.Operand is MethodReference { Name: "AddListener" }
+                && ins.Previous?.Previous?.Operand is MethodReference { Name: "OnFreePlatButtonPressed" });
+
         // Inserting instructions can push short-form branches out of range; re-pick branch sizes for every edited method.
         foreach (var method in _edited) method.Body.OptimizeMacros();
     }

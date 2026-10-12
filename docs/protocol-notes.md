@@ -138,6 +138,9 @@ Private server policy: accept any password hash and never store or log it, nor t
 ### Chat
 - **GeneralChat** (17001): C→S `varint channel, string message` (`6024-6040`); S→C `varint channel, string, string, varint textId` (`1015-1030`).
 
+### Private-server messages (ours, not the client's)
+- **TreeLayout** (31000, S→C) and **TreeState** (31001, S→C) carry the passive tree to the client mod (patch P14). They are outside the client's NetworkCommandType range; an unmodded client logs them as unknown and carries on. Layouts are in `CH.Protocol/Messages/Tree.cs`; see docs/passive-tree.md.
+
 ## 5. Client-side checks the server should know about (O)
 - **ClientErrorMessage** (22001, C→S): one string. Sent on session mismatch, missing item templates and parse failures. Log these: they are a useful debugging signal.
 - **ClientChecksumFailure** (22003): dead code, never sent.
