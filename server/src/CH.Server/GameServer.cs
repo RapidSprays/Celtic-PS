@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using CH.Persistence;
 using CH.Protocol;
 using CH.Protocol.Messages;
+using CH.Server.Game;
 using Lidgren.Network;
 using Microsoft.Extensions.Logging;
 
@@ -12,22 +13,24 @@ namespace CH.Server;
 /// Lidgren UDP game server speaking the client's protocol (docs/protocol-notes.md). All message handling runs on one
 /// pump thread, so session state needs no locking.
 /// </summary>
-public sealed class GameServer : IDisposable
+public sealed partial class GameServer : IDisposable
 {
     private readonly ServerOptions _options;
     private readonly GameStore _store;
     private readonly FrameLog _frames;
+    private readonly Balance _balance;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
     private Thread? _pump;
     private volatile bool _stopping;
 
-    public GameServer(ServerOptions options, GameStore store, FrameLog frames, ILogger log)
+    public GameServer(ServerOptions options, GameStore store, FrameLog frames, Balance balance, ILogger log)
     {
         _options = options;
         _store = store;
         _frames = frames;
+        _balance = balance;
         _log = log;
         var config = new NetPeerConfiguration(Envelope.AppIdentifier)
         {
@@ -161,6 +164,30 @@ public sealed class GameServer : IDisposable
                 OnPlayerMove(s, PlayerMove.Read(msg));
                 break;
 
+            case Opcode.EquipItem:
+                if (InWorld(s)) OnEquipItem(s, EquipItemRequest.Read(msg));
+                break;
+
+            case Opcode.DeleteItem:
+                if (InWorld(s)) OnDeleteItem(s, DeleteItemRequest.Read(msg));
+                break;
+
+            case Opcode.UseItem:
+                if (InWorld(s)) OnUseItem(s, UseItemRequest.Read(msg));
+                break;
+
+            case Opcode.SkillBarUpdate:
+                if (InWorld(s)) OnSkillBarUpdate(s, SkillBarUpdate.Read(msg));
+                break;
+
+            case Opcode.InventoryFavouriteItem:
+                if (InWorld(s)) OnFavourite(s, msg.ReadByte() == 1, msg.ReadVariableInt32());
+                break;
+
+            case Opcode.InventoryItemSwap:
+                if (InWorld(s)) OnInventorySwap(s, msg.ReadByte());
+                break;
+
             case Opcode.ClientErrorMessage:
                 var report = ClientErrorMessage.Read(msg).Text;
                 // In env Test the client forwards its own debug-level messages; the render ones are cosmetic noise.
@@ -219,7 +246,7 @@ public sealed class GameServer : IDisposable
 
     private void SendCharacterList(Session s)
     {
-        var characters = _store.ListCharacters(s.Account!.Id).Select(ToSummary).ToList();
+        var characters = _store.ListCharacters(s.Account!.Id).Select(c => LoadSheet(c).Summary(_options.WorldId)).ToList();
         var last = characters.Count > 0 ? (int)characters[^1].CharacterId : -1;
         Send(s, Opcode.RequestCharacterListReply, new CharacterListReply(CommandStatus.Accepted, _options.MaxCharacterSlots, last, characters).Write);
     }
@@ -257,17 +284,13 @@ public sealed class GameServer : IDisposable
 
         s.Character = character;
         s.Position = (character.Zone, character.X, character.Y, character.Z, character.Direction);
-        var reply = new StartGameReply
-        {
-            Character = ToSummary(character),
-            Level = character.Level,
-            X = character.X,
-            Y = character.Y,
-            Z = character.Z,
-            Direction = character.Direction,
-            KnownZones = [character.Zone],
-        };
-        Send(s, Opcode.StartGameReply, reply.Write);
+        GrantKitIfNeeded(character);
+        var sheet = LoadSheet(character);
+        if (string.IsNullOrEmpty(sheet.Progress.Hud)) _store.SaveHud(character.Id, CharacterSheet.SerializeHud(sheet.DefaultHud()));
+        Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId).Write);
+        // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
+        Send(s, Opcode.StatsUpdate, sheet.Stats().Write);
+        Send(s, Opcode.GameDataMessage, new GameData(MaxChatLength: 200, AttackDelaySeconds: 0.1f).Write);
         _log.LogInformation("{Name} entering zone {Zone} at ({X:F1}, {Y:F1}, {Z:F1})", character.Name, character.Zone, character.X, character.Y, character.Z);
     }
 
@@ -286,32 +309,19 @@ public sealed class GameServer : IDisposable
         _store.SavePosition(s.Character.Id, s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
     }
 
+    private bool InWorld(Session s)
+    {
+        if (s.Account is not null && s.Character is not null) return true;
+        _log.LogWarning("In-world message before StartGame from {Endpoint}", s.Connection.RemoteEndPoint);
+        return false;
+    }
+
     private bool RequireAccount(Session s)
     {
         if (s.Account is not null) return true;
         _log.LogWarning("Message before login from {Endpoint}", s.Connection.RemoteEndPoint);
         return false;
     }
-
-    private CharacterSummary ToSummary(CharacterRecord c) => new(
-        CharacterId: (uint)c.Id,
-        ServerCharacterId: (uint)c.Id,
-        WorldId: _options.WorldId,
-        Name: c.Name,
-        GmFlag: 0,
-        Clan: "",
-        Appearance: new Appearance(c.Race, c.Face, c.Skin, c.SkinColour, c.Hair, c.HairColour, c.FaceAccessory, c.FaceAccessoryColour, c.Scale, c.Gender),
-        Equipment: CharacterSummary.NoEquipment(),
-        Zone: c.Zone,
-        Level: c.Level,
-        FishingLevel: 1,
-        CookingLevel: 1,
-        Class: c.Class,
-        AttackRange: 2f,
-        AttackSpeed: 100,
-        PvpLevel: 0,
-        PvpRating: 0,
-        Dismounted: false);
 
     private void Send(Session s, Opcode opcode, Action<NetBuffer> write, uint? sessionId = null, NetDeliveryMethod delivery = NetDeliveryMethod.ReliableOrdered)
     {

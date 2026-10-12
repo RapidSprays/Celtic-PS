@@ -26,6 +26,15 @@ public sealed record CharacterRecord(
     float Z,
     float Direction);
 
+/// <summary>An item owned by a character. <see cref="Slot"/> is the equipment slot (0-24), or -1 for the backpack.</summary>
+public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Quantity, int Slot, bool Bound, int Charges, bool Favourite)
+{
+    public const int Backpack = -1;
+}
+
+/// <summary>Progress and vitals. Health/energy of -1 mean "full".</summary>
+public sealed record CharacterProgress(int Level, int Xp, int Coins, int Health, int Energy, string Hud, bool KitGranted);
+
 public sealed record NewCharacter(
     string Name,
     int Race,
@@ -84,6 +93,32 @@ public sealed class GameStore : IDisposable
             created_at    TEXT NOT NULL DEFAULT (datetime('now'))
         );
         CREATE INDEX characters_account ON characters(account_id);
+        """,
+        """
+        ALTER TABLE characters ADD COLUMN xp INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN coins INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN health INTEGER NOT NULL DEFAULT -1;
+        ALTER TABLE characters ADD COLUMN energy INTEGER NOT NULL DEFAULT -1;
+        ALTER TABLE characters ADD COLUMN hud TEXT NOT NULL DEFAULT '';
+        ALTER TABLE characters ADD COLUMN kit_granted INTEGER NOT NULL DEFAULT 0;
+        CREATE TABLE items (
+            id           INTEGER PRIMARY KEY,
+            character_id INTEGER NOT NULL REFERENCES characters(id),
+            template_id  INTEGER NOT NULL,
+            quantity     INTEGER NOT NULL DEFAULT 1,
+            slot         INTEGER NOT NULL DEFAULT -1,
+            bound        INTEGER NOT NULL DEFAULT 0,
+            charges      INTEGER NOT NULL DEFAULT 0,
+            favourite    INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE INDEX items_character ON items(character_id);
+        CREATE TABLE skills (
+            character_id INTEGER NOT NULL REFERENCES characters(id),
+            skill_id     INTEGER NOT NULL,
+            level        INTEGER NOT NULL DEFAULT 0,
+            position     INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (character_id, skill_id)
+        );
         """,
     ];
 
@@ -148,6 +183,88 @@ public sealed class GameStore : IDisposable
     public void SavePosition(long characterId, int zone, float x, float y, float z, float direction) =>
         Exec("UPDATE characters SET zone = $zone, x = $x, y = $y, z = $z, direction = $d WHERE id = $id", null,
             ("$zone", zone), ("$x", x), ("$y", y), ("$z", z), ("$d", direction), ("$id", characterId));
+
+    public CharacterProgress GetProgress(long characterId)
+    {
+        using var cmd = Command("SELECT level, xp, coins, health, energy, hud, kit_granted FROM characters WHERE id = $id", null, ("$id", characterId));
+        using var r = cmd.ExecuteReader();
+        if (!r.Read()) throw new InvalidOperationException($"character {characterId} not found");
+        return new CharacterProgress(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4), r.GetString(5), r.GetInt32(6) == 1);
+    }
+
+    public void SaveProgress(long characterId, int level, int xp, int coins) =>
+        Exec("UPDATE characters SET level = $l, xp = $x, coins = $c WHERE id = $id", null, ("$l", level), ("$x", xp), ("$c", coins), ("$id", characterId));
+
+    public void SaveVitals(long characterId, int health, int energy) =>
+        Exec("UPDATE characters SET health = $h, energy = $e WHERE id = $id", null, ("$h", health), ("$e", energy), ("$id", characterId));
+
+    public void SaveHud(long characterId, string hud) =>
+        Exec("UPDATE characters SET hud = $h WHERE id = $id", null, ("$h", hud), ("$id", characterId));
+
+    /// <summary>Gives a character its starting kit once, in one transaction.</summary>
+    public bool GrantKit(long characterId, IEnumerable<(int TemplateId, int Quantity, int Slot)> items, IEnumerable<int> skills, int coins, string hud)
+    {
+        using var tx = _db.BeginTransaction();
+        using (var check = Command("SELECT kit_granted FROM characters WHERE id = $id", tx, ("$id", characterId)))
+            if (Convert.ToInt32(check.ExecuteScalar()) == 1) return false;
+        foreach (var (template, qty, slot) in items)
+            Exec("INSERT INTO items(character_id, template_id, quantity, slot, bound) VALUES ($c, $t, $q, $s, 1)", tx,
+                ("$c", characterId), ("$t", template), ("$q", qty), ("$s", slot));
+        var position = 0;
+        foreach (var skill in skills)
+            Exec("INSERT OR IGNORE INTO skills(character_id, skill_id, level, position) VALUES ($c, $s, 0, $p)", tx,
+                ("$c", characterId), ("$s", skill), ("$p", position++));
+        Exec("UPDATE characters SET kit_granted = 1, coins = coins + $coins, hud = $hud WHERE id = $id", tx,
+            ("$coins", coins), ("$hud", hud), ("$id", characterId));
+        tx.Commit();
+        return true;
+    }
+
+    public IReadOnlyList<ItemRecord> ListItems(long characterId)
+    {
+        using var cmd = Command("SELECT id, character_id, template_id, quantity, slot, bound, charges, favourite FROM items WHERE character_id = $c ORDER BY id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<ItemRecord>();
+        while (r.Read())
+            list.Add(new ItemRecord(r.GetInt64(0), r.GetInt64(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4), r.GetInt32(5) == 1, r.GetInt32(6), r.GetInt32(7) == 1));
+        return list;
+    }
+
+    public long AddItem(long characterId, int templateId, int quantity, int slot = ItemRecord.Backpack)
+    {
+        using var cmd = Command("INSERT INTO items(character_id, template_id, quantity, slot) VALUES ($c, $t, $q, $s) RETURNING id", null,
+            ("$c", characterId), ("$t", templateId), ("$q", quantity), ("$s", slot));
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    public void SetItemSlot(long itemId, int slot) => Exec("UPDATE items SET slot = $s WHERE id = $id", null, ("$s", slot), ("$id", itemId));
+
+    public void SetItemQuantity(long itemId, int quantity)
+    {
+        if (quantity <= 0) Exec("DELETE FROM items WHERE id = $id", null, ("$id", itemId));
+        else Exec("UPDATE items SET quantity = $q WHERE id = $id", null, ("$q", quantity), ("$id", itemId));
+    }
+
+    public void SetItemFavourite(long itemId, bool favourite) =>
+        Exec("UPDATE items SET favourite = $f WHERE id = $id", null, ("$f", favourite ? 1 : 0), ("$id", itemId));
+
+    public IReadOnlyList<(int SkillId, int Level)> ListSkills(long characterId)
+    {
+        using var cmd = Command("SELECT skill_id, level FROM skills WHERE character_id = $c ORDER BY position, skill_id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<(int, int)>();
+        while (r.Read()) list.Add((r.GetInt32(0), r.GetInt32(1)));
+        return list;
+    }
+
+    public bool LearnSkill(long characterId, int skillId)
+    {
+        using var cmd = Command(
+            "INSERT OR IGNORE INTO skills(character_id, skill_id, level, position) " +
+            "VALUES ($c, $s, 0, (SELECT COALESCE(MAX(position), -1) + 1 FROM skills WHERE character_id = $c))", null,
+            ("$c", characterId), ("$s", skillId));
+        return cmd.ExecuteNonQuery() == 1;
+    }
 
     private List<CharacterRecord> QueryCharacters(string where, params (string, object)[] args)
     {

@@ -153,7 +153,8 @@ public sealed class FakeClient : IDisposable
 
     // ---- plumbing -----------------------------------------------------------------------------
 
-    private void Send(Opcode opcode, Action<NetBuffer> write, NetDeliveryMethod delivery = NetDeliveryMethod.ReliableOrdered)
+    /// <summary>Sends any client message with the real client's header (for messages without a helper).</summary>
+    public void Send(Opcode opcode, Action<NetBuffer> write, NetDeliveryMethod delivery = NetDeliveryMethod.ReliableOrdered)
     {
         var msg = Envelope.CreateClientMessage(_client, opcode, _session);
         write(msg);

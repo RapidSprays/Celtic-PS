@@ -13,7 +13,7 @@ public sealed class EndToEndTests : IAsyncDisposable
 {
     private readonly string _dir = Directory.CreateTempSubdirectory("ch-e2e-").FullName;
 
-    private ServerOptions Options() => new() { HttpPort = 0, GamePort = 0, DataDirectory = _dir };
+    private ServerOptions Options() => new() { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = null };
 
     private static Task<ServerHost> Start(ServerOptions o) => ServerHost.StartAsync(o, NullLoggerFactory.Instance);
 

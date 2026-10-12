@@ -13,8 +13,8 @@ public sealed class PersistenceTests : IDisposable
     [Fact]
     public void Migrations_apply_once_and_record_schema_version()
     {
-        using (var store = new GameStore(Db)) Assert.Equal(1, store.SchemaVersion);
-        using (var again = new GameStore(Db)) Assert.Equal(1, again.SchemaVersion);
+        using (var store = new GameStore(Db)) Assert.Equal(2, store.SchemaVersion);
+        using (var again = new GameStore(Db)) Assert.Equal(2, again.SchemaVersion);
     }
 
     [Fact]
@@ -50,6 +50,24 @@ public sealed class PersistenceTests : IDisposable
             var c = reopened.GetCharacter(id)!;
             Assert.Equal((2, 10f, 1f, 20f, 0.5f), (c.Zone, c.X, c.Y, c.Z, c.Direction));
         }
+    }
+
+    [Fact]
+    public void Kit_is_granted_once_and_items_and_skills_persist()
+    {
+        using var store = new GameStore(Db);
+        var id = store.CreateCharacter(store.GetOrCreateAccount("alice").Id, Brigid).Id;
+        Assert.True(store.GrantKit(id, [(10000, 1, 0), (10040, 5, -1)], [1, 47], 50, "hud"));
+        Assert.False(store.GrantKit(id, [(10000, 1, 0)], [1], 50, "hud"));
+        Assert.Equal(2, store.ListItems(id).Count);
+        Assert.Equal([(1, 0), (47, 0)], store.ListSkills(id));
+        Assert.Equal(50, store.GetProgress(id).Coins);
+        Assert.True(store.LearnSkill(id, 2));
+        Assert.False(store.LearnSkill(id, 2));
+        Assert.Equal(2, store.ListSkills(id)[^1].SkillId);
+        var potion = store.ListItems(id).Single(i => i.TemplateId == 10040);
+        store.SetItemQuantity(potion.Id, 0);
+        Assert.Single(store.ListItems(id));
     }
 
     [Fact]

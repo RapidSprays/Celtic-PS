@@ -43,6 +43,10 @@ public sealed class ServerOptions
     /// </summary>
     public (int Zone, float X, float Y, float Z, float Direction) DefaultSpawn { get; set; } = (2, -109.51f, -3.7f, -16.86f, 0f);
 
+    /// <summary>The client's balance JSON extracted by scripts/extract-balance.py. Missing → the server runs without it.</summary>
+    public string? BalancePath { get; set; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CelticHeroesAnalysis", "extracted", "24928510", "balance-client.json");
+
     public void Validate()
     {
         if (!IPAddress.IsLoopback(BindAddress) && !AllowRemote)
@@ -63,6 +67,8 @@ public sealed class ServerOptions
                 case "--public-host": o.PublicHost = Next(); break;
                 case "--data": o.DataDirectory = Path.GetFullPath(Next()); break;
                 case "--allow-remote": o.AllowRemote = true; break;
+                case "--balance": o.BalancePath = Path.GetFullPath(Next()); break;
+                case "--no-balance": o.BalancePath = null; break;
                 default: throw new ArgumentException($"unknown option {args[i]}");
             }
         }

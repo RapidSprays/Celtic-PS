@@ -16,11 +16,17 @@ public sealed class ServerHost : IAsyncDisposable
         Options = options;
         _store = new GameStore(options.DatabasePath);
         _frames = new FrameLog(options.LogDirectory);
-        Game = new GameServer(options, _store, _frames, logs.CreateLogger("game"));
+        Balance = CH.Server.Game.Balance.Load(options.BalancePath);
+        logs.CreateLogger("main").LogInformation("Balance data: {State}", Balance.IsLoaded
+            ? $"version {Balance.Version}, {Balance.Items.Count} items, {Balance.Skills.Count} skills, {Balance.Mobs.Count} mobs, {Balance.Zones.Count} zones"
+            : "not loaded (run scripts/extract-balance.py); gear stats will be zero");
+        Game = new GameServer(options, _store, _frames, Balance, logs.CreateLogger("game"));
         Patch = new PatchServer(options, () => _store, logs.CreateLogger("http")) { GamePortProvider = () => Game.Port };
     }
 
     public ServerOptions Options { get; }
+
+    public CH.Server.Game.Balance Balance { get; }
 
     public GameServer Game { get; }
 
