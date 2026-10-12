@@ -37,7 +37,7 @@ public static class GearPlanner
         !item.IsPlaceholder && !DevName.IsMatch(item.Name)
         && (item.Classes.Count == 0 || item.Classes.Contains(cls.ToString()))
         && item.LevelRequirement <= level
-        && item.Requirements.All(r => r.Type != "GenderRequirement" || r.Amount == gender);
+        && item.Requirements.All(r => r.Type != "GenderRequirement" || r.Amount == 0 || r.Amount == gender);
 
     /// <summary>Rough strength of an item for its slot: level tier first, then stars, stats, damage and armour.</summary>
     public static double Score(ItemInfo i) =>

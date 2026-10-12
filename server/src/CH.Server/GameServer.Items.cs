@@ -90,6 +90,27 @@ public sealed partial class GameServer
         Send(s, Opcode.EquipItemReply, b => InventoryReplies.WriteEquipment(b, CommandStatus.Accepted, "", updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: false));
         SendLiveStats(s);
         Send(s, Opcode.SkillListUpdate, new SkillListUpdate(updated.SkillPoints, updated.SkillEntries()).Write);
+        SendOwnAppearance(s);
+    }
+
+    /// <summary>
+    /// AppearanceOnlyUpdate (12009, NetworkManager.cs:5404): appearance block, varint pvpRating, varint pvpLevel. Redraws the
+    /// local player's model, including mounting/dismounting (EquipItemReply doesn't redraw while slot 21 or 22 is filled).
+    /// </summary>
+    private void SendOwnAppearance(Session s) =>
+        Send(s, Opcode.AppearanceOnlyUpdate, b =>
+        {
+            s.Sheet!.Appearance().Write(b);
+            b.WriteVariableInt32(0);
+            b.WriteVariableInt32(0);
+        });
+
+    /// <summary>UpdateCharacterOptions (12010, NetworkManager.cs:5749): byte showHeadgear, byte showFashion.</summary>
+    private void OnDisplayOptions(Session s, bool showHeadgear, bool showFashion)
+    {
+        _store.SaveDisplayOptions(s.Character!.Id, showHeadgear, showFashion);
+        RefreshSheet(s);
+        SendOwnAppearance(s);
     }
 
     /// <summary>Level, attribute and gender requirements (RequirementTypes). Attributes count gear bonuses, like the stats page.</summary>
@@ -106,7 +127,8 @@ public sealed partial class GameServer
                 "VitalityRequirement" => (sheet.CombinedVitality, "vitality"),
                 _ => (int.MaxValue, ""),
             };
-            if (type == "GenderRequirement" && amount != c.Gender) return "That item is for the other gender.";
+            // Gender: 0 any, 1 male, 2 female (client Gender enum; CItemManager.CheckStatRequirements).
+            if (type == "GenderRequirement" && amount != 0 && amount != c.Gender) return "That item is for the other gender.";
             if (have < amount) return $"You need {amount} {label} to use that.";
         }
         return null;

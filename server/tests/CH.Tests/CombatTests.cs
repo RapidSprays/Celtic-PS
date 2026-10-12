@@ -278,6 +278,34 @@ public sealed class CombatTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Mounting_fills_slot_22_speeds_you_up_and_redraws_the_model()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var (host, client, start) = await EnterAs("rider", "Medb", @class: 5);
+        await using var _h = host;
+        using var _c = client;
+        Assert.Equal(5f, start.Stats.MaxSpeed);
+
+        Chat(client, ".mount wolf");
+        var equipped = ReadEquipReply(client.Expect(Opcode.EquipItemReply)).Equipment;
+        Assert.True(equipped[22].TemplateId > 0);
+        Assert.Equal(7f, CharacterStats.Read(client.Expect(Opcode.StatsUpdate)).MaxSpeed);
+        client.Expect(Opcode.AppearanceOnlyUpdate); // what makes the client build the mount
+
+        Chat(client, ".mount off");
+        Assert.Equal(-1, ReadEquipReply(client.Expect(Opcode.EquipItemReply)).Equipment[22].TemplateId);
+        Assert.Equal(5f, CharacterStats.Read(client.Expect(Opcode.StatsUpdate)).MaxSpeed);
+
+        // Resists from a level-225 kit reach the stats block as client BonusType ids (0-8 resists).
+        Chat(client, ".level 225");
+        client.Expect(Opcode.LevelUp);
+        Chat(client, ".gearset");
+        client.Expect(Opcode.EquipItemReply);
+        var stats = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
+        Assert.Contains(stats.Bonuses, b => b.Id is >= 0 and <= 8 && b.Value != 0);
+    }
+
+    [Fact]
     public void Npc_conversations_are_matched_by_name()
     {
         if (!File.Exists(BalancePath)) return;

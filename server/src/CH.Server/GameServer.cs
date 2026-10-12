@@ -208,6 +208,10 @@ public sealed partial class GameServer : IDisposable
                 if (InWorld(s)) OnBuySkill(s, msg.ReadVariableInt32(), msg.ReadVariableInt32());
                 break;
 
+            case Opcode.UpdateCharacterOptions:
+                if (InWorld(s)) OnDisplayOptions(s, msg.ReadByte() == 1, msg.ReadByte() == 1);
+                break;
+
             case Opcode.InGamePopup:
                 if (InWorld(s)) OnPopupOption(s, msg.ReadVariableInt32(), msg.ReadVariableInt32(), msg.ReadVariableInt32());
                 break;

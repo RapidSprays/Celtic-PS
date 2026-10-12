@@ -30,6 +30,7 @@ public sealed partial class GameServer
         ".chest [name] [qty] - a random legacy chest, or chests by name (e.g. .chest mystery chest 5)",
         ".gearset [level] - equip the best gear your class can wear at that level (old gear goes to your backpack)",
         ".wear <item name or id> - give and equip an item",
+        ".mount [name] | .mount off - ride a mount (random if no name), or get off",
         ".heal | .learn <skill id>",
         ".respawn - respawn every mob in the zone");
 
@@ -224,6 +225,29 @@ public sealed partial class GameServer
                 foreach (var (slot, info) in plan) _store.AddItem(s.Character.Id, info.Id, 1, slot);
                 SendEquipment(s);
                 Tell(s, $"Level {level} {cls} gear: " + string.Join(", ", plan.OrderBy(p => p.Key).Select(p => p.Value.Name)));
+                break;
+            }
+
+            case "mount":
+            {
+                var current = s.Sheet!.Equipped.FirstOrDefault(i => i.Slot == (int)EquipSlot.Mount);
+                if (args.Length > 0 && args[0].Equals("off", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (current is null) { Tell(s, "You aren't riding anything."); break; }
+                    _store.SetItemSlot(current.Id, ItemRecord.Backpack);
+                    SendEquipment(s);
+                    Tell(s, "You dismount.");
+                    break;
+                }
+                var query = string.Join(' ', args);
+                var mounts = _balance.Items.Values.Where(i => i.Slot == EquipSlot.Mount && !i.IsPlaceholder).ToList();
+                var mount = query.Length == 0 ? mounts[Random.Shared.Next(mounts.Count)]
+                    : mounts.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).OrderBy(i => i.Name.Length).ThenBy(i => i.Id).FirstOrDefault();
+                if (mount is null) { Tell(s, $"No mount matches \"{query}\" ({mounts.Count} mounts exist)."); break; }
+                if (current is not null) _store.SetItemSlot(current.Id, ItemRecord.Backpack);
+                _store.AddItem(s.Character!.Id, mount.Id, 1, (int)EquipSlot.Mount);
+                SendEquipment(s);
+                Tell(s, $"You mount your {mount.Name} ({mount.Id}).");
                 break;
             }
 

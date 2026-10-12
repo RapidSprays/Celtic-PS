@@ -85,6 +85,15 @@ public sealed class CharacterSheet
     public int CombinedFocus { get; }
     public int CombinedVitality { get; }
 
+    /// <summary>The equipped mount (slot 22), if any. The client shows the player riding it (MountsManager.CheckForMount).</summary>
+    public ItemInfo? Mount => Equipped.FirstOrDefault(i => i.Slot == (int)EquipSlot.Mount) is { } m ? _balance.Items.GetValueOrDefault(m.TemplateId) : null;
+
+    /// <summary>
+    /// Run-speed bonus while mounted. The client data doesn't link mounts to their speed effects (server-only), so this is
+    /// <b>approximated</b>: 40%.
+    /// </summary>
+    public int MountSpeedPercent => Mount is null ? 0 : 40;
+
     /// <summary>Templates of everything equipped.</summary>
     public IReadOnlyList<ItemInfo> Gear { get; }
 
@@ -141,8 +150,14 @@ public sealed class CharacterSheet
         foreach (var item in Equipped.Where(i => i.Slot < CharacterSummary.EquipmentSlots)) appearanceIds[item.Slot] = item.TemplateId;
         var c = Character;
         return new CharacterSummary((uint)c.Id, (uint)c.Id, worldId, c.Name, 0, "",
-            new Appearance(c.Race, c.Face, c.Skin, c.SkinColour, c.Hair, c.HairColour, c.FaceAccessory, c.FaceAccessoryColour, c.Scale, c.Gender),
-            appearanceIds, c.Zone, Level, 1, 1, c.Class, AttackRange, AttackSpeed, 0, 0, false);
+            Appearance(), appearanceIds, c.Zone, Level, 1, 1, c.Class, AttackRange, AttackSpeed, 0, 0, false);
+    }
+
+    public Appearance Appearance()
+    {
+        var c = Character;
+        return new Appearance(c.Race, c.Face, c.Skin, c.SkinColour, c.Hair, c.HairColour, c.FaceAccessory, c.FaceAccessoryColour, c.Scale, c.Gender,
+            Progress.ShowHeadgear, Progress.ShowFashion);
     }
 
     public CharacterStats Stats()
@@ -154,9 +169,12 @@ public sealed class CharacterSheet
             Attack = Attack, Defence = Defence, AttackSpeed = AttackSpeed, WeaponDamage = WeaponDamage, ArmourValue = Armour,
             Vitality = vit, Strength = str, Focus = foc, Dexterity = dex, Encumbrance = Encumbrance,
             SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
-            AttackRange = AttackRange, FastTravelItemLimit = 20, MaxSpeed = 5f, Scale = 1f,
+            AttackRange = AttackRange, FastTravelItemLimit = 20, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
             CompiledAbilities = Abilities(),
-            CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, s.Level + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == s.SkillId).Sum(b => b.Amount))).ToList(),
+            // Small SkillBonuses are rank bonuses (large ones are flat damage); the client indexes Levels[compiled], so clamp.
+            CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, Math.Clamp(
+                s.Level + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == s.SkillId && Math.Abs(b.Amount) <= 10).Sum(b => b.Amount),
+                0, Math.Max(0, (_balance.Skills.GetValueOrDefault(s.SkillId)?.Levels.Count ?? 1) - 1)))).ToList(),
             Avoidances = Gear.SelectMany(g => g.AvoidanceBonuses).GroupBy(a => a.Id).Select(g => new IdValue(g.Key, g.Sum(a => a.Amount))).ToList(),
             Bonuses = GearBonuses(),
         };
@@ -176,7 +194,16 @@ public sealed class CharacterSheet
             .GroupBy(b => BonusTypeIds[b.Type]).Select(g => new IdValue(g.Key, g.Sum(b => b.Amount))).ToList();
 
     /// <summary>Client BonusType enum values by name. Filled from the client enum (Balance.Model BonusType).</summary>
-    public static IReadOnlyDictionary<string, int> BonusTypeIds { get; set; } = new Dictionary<string, int>();
+    /// <summary>
+    /// Client BonusType values (Balance.Model/BonusType.cs) for the resists shown on the Abilities screen. Attack, defence,
+    /// health and energy bonuses (10-13) are folded into those stats instead.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, int> BonusTypeIds = new Dictionary<string, int>
+    {
+        ["PiercingResist"] = 0, ["SlashingResist"] = 1, ["CrushingResist"] = 2, ["HeatResist"] = 3, ["ColdResist"] = 4,
+        ["MagicResist"] = 5, ["PoisonResist"] = 6, ["DivineResist"] = 7, ["ChaosResist"] = 8, ["FishingResist"] = 15,
+        ["ConcentrationBonus"] = 16,
+    };
 
     /// <summary>XP progress into the current level, 0-100.</summary>
     public float XpPercent => Math.Clamp(100f * Progress.Xp / Progression.XpToNextLevel(Level), 0f, 100f);

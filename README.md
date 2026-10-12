@@ -81,7 +81,9 @@ attribute and skill points to spend on the stats and skills pages.
 
 **Equipment:** every item's stats apply: primary stat bonuses, Health/Energy/Attack/Defence bonuses, ability and
 skill bonuses, avoidances; level/stat/gender requirements are enforced; two-handers block the offhand; equip skills
-(e.g. Virulent Sunder) join the skill list while worn; weapon procs fire on hit.
+(e.g. Virulent Sunder) join the skill list while worn; weapon procs fire on hit; resists show on the Abilities
+screen. Mounts work: an item in the Mount slot makes you ride it (+40% run speed, approximated), saddles/bardings
+change its look, and mount skills come with the mount.
 
 **Chests:** all 315 openable containers in the client data work (`server/src/CH.Server/Game/Chests.cs`):
 70 Mystery Chests open on the client's own chest-opening screen ("Next Chest" opens the next); pirate,
@@ -106,6 +108,7 @@ GM commands are typed in normal chat with a `.` prefix (`/` commands are client-
 | `.give <item id or name> [qty]` (or `.item`) | put items in your backpack, e.g. `.give minor health potion 5` |
 | `.finditem <name>` | search item templates (several can share a name; pick by id) |
 | `.gearset [level]` | equip the best gear your class can wear at that level (Rogue: daggers + leather) |
+| `.mount [name]` / `.mount off` | ride a mount (any of the 200+ in the files; random if no name), or get off |
 | `.wear <item name or id>` | give and equip an item (GM override of requirements) |
 | `.chest [name] [qty]` | a random legacy chest, or chests by name (`.chest mystery chest 5`, `.chest pirate`, `.chest bounty`) |
 | `.heal`, `.learn <skill id>` | testing helpers |
