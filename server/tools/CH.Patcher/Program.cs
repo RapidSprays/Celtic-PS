@@ -2,6 +2,7 @@
 //
 //   dotnet run --project tools/CH.Patcher -- [--build 24928510] [--http-port 5555] [--host 127.0.0.1] [--dry-run] [--discover] [--inspect OUT.dll]
 //   CH.Patcher setup [--host <server address>] [--steam-dir DIR] [--dest DIR]   (friends: see docs/friends.md)
+//   CH.Patcher verify --game-dir <CelticHeroes.app | Windows game folder>      (read-only: hashes and patch site counts)
 //
 // Always patches from the pristine, hash-verified snapshot DLL, so running it twice gives the same result. Writes only
 // inside ~/CelticHeroesAnalysis/client/<build>/; the Steam install is never touched.
@@ -12,6 +13,7 @@ using CH.Patcher;
 using Mono.Cecil;
 
 if (args.Length > 0 && args[0] == "setup") return FriendSetup.Run(args[1..]);
+if (args.Length > 0 && args[0] == "verify") return Verify.Run(args[1..]);
 
 var build = "24928510";
 var host = "127.0.0.1";

@@ -21,6 +21,7 @@ public static class FriendSetup
         string? steamDir = null;
         string? dest = null;
         var httpPort = 5555;
+        ClientPlatform? forced = null; // --platform windows: lets the host rehearse the Windows path on a Mac with a downloaded depot
         for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
@@ -29,6 +30,7 @@ public static class FriendSetup
                 case "--steam-dir": steamDir = args[++i]; break;
                 case "--dest": dest = args[++i]; break;
                 case "--http-port": httpPort = int.Parse(args[++i]); break;
+                case "--platform": forced = Enum.Parse<ClientPlatform>(args[++i], ignoreCase: true); break;
                 default: Console.Error.WriteLine($"unknown option {args[i]}"); return 2;
             }
         }
@@ -37,9 +39,9 @@ public static class FriendSetup
         {
             if (string.IsNullOrWhiteSpace(host) || !Regex.IsMatch(host, @"^[A-Za-z0-9.:\-\[\]]+$"))
                 throw new InvalidOperationException("No server address. Run with --host <the host's Tailscale IP>, or keep host.txt next to this program.");
-            var platform = OperatingSystem.IsMacOS() ? ClientPlatform.Mac
+            var platform = forced ?? (OperatingSystem.IsMacOS() ? ClientPlatform.Mac
                 : OperatingSystem.IsWindows() ? ClientPlatform.Windows
-                : throw new InvalidOperationException("Celtic Heroes runs on macOS and Windows only.");
+                : throw new InvalidOperationException("Celtic Heroes runs on macOS and Windows only."));
             var game = steamDir is not null ? Path.GetFullPath(steamDir) : FindSteamGame(platform)
                 ?? throw new InvalidOperationException("Celtic Heroes isn't installed in Steam. Install it (it's free), start it once, quit it, then run this again.");
             var source = platform == ClientPlatform.Mac ? Path.Combine(game, "CelticHeroes.app") : game;
@@ -84,8 +86,14 @@ public static class FriendSetup
             }
             var (ggmPatched, ggmChanges) = AssetUrlPatcher.Patch(File.ReadAllBytes(ggm), httpPort);
             Require(ggmChanges.Count == 7 && AssetUrlPatcher.RemainingUnityUrls(ggmPatched).Count == 0, "Unity telemetry URLs not patched as expected");
-            File.WriteAllBytes(ggm, ggmPatched);
             results.Add(new PatchResult("P8", "globalgamemanagers: Unity engine telemetry URLs → same-length localhost URLs", ggmChanges.Count));
+            if (platform == ClientPlatform.Windows)
+            {
+                // P9: own company name → own registry PlayerPrefs and AppData folder, never the live game's saved login.
+                Require(AssetUrlPatcher.PatchCompanyName(ggmPatched) == 1, "company name not found exactly once");
+                results.Add(new PatchResult("P9", $"globalgamemanagers: companyName → \"{AssetUrlPatcher.PrivateCompanyName}\"", 1));
+            }
+            File.WriteAllBytes(ggm, ggmPatched);
 
             if (platform == ClientPlatform.Mac)
             {
@@ -96,6 +104,7 @@ public static class FriendSetup
 
             // 4. Steam app id (so Steam doesn't relaunch the live game) and a launcher.
             File.WriteAllText(Path.Combine(dest, "steam_appid.txt"), KnownBuild.SteamAppId.ToString());
+            if (platform == ClientPlatform.Windows) File.WriteAllText(Path.Combine(copy, "steam_appid.txt"), KnownBuild.SteamAppId.ToString());
             var launcher = WriteLauncher(platform, dest);
             File.WriteAllText(Path.Combine(dest, "patch-state.json"), JsonSerializer.Serialize(new
             {

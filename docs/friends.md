@@ -46,15 +46,26 @@ The kit only accepts the client build it was verified against (24928510, in `ser
 If Steam updates Celtic Heroes before a friend runs the setup, the setup refuses and asks for an updated kit. Once a
 private copy exists, Steam updates don't touch it.
 
-## Windows support (to do)
+## Windows support (in progress)
 
-The Windows game files differ from the Mac ones. Adding Windows support needs:
-- the Windows build's hashes;
-- the patch site counts checked against the Windows DLL;
-- a separate PlayerPrefs location for the private copy, the Windows equivalent of the Mac bundle-id patch (P1), because
-  Windows keys PlayerPrefs on the company and product names.
+Ready now:
+- **P9:** the friend tool renames the copy's company name to `CelticHeroes Private` (same length). That moves its registry PlayerPrefs and AppData folder away from the live game's saved login, as the bundle id does on Mac.
+- **Steam app id:** `steam_appid.txt` goes beside the exe and the launcher.
+- **Launcher:** a `.bat` file.
 
-To get the Windows files onto this Mac without a Windows PC:
+Still missing: the Windows build's hashes and confirmed patch site counts. To get the Windows files onto this Mac without a Windows PC:
 1. With Steam running, open `steam://open/console` in a browser.
-2. Run `download_depot 2829820 2829821` (2829821 is the expected Windows depot; the Mac one is 2829822).
+2. Run `download_depot 2829820 2829821`. That's the expected Windows depot; the Mac one is 2829822.
 3. Steam prints the folder it downloaded to, usually `~/Library/Application Support/Steam/steamapps/content/app_2829820/depot_2829821`.
+
+Then:
+1. Analyse it, read-only:
+   ```bash
+   dotnet server/tools/CH.Patcher/bin/Debug/net8.0/CH.Patcher.dll verify --game-dir <depot folder>
+   ```
+2. Add its hashes to `KnownBuilds.cs`.
+3. Rehearse the setup on the Mac:
+   ```bash
+   dotnet server/tools/CH.Patcher/bin/Debug/net8.0/CH.Patcher.dll setup --platform windows --steam-dir <depot folder> --dest <scratch folder> --host <ip>
+   ```
+4. Rebuild the kit: `make-friend-kit.sh` adds the Windows tool automatically.

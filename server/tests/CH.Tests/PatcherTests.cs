@@ -123,4 +123,20 @@ public class PatcherTests
         Assert.Equal(asset[..4], patched[..4]);
         Assert.Equal(asset[^5..], patched[^5..]);
     }
+
+    [Fact]
+    public void P9_renames_the_company_once_at_the_same_length()
+    {
+        var ggm = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "CelticHeroesAnalysis", "client", "24928510", "pristine", "globalgamemanagers"); // CH.Patcher's hash-checked backup
+        if (!File.Exists(ggm)) return;
+        var bytes = File.ReadAllBytes(ggm);
+        var length = bytes.Length;
+        Assert.Equal(1, CH.Patcher.AssetUrlPatcher.PatchCompanyName(bytes));
+        Assert.Equal(length, bytes.Length);
+        var text = System.Text.Encoding.Latin1.GetString(bytes);
+        Assert.Contains(CH.Patcher.AssetUrlPatcher.PrivateCompanyName, text);
+        Assert.DoesNotContain(CH.Patcher.AssetUrlPatcher.LiveCompanyName, text);
+        Assert.Equal(0, CH.Patcher.AssetUrlPatcher.PatchCompanyName(bytes)); // idempotent: nothing left to rename
+    }
 }

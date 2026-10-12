@@ -41,6 +41,29 @@ public static class AssetUrlPatcher
         return (prefix + fill)[..url.Length];
     }
 
+    public const string LiveCompanyName = "One Thumb Mobile Ltd";
+    public const string PrivateCompanyName = "CelticHeroes Private"; // same length (20)
+
+    /// <summary>
+    /// P9 (Windows): PlayerSettings.companyName → <see cref="PrivateCompanyName"/>. Unity on Windows keys PlayerPrefs
+    /// (HKCU\Software\&lt;company&gt;\&lt;product&gt;) and persistentDataPath on it, so the private copy never reads the live
+    /// game's saved login. The macOS build gets the same separation from its bundle id (P1). Returns the number of
+    /// length-prefixed occurrences replaced (expected: 1).
+    /// </summary>
+    public static int PatchCompanyName(byte[] asset)
+    {
+        var name = Encoding.ASCII.GetBytes(LiveCompanyName);
+        var replacement = Encoding.ASCII.GetBytes(PrivateCompanyName);
+        var count = 0;
+        for (var i = 4; i + name.Length <= asset.Length; i++)
+        {
+            if (BitConverter.ToInt32(asset, i - 4) != name.Length || !asset.AsSpan(i, name.Length).SequenceEqual(name)) continue;
+            replacement.CopyTo(asset, i);
+            count++;
+        }
+        return count;
+    }
+
     public static IReadOnlyList<string> RemainingUnityUrls(byte[] asset) =>
         UnityServiceUrl.Matches(Encoding.Latin1.GetString(asset)).Select(m => m.Value).ToList();
 }
