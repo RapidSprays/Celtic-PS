@@ -101,9 +101,23 @@ public sealed class PatchServer : IAsyncDisposable
             case "purchaseslist.aspx":
                 return Text("");
 
+            case "namegenerator.aspx":
+                // "0" then one suggested name per line (RandomCharNames.cs:76-95).
+                return Text("0\n" + string.Join("\n", NameSuggestions.Take(Random.Shared.Next(8, 13))));
+
             default:
                 _log.LogWarning("HTTP page not implemented: {Page}", page);
                 return Results.NotFound();
+        }
+    }
+
+    private static IEnumerable<string> NameSuggestions
+    {
+        get
+        {
+            string[] first = ["Aed", "Bran", "Cael", "Dara", "Eithne", "Fionn", "Gorm", "Iona", "Lugh", "Maeve", "Niall", "Orla", "Ronan", "Saoirse", "Tadhg", "Una"];
+            string[] last = ["mor", "an", "ach", "wyn", "ric", "dan", "lin", "ra", "gal", "bran"];
+            while (true) yield return first[Random.Shared.Next(first.Length)] + last[Random.Shared.Next(last.Length)];
         }
     }
 

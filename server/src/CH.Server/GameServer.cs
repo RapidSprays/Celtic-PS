@@ -162,12 +162,33 @@ public sealed class GameServer : IDisposable
                 break;
 
             case Opcode.ClientErrorMessage:
-                _log.LogWarning("Client error report: {Text}", ClientErrorMessage.Read(msg).Text);
+                var report = ClientErrorMessage.Read(msg).Text;
+                // In env Test the client forwards its own debug-level messages; the render ones are cosmetic noise.
+                if (report.Contains("db RenderChild Problem", StringComparison.Ordinal)) _log.LogDebug("Client: {Text}", report);
+                else _log.LogWarning("Client error report: {Text}", report);
                 break;
 
+            case Opcode.SigilsCount:
+                // Reply: varint sigilsOfEnergy, varint sigilsOfHealth (NetworkManager.cs:1413-1426).
+                Send(s, Opcode.SigilsCount, b => { b.WriteVariableInt32(0); b.WriteVariableInt32(0); });
+                break;
+
+            case Opcode.RequestSpecialOffers:
+                // Reply: varint offer count (NetworkManager.cs:1428). No offers on a private server.
+                Send(s, Opcode.RequestSpecialOffers, b => b.WriteVariableInt32(0));
+                break;
+
+            case Opcode.Logout:
+                _log.LogInformation("{Account} logging out", s.Account?.Username);
+                break;
+
+            // Client housekeeping and telemetry; nothing to answer.
+            case Opcode.PlayerIsBusy:
+            case Opcode.AvgFpsReport:
+            case Opcode.GraphicSettingsUpdateMessage:
+            case Opcode.InactivityMessage:
             // Sent by the client during login and zone load; replies are optional (docs/protocol-notes.md §4).
             case Opcode.DailyRewardMessage:
-            case Opcode.RequestSpecialOffers:
             case Opcode.RequestAccurateQuestData:
             case Opcode.MapEnterStatsMessage:
             case Opcode.ClientBackgrounded:
