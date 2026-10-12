@@ -468,4 +468,74 @@ public sealed class ZoneTests : IDisposable
         Assert.Contains(inventory.Items, i => i.TemplateId == 58665);
         Assert.DoesNotContain(inventory.Items, i => i.TemplateId == 56051);
     }
+
+    [Fact]
+    public void Every_usable_item_resolves_to_a_behaviour()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var b = Data.Value;
+        var chests = ChestCatalog.Build(b);
+        var unresolved = b.Items.Values
+            .Where(i => i.Usable && !i.IsPlaceholder && !System.Text.RegularExpressions.Regex.IsMatch(i.Name, "TEST|OVERWRITE|DO NOT USE|UNUSED"))
+            .Where(i => chests.For(i.Id) is null && b.SkillTaughtBy(i) is null && b.RecipeTaughtBy(i) is null && !b.Skills.ContainsKey(i.SkillLinkId))
+            .Select(i => $"{i.Id} {i.Name} ({i.SkillLink})").ToList();
+        Assert.True(unresolved.Count == 0, string.Join("; ", unresolved.Take(30)));
+        Assert.NotNull(b.SkillTaughtBy(b.Items.Values.First(i => i.Name == "'Natures Breath' Spell Tome")));
+        Assert.Equal("Broth", b.Recipes[b.RecipeTaughtBy(b.Items.Values.First(i => i.Name == "'Broth' Recipe Book"))!.Value]);
+    }
+
+    [Fact]
+    public async Task Consumables_restore_buff_strike_teach_and_refuse_special_targets()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("consumer");
+        var id = client.CreateCharacter("Deirdre").CharacterId;
+        client.StartGame(id, "Deirdre");
+        client.FinishZoning();
+        var b = Data.Value;
+        void Say(string text) => client.Send(Opcode.GeneralChat, new ChatMessage(ChatChannel.Local, "", text).WriteFromClient);
+        ItemSlot Give(string name)
+        {
+            var template = b.Items.Values.First(i => i.Name == name && i.Usable).Id;
+            Say($".give {template}");
+            return InventoryWithMoney.Read(client.Expect(Opcode.InventoryUpdate)).Items.Last(i => i.TemplateId == template);
+        }
+        (byte Status, string Reason) Use(ItemSlot item, TargetType type = TargetType.Self, uint target = 0)
+        {
+            client.Send(Opcode.UseItem, new UseItemRequest(item.ServerInventoryId, type, target).Write);
+            var reply = client.Expect(Opcode.UseItemReply);
+            var status = reply.ReadByte();
+            return (status, status == 0 ? reply.ReadString() : "");
+        }
+
+        // Gruel restores energy (its energy cost is −20).
+        Assert.Equal(1, Use(Give("Gruel")).Status);
+        // Elixir of Attack applies its buff.
+        var elixir = Give("Elixir of Attack");
+        client.Send(Opcode.UseItem, new UseItemRequest(elixir.ServerInventoryId, TargetType.Self, 0).Write);
+        var effects = client.Expect(Opcode.StatusEffectUpdate); // the buff arrives before the use reply
+        Assert.True(effects.ReadVariableInt32() >= 1);
+        Assert.Equal(1, client.Expect(Opcode.UseItemReply).ReadByte());
+        // A Firebolt scroll needs an enemy, then hits it.
+        var scroll = Give("Minor Summerspark Scroll");
+        Assert.Equal((0, "You need to target an enemy."), Use(scroll));
+        Say(".spawn Scrawny Coast Wolf 1");
+        var wolf = client.Expect(Opcode.ZoneMonsterAppeared).ReadVariableUInt32();
+        Assert.Equal(1, Use(scroll, TargetType.Mob, wolf).Status);
+        client.Expect(Opcode.CombatDamageMessage);
+        // A recipe book teaches once.
+        var book = Give("'Broth' Recipe Book");
+        Assert.Equal(1, Use(book).Status);
+        Assert.Contains("already know", Use(Give("'Broth' Recipe Book")).Reason);
+        // Fireworks are cosmetic: accepted.
+        Assert.Equal(1, Use(Give("7th Anniversary Red Firework")).Status);
+        // Spirit keys only work on spirit-bound locks: refused, not used up.
+        var key = Give("Weeping Key");
+        Assert.Equal((0, "That only works on something special."), Use(key, TargetType.Mob, wolf));
+    }
 }

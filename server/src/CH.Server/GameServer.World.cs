@@ -543,8 +543,9 @@ public sealed partial class GameServer
     {
         var c = s.Character!;
         var progress = _store.GetProgress(c.Id);
-        var xp = MobStats.Xp(mob.Level, mob.Template.Power);
-        var coins = MobStats.Coins(mob.Level, mob.Template.Power);
+        var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects
+        var xp = MobStats.Xp(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.XpBoostPercent)) / 100;
+        var coins = MobStats.Coins(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.GoldBoostPercent)) / 100;
         var loot = new List<(int, int)>();
         foreach (var drop in _loot.Roll(mob.Level, mob.Template.Power, (CharacterClass)c.Class, Random.Shared))
         {

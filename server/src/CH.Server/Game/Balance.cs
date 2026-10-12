@@ -90,6 +90,9 @@ public sealed record ItemInfo(
 
     /// <summary>ImportantItem: quest and key items the client asks about before selling.</summary>
     public bool ImportantItem { get; init; }
+
+    /// <summary>MaxCharges: uses before the item is gone (1 = single use, −1 = never runs out).</summary>
+    public int MaxCharges { get; init; } = 1;
     public int ModelId { get; init; }
 
     public int Requirement(string type) => Requirements.Where(r => r.Type == type).Select(r => r.Amount).DefaultIfEmpty(0).Max();
@@ -169,6 +172,9 @@ public sealed class Balance
 
     public IReadOnlyDictionary<int, ItemInfo> Items { get; }
     public IReadOnlyDictionary<int, SkillInfo> Skills { get; }
+
+    /// <summary>Cooking recipes (CraftingTemplates): recipe id → name.</summary>
+    public IReadOnlyDictionary<int, string> Recipes { get; private init; } = new Dictionary<int, string>();
     public IReadOnlyDictionary<int, MobInfo> Mobs { get; }
     public IReadOnlyDictionary<int, ZoneInfo> Zones { get; }
     public IReadOnlyDictionary<int, int[]> MobSets { get; }
@@ -216,6 +222,7 @@ public sealed class Balance
                 StarLevel = Int(e, "StarLevel"),
                 Tradeable = Int(e, "Tradeable") == 1,
                 ImportantItem = Int(e, "ImportantItem") == 1,
+                MaxCharges = Int(e, "MaxCharges"),
                 ModelId = Int(e, "ModelID"),
             };
         }
@@ -284,19 +291,43 @@ public sealed class Balance
             statusEffects[id] = new StatusEffectInfo(id, Str(e, "Name"), Int(e, "EffectType"), levels);
         }
 
+        var recipes = new Dictionary<int, string>();
+        foreach (var (key, e) in Entries(root, "CraftingTemplates")) recipes[int.Parse(key)] = Str(e, "RecipeName");
+
         var version = root.TryGetProperty("Version", out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
-        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects);
+        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects) { Recipes = recipes };
     }
 
     /// <summary>Whether an item is an openable container (see <see cref="ChestCatalog"/>).</summary>
     public bool Chests(int itemId) => Items.TryGetValue(itemId, out var i) && i.Usable && ChestCatalog.ContainerLinks.Contains(i.SkillLinkId);
 
-    /// <summary>Skill taught by a "Learn…" skill book, matched on the skill's name without spaces.</summary>
+    /// <summary>
+    /// What a "Learn …" book teaches: its link is either the name ("LearnPummel") or a skill id whose template is
+    /// called "Learn Natures Breath". Returns the name after "Learn".
+    /// </summary>
+    private string? LearnTarget(ItemInfo book) =>
+        book.SkillLink.StartsWith("Learn", StringComparison.Ordinal) && !book.SkillLink.StartsWith("Learn ", StringComparison.Ordinal) ? book.SkillLink["Learn".Length..]
+        : Skills.TryGetValue(book.SkillLinkId, out var link) && link.Name.StartsWith("Learn ", StringComparison.OrdinalIgnoreCase) ? link.Name["Learn ".Length..]
+        : null;
+
+    private static string NameKey(string name) => new(name.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+
+    /// <summary>Skill taught by a skill book (training manual / spell tome), matched on the skill's name.</summary>
     public SkillInfo? SkillTaughtBy(ItemInfo book)
     {
-        if (!book.SkillLink.StartsWith("Learn", StringComparison.Ordinal)) return null;
-        var wanted = book.SkillLink["Learn".Length..];
-        return Skills.Values.FirstOrDefault(s => s.Name.Replace(" ", "").Replace("'", "").Equals(wanted, StringComparison.OrdinalIgnoreCase));
+        if (LearnTarget(book) is not { } wanted) return null;
+        var key = NameKey(wanted);
+        return Skills.Values.FirstOrDefault(s => !s.Name.StartsWith("Learn", StringComparison.OrdinalIgnoreCase) && NameKey(s.Name) == key);
+    }
+
+    /// <summary>Cooking recipe taught by a recipe book ("'Broth' Recipe Book" → recipe "Broth").</summary>
+    public int? RecipeTaughtBy(ItemInfo book)
+    {
+        if (LearnTarget(book) is not { } wanted) return null;
+        var key = NameKey(wanted);
+        foreach (var (id, name) in Recipes)
+            if (NameKey(name) == key) return id;
+        return null;
     }
 
     /// <summary>
@@ -328,13 +359,13 @@ public sealed class Balance
 
     /// <summary>
     /// ItemTemplate.SkillLinkID is the client's SkillType enum: a name when the enum has one, otherwise the number. Only
-    /// the container names matter here (MagicBox = 208, MagicBoxNew = 267).
+    /// Names are resolved through the generated <see cref="SkillTypes"/> table (e.g. InstantHeal = 6, MagicBox = 208).
     /// </summary>
     private static int SkillLinkId(JsonElement e)
     {
         if (!e.TryGetProperty("SkillLinkID", out var v)) return -1;
         if (v.ValueKind == JsonValueKind.Number) return (int)v.GetDouble();
-        return v.GetString() switch { "MagicBox" => 208, "MagicBoxNew" => 267, _ => -1 };
+        return v.GetString() is { } name && SkillTypes.ByName.TryGetValue(name, out var id) ? id : -1;
     }
 
     private static List<(string, int)> Pairs(JsonElement e, string list, string key) =>

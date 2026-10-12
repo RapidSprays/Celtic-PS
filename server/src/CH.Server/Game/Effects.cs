@@ -41,6 +41,10 @@ public sealed class ActiveEffect
 /// </summary>
 public sealed record EffectModifiers
 {
+    /// <summary>Extra kill XP and coins, in percent (Elixir of Knowledge, Jubilation Elixir, gold-drop effects).</summary>
+    public int XpBoostPercent { get; init; }
+    public int GoldBoostPercent { get; init; }
+
     public int Armour { get; init; }
     public int Defence { get; init; }
     public int Attack { get; init; }
@@ -84,6 +88,14 @@ public sealed record EffectModifiers
                 EffectType.BuffRangeAttackAndDamage => m with { RangedDamage = m.RangedDamage + a },
                 EffectType.DamageShield => m with { DamageShield = m.DamageShield + Math.Max(1, a) },
                 EffectType.Camouflage or EffectType.Camouflage2 => m with { CamouflagePercent = Math.Min(90, m.CamouflagePercent + a) },
+                EffectType.BuffXpGain => m with { XpBoostPercent = m.XpBoostPercent + a },
+                EffectType.GoldDrop => m with { GoldBoostPercent = m.GoldBoostPercent + a },
+                EffectType.CombinationGoldDrop => m with { GoldBoostPercent = m.GoldBoostPercent + a, XpBoostPercent = m.XpBoostPercent + a },
+                // Combination potions/elixirs raise attack, defence and armour together (approximated split).
+                EffectType.Combination => m with
+                {
+                    Attack = m.Attack + baseAttack * a / 100, Defence = m.Defence + baseDefence * a / 100, Armour = m.Armour + baseArmour * a / 100,
+                },
                 EffectType.Hide => m with { HiddenUpToLevel = Math.Max(m.HiddenUpToLevel, e.RawAmount) },
                 EffectType.Invisibility or EffectType.PlayingDead => m with { HiddenUpToLevel = float.MaxValue },
                 _ => m,

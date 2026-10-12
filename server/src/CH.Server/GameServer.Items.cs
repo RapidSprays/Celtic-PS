@@ -9,7 +9,6 @@ namespace CH.Server;
 /// <summary>Starting kit, inventory and item use (docs/protocol-notes.md, inventory messages).</summary>
 public sealed partial class GameServer
 {
-    private const float PotionRechargeSeconds = 10f;
     private const int SkillBooksInKit = 2;
 
     private CharacterSheet LoadSheet(CharacterRecord c) =>
@@ -201,25 +200,21 @@ public sealed partial class GameServer
             return;
         }
 
-        if (info.SkillLink == "InstantHeal")
+        if (_balance.RecipeTaughtBy(info) is { } recipe)
         {
-            // Approximated: a minor potion restores 30% of max health.
-            if (s.Dead)
+            if (!_store.LearnRecipe(s.Character!.Id, recipe))
             {
-                Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Rejected, "You are dead.", 0, null));
+                Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Rejected, $"You already know how to cook {_balance.Recipes[recipe]}.", 0, null));
                 return;
             }
-            var healed = Math.Min(s.MaxHealth, s.Health + Math.Max(10, s.MaxHealth * 30 / 100));
-            s.Health = healed;
-            _store.SaveVitals(s.Character!.Id, healed, s.Energy);
             _store.SetItemQuantity(item.Id, item.Quantity - 1);
-            var after = RefreshSheet(s);
-            Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", PotionRechargeSeconds, after.InventoryWithMoney()));
-            Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Health, healed)]).Write);
+            var cook = RefreshSheet(s);
+            Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", 0f, cook.InventoryWithMoney()));
+            Tell(s, $"You learnt the recipe for {_balance.Recipes[recipe]}.");
             return;
         }
 
-        Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Rejected, "You can't use that here yet.", 0, null));
+        UseSkillItem(s, item, info, req);
     }
 
     private void OnSkillBarUpdate(Session s, SkillBarUpdate update)

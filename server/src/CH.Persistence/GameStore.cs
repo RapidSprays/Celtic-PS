@@ -223,6 +223,13 @@ public sealed class GameStore : IDisposable
         ALTER TABLE characters ADD COLUMN pet_fed_level INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE characters ADD COLUMN pet_fed_seconds INTEGER NOT NULL DEFAULT 0;
         """,
+        """
+        CREATE TABLE recipes (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            recipe_id    INTEGER NOT NULL,
+            PRIMARY KEY (character_id, recipe_id)
+        );
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -488,6 +495,22 @@ public sealed class GameStore : IDisposable
         using var cmd = Command("SELECT pet_fed_effect, pet_fed_level, pet_fed_seconds FROM characters WHERE id = $id", null, ("$id", characterId));
         using var r = cmd.ExecuteReader();
         return r.Read() ? (r.GetInt32(0), r.GetInt32(1), r.GetInt32(2)) : (0, 0, 0);
+    }
+
+    /// <summary>Cooking recipes learnt from recipe books. True if it was new.</summary>
+    public bool LearnRecipe(long characterId, int recipeId)
+    {
+        using var cmd = Command("INSERT OR IGNORE INTO recipes(character_id, recipe_id) VALUES ($c, $r)", null, ("$c", characterId), ("$r", recipeId));
+        return cmd.ExecuteNonQuery() == 1;
+    }
+
+    public IReadOnlyList<int> ListRecipes(long characterId)
+    {
+        using var cmd = Command("SELECT recipe_id FROM recipes WHERE character_id = $c ORDER BY recipe_id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<int>();
+        while (r.Read()) list.Add(r.GetInt32(0));
+        return list;
     }
 
     /// <summary>Abilities learnt from trainers (LEARN_ABILITY).</summary>
