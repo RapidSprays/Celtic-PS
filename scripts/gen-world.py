@@ -225,6 +225,36 @@ for key, coll in bal["SpawnIconInfoCollections"].items():
                      "x": round(x, 2), "y": round(y, 2), "z": round(zz, 2), "direction": round(facing, 1),
                      "roles": sorted({i.get("Type") for i in icons})})
 
+# Service NPCs whose spawn icons don't name a conversation (token vendors): placed by hand around the Farcrag Castle
+# stables. (template, conversation file)
+SERVICE = [(897, "cv_pet_vendor"), (898, "cv_pet_breeder"), (916, "cv_fc_delwen_pet_exchange"), (920, "cv_mount_vendor"),
+           (141047, "cv_mount_breeder"), (141051, "cv_saddle_vendor"), (901, "cv_bounty_vendor")]
+by_file = {c["file"]: cid for cid, c in convs.items()}
+placed_templates = {n["template"] for n in npcs}
+spawn_of = {}
+for key, coll in bal["SpawnIconInfoCollections"].items():
+    if key == "$id": continue
+    for t in coll.get("IconsInfoPerMob", {}):
+        if t != "$id": spawn_of.setdefault(int(t), int(key))
+used_spawns = {n["spawnId"] for n in npcs}
+sx, sy, sz = PROPS["Stable"]
+placements = []
+for i, (template, conv_file) in enumerate(SERVICE):
+    angle = math.radians(200 + i * 22)
+    placements.append((template, conv_file, 93, sx + 9 * math.sin(angle), sy, sz + 9 * math.cos(angle), (math.degrees(angle) + 180) % 360))
+# Bankers: Baldwin beside the Farcrag Castle bank prop; his brother by the Lir's Reach mailbox (scene prop) so a bank
+# is reachable from the start.
+bx, by_, bz = PROPS["Banker"]
+placements.append((147, "cv_banker", 93, bx + 1.5, by_, bz + 1.5, 90.0))
+placements.append((138807, "cv_banker", 2, -104.85, -5.43, -26.5, 180.0))
+for i, (template, conv_file, zone, x, y, z, facing) in enumerate(placements):
+    if template in placed_templates or template not in mobs or conv_file not in by_file: continue
+    spawn = spawn_of.get(template)
+    if spawn is None or spawn in used_spawns: spawn = 15000 + i
+    used_spawns.add(spawn)
+    npcs.append({"spawnId": spawn, "template": template, "name": mobs[template]["Name"], "conversation": by_file[conv_file], "zone": zone,
+                 "x": round(x, 2), "y": y, "z": round(z, 2), "direction": round(facing, 1), "roles": ["Service"]})
+
 # ---- shops ------------------------------------------------------------------------------------------------------
 # The client knows which shop id a conversation opens, never what it stocks (server-only). Each shop gets a category
 # from its menu label, file and NPC name; the server stocks it from the item templates for the NPC's zone level.
