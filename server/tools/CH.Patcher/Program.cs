@@ -104,6 +104,7 @@ try
     var tmp = clientDll + ".patching";
     module.Write(tmp);
     File.Move(tmp, clientDll, overwrite: true);
+    ClientMods.Install(clientDll); // P10's Max button
     File.WriteAllBytes(ggmClient, ggmPatched);
 
     // P1: separate bundle id → separate PlayerPrefs and persistentDataPath from the live game.

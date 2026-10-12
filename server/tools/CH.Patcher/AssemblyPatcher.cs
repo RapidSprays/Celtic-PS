@@ -66,6 +66,9 @@ public sealed class AssemblyPatcher
         // P7: Unity IAP never initializes, so the store and purchases are unavailable.
         NeutralizeCalls("P7", "InAppPurchaseManager", ".ctor", "UnityEngine.Purchasing.UnityPurchasing::Initialize", expectedSites: 1);
 
+        // P10: a "Max" button on the skill popup (CHPrivateMods.dll, shipped next to Assembly-CSharp).
+        InjectMaxButton("P10");
+
         // Inserting instructions can push short-form branches out of range; re-pick branch sizes for every edited method.
         foreach (var method in _edited) method.Body.OptimizeMacros();
     }
@@ -161,6 +164,55 @@ public sealed class AssemblyPatcher
             sites++;
         }
         Record(id, "CController.Init: ZendeskSdk.InitializeAsync(...).ContinueWith(...) removed", sites, expected: 1);
+    }
+
+    /// <summary>Name of the mod assembly P10 calls into (built from tools/CH.ClientMods).</summary>
+    public const string ModsAssembly = "CHPrivateMods";
+
+    /// <summary>
+    /// P10: at the end of CSkillPopup's constructor, call CHPrivateMods.SkillMaxButton.Attach(this). The call sits in
+    /// its own small method invoked inside try/catch, so if the mod assembly were missing (the JIT fails resolving it
+    /// when compiling that small method) the popup still opens normally.
+    /// </summary>
+    private void InjectMaxButton(string id)
+    {
+        var popup = _module.GetType("CSkillPopup");
+        var ctors = popup?.Methods.Where(m => m.IsConstructor && !m.IsStatic && m.Parameters.Count == 5).ToList() ?? [];
+        var sites = 0;
+        if (ctors.Count == 1 && popup!.Methods.All(m => m.Name != "CHPrivate_AttachMax"))
+        {
+            var mods = new AssemblyNameReference(ModsAssembly, new Version(1, 0, 0, 0));
+            if (_module.AssemblyReferences.All(r => r.Name != ModsAssembly)) _module.AssemblyReferences.Add(mods);
+            var modType = new TypeReference("CHPrivateMods", "SkillMaxButton", _module, _module.AssemblyReferences.First(r => r.Name == ModsAssembly));
+            var attach = new MethodReference("Attach", _module.TypeSystem.Void, modType) { HasThis = false };
+            attach.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Object));
+
+            var helper = new MethodDefinition("CHPrivate_AttachMax", MethodAttributes.Private | MethodAttributes.HideBySig, _module.TypeSystem.Void);
+            var h = helper.Body.GetILProcessor();
+            h.Emit(OpCodes.Ldarg_0);
+            h.Emit(OpCodes.Call, attach);
+            h.Emit(OpCodes.Ret);
+            popup.Methods.Add(helper);
+
+            var ctor = ctors[0];
+            var il = BeginEdit(ctor);
+            var ret = ctor.Body.Instructions.Last();
+            if (ret.OpCode != OpCodes.Ret) throw new PatchException(id, "CSkillPopup constructor doesn't end in ret");
+            var tryStart = il.Create(OpCodes.Ldarg_0);
+            var call = il.Create(OpCodes.Call, helper);
+            var leaveTry = il.Create(OpCodes.Leave, ret);
+            var catchStart = il.Create(OpCodes.Pop);
+            var leaveCatch = il.Create(OpCodes.Leave, ret);
+            foreach (var ins in new[] { tryStart, call, leaveTry, catchStart, leaveCatch }) il.InsertBefore(ret, ins);
+            // Earlier "return" branches to ret still skip the Max button only in paths that never built the popup.
+            ctor.Body.ExceptionHandlers.Add(new ExceptionHandler(ExceptionHandlerType.Catch)
+            {
+                TryStart = tryStart, TryEnd = catchStart, HandlerStart = catchStart, HandlerEnd = ret,
+                CatchType = new TypeReference("System", "Exception", _module, _module.TypeSystem.CoreLibrary),
+            });
+            sites = 1;
+        }
+        Record(id, "CSkillPopup..ctor: Max button (CHPrivateMods.SkillMaxButton.Attach)", sites, expected: 1);
     }
 
     private void Neutralize(MethodDefinition method, Instruction call, MethodReference callee)

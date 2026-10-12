@@ -31,7 +31,7 @@ public class PatcherTests
 
         var patcher = new AssemblyPatcher(module, 5555);
         patcher.ApplyAll(); // throws if any site count differs from build 24928510
-        Assert.Equal(["P2", "P4", "P4b", "P5", "P6a", "P6b", "P7"], patcher.Results.Select(r => r.Id));
+        Assert.Equal(["P2", "P4", "P4b", "P5", "P6a", "P6b", "P7", "P10"], patcher.Results.Select(r => r.Id));
         Assert.Empty(patcher.RemainingLiveUrls());
     }
 

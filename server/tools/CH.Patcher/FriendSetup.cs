@@ -84,6 +84,7 @@ public static class FriendSetup
                 results.AddRange(patcher.Results);
                 module.Write(dll);
             }
+            ClientMods.Install(dll); // P10's Max button
             var (ggmPatched, ggmChanges) = AssetUrlPatcher.Patch(File.ReadAllBytes(ggm), httpPort);
             Require(ggmChanges.Count == 7 && AssetUrlPatcher.RemainingUnityUrls(ggmPatched).Count == 0, "Unity telemetry URLs not patched as expected");
             results.Add(new PatchResult("P8", "globalgamemanagers: Unity engine telemetry URLs → same-length localhost URLs", ggmChanges.Count));

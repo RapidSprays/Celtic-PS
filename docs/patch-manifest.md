@@ -43,3 +43,17 @@ Patched client running at the main menu: `lsof -a -p <pid> -i TCP` shows only `1
 - The server log shows Unity telemetry POSTs arriving at `/u/…` and being refused.
 - The environment, privacy, patch-level and server-status requests are all served locally.
 - `scripts/inventory.sh --verify` on the Steam install still passes.
+
+## P9: Windows company name (friend copies on Windows only)
+`globalgamemanagers` PlayerSettings.companyName `One Thumb Mobile Ltd` → `CelticHeroes Private`, a same-length, length-prefixed rewrite. Unity on Windows keys registry PlayerPrefs and `persistentDataPath` on the company name, so the private copy never reads the live game's saved login. It's the Windows counterpart of P1, the bundle id. Expected: 1 site.
+
+## P10: "Max" button on the skill popup
+- **Code:** `CSkillPopup..ctor` gets a call at its end, inside try/catch, to a new private method `CHPrivate_AttachMax`. That method calls `CHPrivateMods.SkillMaxButton.Attach(this)`.
+- **Mod assembly:** `CHPrivateMods.dll` is built from `server/tools/CH.ClientMods`, embedded in CH.Patcher, and copied next to Assembly-CSharp.dll.
+- **What the mod does:**
+  - copies the Upgrade button, labels it "Max" and places it above;
+  - on tap, calls the popup's own `SetLevelToUpgradeTo(int.MaxValue)` (which clamps to the rank cap and free points) and then `ConfirmButtonPressed()`;
+  - keeps its visibility in step with Upgrade.
+- **Server side:** it accepts multi-rank BuySkill requests and clamps again.
+- **Failure safety:** if the mod were missing or failed, the try/catch leaves the popup unchanged.
+- Expected: 1 site.

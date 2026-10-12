@@ -28,6 +28,8 @@ fi
 
 rm -rf "$KIT"
 mkdir -p "$KIT"
+# The Max-button mod (patch P10) is embedded in the setup tool; build it first (needs the pinned client's Unity DLLs).
+dotnet build -c Release "$REPO/server/tools/CH.ClientMods" >/dev/null
 for rid in osx-arm64 osx-x64; do
   dir="$KIT/mac-${rid#osx-}"
   dotnet publish "$REPO/server/tools/CH.Patcher" -c Release -r "$rid" --self-contained \

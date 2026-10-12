@@ -11,4 +11,13 @@
     <PackageReference Include="Mono.Cecil" Version="0.11.6" />
   </ItemGroup>
 
+  <!-- P10's mod assembly travels inside the patcher (and the friend kit). Build tools/CH.ClientMods (Release) first;
+       it needs the pinned client's Unity assemblies, so it only builds on the host. -->
+  <PropertyGroup>
+    <ClientModsDll>$(MSBuildThisFileDirectory)../CH.ClientMods/bin/Release/netstandard2.1/CHPrivateMods.dll</ClientModsDll>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('$(ClientModsDll)')">
+    <EmbeddedResource Include="$(ClientModsDll)" LogicalName="CHPrivateMods.dll" />
+  </ItemGroup>
+
 </Project>
