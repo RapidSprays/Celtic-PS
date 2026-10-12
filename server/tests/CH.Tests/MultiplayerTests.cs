@@ -225,4 +225,51 @@ public sealed class MultiplayerTests : IDisposable
         var empty = BatchZonePositionUpdate.Read(watcher.Expect(Opcode.BatchZonePositionUpdate));
         Assert.Empty(empty.Players);
     }
+
+    [Fact]
+    public async Task A_duel_counts_down_and_ends_in_victory_at_one_hp()
+    {
+        if (!File.Exists(BalancePath)) return;
+        await using var host = await ServerHost.StartAsync(
+            new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath }, NullLoggerFactory.Instance);
+        var (a, aId) = Join(host, "fionn", "Fionn");
+        using var _a = a;
+        a.FinishZoning();
+        var (b, bId) = Join(host, "oisin", "Oisin");
+        using var _b = b;
+        b.FinishZoning();
+        Say(a, ChatChannel.Local, ".level 60");
+        a.Expect(Opcode.LevelUp);
+
+        // Challenge, prompt, accept.
+        a.Send(Opcode.PVPMessage, m => { m.WriteVariableInt32(0); m.WriteVariableUInt32(bId); });
+        var prompt = b.Expect(Opcode.PVPMessage);
+        Assert.Equal((1, aId), (prompt.ReadVariableInt32(), prompt.ReadVariableUInt32()));
+        b.Send(Opcode.PVPMessage, m => { m.WriteVariableInt32(2); m.Write((byte)1); m.WriteVariableUInt32(aId); });
+        var reply = a.Expect(Opcode.PVPMessage);
+        Assert.Equal((3, (byte)1, bId), (reply.ReadVariableInt32(), reply.ReadByte(), reply.ReadVariableUInt32()));
+
+        // Both get the begin message with a countdown, then the opponent in their hate list.
+        foreach (var (c, opponent) in new[] { (a, bId), (b, aId) })
+        {
+            var begin = c.Expect(Opcode.PVPMessage);
+            Assert.Equal(4, begin.ReadVariableInt32());
+            var start = begin.ReadDouble();
+            Assert.True(begin.ReadDouble() > start);
+            Assert.Equal(opponent, begin.ReadVariableUInt32());
+        }
+        // Attacking before the countdown ends does nothing.
+        a.Send(Opcode.StartAttackingNPC, new StartAttacking(TargetType.OtherPlayer, NetTime.Now, bId).Write);
+        Assert.Throws<TimeoutException>(() => b.Expect(Opcode.CombatDamageMessage, TimeSpan.FromSeconds(2)));
+        var hate = b.Expect(Opcode.PlayerHateList, TimeSpan.FromSeconds(6));
+        Assert.Equal((1, aId), (hate.ReadVariableInt32(), hate.ReadVariableUInt32()));
+
+        // Now the level 60 attacker wins; the loser ends on 1 HP.
+        a.Send(Opcode.StartAttackingNPC, new StartAttacking(TargetType.OtherPlayer, NetTime.Now, bId).Write);
+        var won = a.Expect(Opcode.PVPMessage, TimeSpan.FromSeconds(30));
+        Assert.Equal((5, bId, 2), (won.ReadVariableInt32(), won.ReadVariableUInt32(), won.ReadVariableInt32()));
+        var lost = b.Expect(Opcode.PVPMessage);
+        Assert.Equal((5, aId, 3), (lost.ReadVariableInt32(), lost.ReadVariableUInt32(), lost.ReadVariableInt32()));
+        Assert.Equal(0, b.Expect(Opcode.PlayerHateList).ReadVariableInt32());
+    }
 }

@@ -133,6 +133,7 @@ public sealed partial class GameServer
         if (now < _nextTick) return;
         _nextTick = now + TickSeconds;
         foreach (var zone in _zones.Values.Where(z => z.Players.Count > 0).ToList()) Tick(zone, now);
+        TickDuels(now);
     }
 
     private void Tick(Zone zone, double now)
@@ -287,6 +288,7 @@ public sealed partial class GameServer
     {
         if (s.Dead) return;
 
+        TickPvpAttack(zone, s, now);
         if (s.AttackTarget is { } target)
         {
             if (target.State == MobState.Dead || !zone.Mobs.ContainsKey(target.ServerId)) SetAttackTarget(s, null);
@@ -343,8 +345,18 @@ public sealed partial class GameServer
 
     private void OnStartAttacking(Session s, StartAttacking req)
     {
+        if (req.TargetType == TargetType.OtherPlayer)
+        {
+            if (Enemy(s, (int)req.TargetId) is not { } enemy) return;
+            SetAttackTarget(s, null);
+            SetPvpTarget(s, enemy);
+            s.NextSwingAt = Math.Max(s.NextSwingAt, NetTime.Now + 0.3);
+            BreakStealth(s);
+            return;
+        }
         if (req.TargetType != TargetType.Mob || !_zones.TryGetValue(s.Position.Zone, out var zone)) return;
         if (!zone.Mobs.TryGetValue(req.TargetId, out var mob) || mob.IsNpc || mob.State == MobState.Dead) return;
+        SetPvpTarget(s, null);
         SetAttackTarget(s, mob);
         s.NextSwingAt = Math.Max(s.NextSwingAt, NetTime.Now + 0.3);
         BreakStealth(s);
@@ -361,19 +373,26 @@ public sealed partial class GameServer
         }
         var level = skill.Level(known.Level);
         Mob? target = null;
-        if (skill.CastTarget == "Enemy")
+        Session? enemy = null;
+        if (skill.CastTarget == "Enemy" && req.TargetType == TargetType.OtherPlayer)
+        {
+            if (Enemy(s, (int)req.TargetId) is { } e
+                && Dist2D(s.Position.X, s.Position.Z, e.Position.X, e.Position.Z) - 2 * PlayerRadius <= Math.Max(skill.CastRange, s.Sheet.AttackRange) + MeleeTolerance + 1f)
+                enemy = e;
+        }
+        else if (skill.CastTarget == "Enemy")
         {
             if (_zones.TryGetValue(s.Position.Zone, out var zone) && zone.Mobs.TryGetValue(req.TargetId, out var mob)
                 && !mob.IsNpc && mob.State != MobState.Dead && InReach(s, mob, Math.Max(skill.CastRange, s.Sheet.AttackRange) + MeleeTolerance + 1f, now))
                 target = mob;
         }
         var onCooldown = s.Cooldowns.TryGetValue(skill.Id, out var readyAt) && now < readyAt - 0.25;
-        if ((skill.CastTarget == "Enemy" && target is null) || onCooldown || s.Energy < level.EnergyCost)
+        if ((skill.CastTarget == "Enemy" && target is null && enemy is null) || onCooldown || s.Energy < level.EnergyCost)
         {
             Send(s, Opcode.SkillUpdate, new SkillUpdate(skill.Id, known.Level, 0).Write); // tells the client the skill failed
             return;
         }
-        s.Casts.Add(new PendingCast(skill, known.Level, target, now + level.CastingTime));
+        s.Casts.Add(new PendingCast(skill, known.Level, target, now + level.CastingTime, enemy));
     }
 
     private void OnCancelSkill(Session s, uint skillId)
@@ -396,6 +415,12 @@ public sealed partial class GameServer
         Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Energy, s.Energy)]).Write);
 
         var amount = Math.Abs(level.InitialDamage) + Math.Abs(level.BaseDamage);
+        if (cast.PlayerTarget is { } enemy)
+        {
+            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4 + s.Sheet!.SkillDamageBonus;
+            if (Enemy(s, enemy.CharacterId) is not null) PlayerHitsPlayer(zone, s, enemy, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
+            return;
+        }
         if (cast.Target is { } mob)
         {
             var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4 + s.Sheet!.SkillDamageBonus;

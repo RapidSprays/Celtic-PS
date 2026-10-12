@@ -220,6 +220,11 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.StopAttackingNPC:
                 SetAttackTarget(s, null);
+                SetPvpTarget(s, null);
+                break;
+
+            case Opcode.PVPMessage:
+                if (InWorld(s)) OnPvpMessage(s, msg);
                 break;
 
             case Opcode.CharacterPlayingEmote:
@@ -518,10 +523,13 @@ public sealed partial class GameServer : IDisposable
         public Party? Party { get; set; }
         public HashSet<int> PartyInvites { get; } = new();
         public int SharedHealthPercent { get; set; } = -1;
+        public Session? PvpTarget { get; set; }
+        public Duel? Duel { get; set; }
+        public HashSet<int> DuelInvites { get; } = new();
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";
     }
 
-    private sealed record PendingCast(SkillInfo Skill, int Level, Mob? Target, double ResolveAt);
+    private sealed record PendingCast(SkillInfo Skill, int Level, Mob? Target, double ResolveAt, Session? PlayerTarget = null);
 }
