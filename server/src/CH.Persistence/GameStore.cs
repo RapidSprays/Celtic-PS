@@ -32,8 +32,9 @@ public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Q
     public const int Backpack = -1;
 }
 
-/// <summary>Progress and vitals. Health/energy of -1 mean "full".</summary>
-public sealed record CharacterProgress(int Level, int Xp, int Coins, int Health, int Energy, string Hud, bool KitGranted);
+/// <summary>Progress and vitals. Health/energy of -1 mean "full"; attributes of -1 mean "race base, nothing spent".</summary>
+public sealed record CharacterProgress(int Level, int Xp, int Coins, int Health, int Energy, string Hud, bool KitGranted,
+    int Strength = -1, int Dexterity = -1, int Focus = -1, int Vitality = -1);
 
 /// <summary>A hand-placed (GM) spawn point. Opinion below 50 is hostile; NPCs use 100 with level 0.</summary>
 public sealed record SpawnRecord(
@@ -155,6 +156,12 @@ public sealed class GameStore : IDisposable
         );
         CREATE INDEX spawns_zone ON spawns(zone);
         """,
+        """
+        ALTER TABLE characters ADD COLUMN strength INTEGER NOT NULL DEFAULT -1;
+        ALTER TABLE characters ADD COLUMN dexterity INTEGER NOT NULL DEFAULT -1;
+        ALTER TABLE characters ADD COLUMN focus INTEGER NOT NULL DEFAULT -1;
+        ALTER TABLE characters ADD COLUMN vitality INTEGER NOT NULL DEFAULT -1;
+        """,
     ];
 
     private readonly SqliteConnection _db;
@@ -221,10 +228,11 @@ public sealed class GameStore : IDisposable
 
     public CharacterProgress GetProgress(long characterId)
     {
-        using var cmd = Command("SELECT level, xp, coins, health, energy, hud, kit_granted FROM characters WHERE id = $id", null, ("$id", characterId));
+        using var cmd = Command("SELECT level, xp, coins, health, energy, hud, kit_granted, strength, dexterity, focus, vitality FROM characters WHERE id = $id", null, ("$id", characterId));
         using var r = cmd.ExecuteReader();
         if (!r.Read()) throw new InvalidOperationException($"character {characterId} not found");
-        return new CharacterProgress(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4), r.GetString(5), r.GetInt32(6) == 1);
+        return new CharacterProgress(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4), r.GetString(5), r.GetInt32(6) == 1,
+            r.GetInt32(7), r.GetInt32(8), r.GetInt32(9), r.GetInt32(10));
     }
 
     public void SaveProgress(long characterId, int level, int xp, int coins) =>
@@ -232,6 +240,13 @@ public sealed class GameStore : IDisposable
 
     public void SaveVitals(long characterId, int health, int energy) =>
         Exec("UPDATE characters SET health = $h, energy = $e WHERE id = $id", null, ("$h", health), ("$e", energy), ("$id", characterId));
+
+    public void SaveAttributes(long characterId, int strength, int dexterity, int focus, int vitality) =>
+        Exec("UPDATE characters SET strength = $s, dexterity = $d, focus = $f, vitality = $v WHERE id = $id", null,
+            ("$s", strength), ("$d", dexterity), ("$f", focus), ("$v", vitality), ("$id", characterId));
+
+    public void SetSkillLevel(long characterId, int skillId, int level) =>
+        Exec("UPDATE skills SET level = $l WHERE character_id = $c AND skill_id = $s", null, ("$l", level), ("$c", characterId), ("$s", skillId));
 
     public void SaveHud(long characterId, string hud) =>
         Exec("UPDATE characters SET hud = $h WHERE id = $id", null, ("$h", hud), ("$id", characterId));

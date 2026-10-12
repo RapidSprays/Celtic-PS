@@ -167,6 +167,59 @@ public sealed class CombatTests : IAsyncDisposable
         Assert.True(xpUp.ReadVariableInt32() > 3);
     }
 
+    private static List<SkillEntry> ReadSkillList(NetIncomingMessage m, out int points)
+    {
+        points = m.ReadVariableInt32();
+        var skills = new List<SkillEntry>();
+        for (int i = 0, n = m.ReadVariableInt32(); i < n; i++)
+            skills.Add(new SkillEntry(m.ReadVariableInt32(), m.ReadVariableInt32(), m.ReadVariableInt32(), m.ReadFloat()));
+        return skills;
+    }
+
+    [Fact]
+    public async Task Levelling_grants_attribute_and_skill_points_that_can_be_spent()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var (host, client, start) = await EnterAs("leveller", "Aodhan", @class: 1);
+        await using var _h = host;
+        using var _c = client;
+        Assert.Equal((0, 0), (start.Stats.SkillPoints, start.Stats.AttributePoints));
+
+        Chat(client, ".level 20");
+        client.Expect(Opcode.LevelUp);
+        client.Expect(Opcode.BaseStats);
+        var stats = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
+        Assert.Equal((19, 57), (stats.SkillPoints, stats.AttributePoints));
+        var skills = ReadSkillList(client.Expect(Opcode.SkillListUpdate), out var skillPoints);
+        Assert.Equal(19, skillPoints);
+        Assert.Equal(9, skills.Single(k => k.SkillId == 1).MaxLevel); // ranks 5-9 open at level 15
+
+        // +5 strength, +3 vitality: more attack and health, 49 points left.
+        client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(5); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(3); b.WriteVariableUInt32(49); });
+        var baseStats = client.Expect(Opcode.BaseStats);
+        Assert.Equal(13, baseStats.ReadVariableInt32()); // vitality 10 + 3
+        Assert.Equal(10, baseStats.ReadVariableInt32()); // strength 5 + 5
+        var after = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
+        Assert.Equal(49, after.AttributePoints);
+        Assert.Equal(stats.MaxHealth + 18, after.MaxHealth);
+        Assert.Equal(stats.Attack + 5, after.Attack);
+
+        // Spending more than you have is refused.
+        client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(100); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); });
+        Assert.Contains("49 attribute points", NextSystemLine(client));
+
+        // Rank Pummel up once; skipping a rank is refused.
+        client.Send(Opcode.BuySkill, b => { b.WriteVariableInt32(1); b.WriteVariableInt32(1); });
+        var bought = client.Expect(Opcode.BuySkillReply);
+        var points = bought.ReadVariableInt32();
+        Assert.Equal(-1, bought.ReadVariableInt32());
+        var list = Enumerable.Range(0, bought.ReadVariableInt32()).Select(_ => new SkillEntry(bought.ReadVariableInt32(), bought.ReadVariableInt32(), bought.ReadVariableInt32(), bought.ReadFloat())).ToList();
+        Assert.Equal(18, points);
+        Assert.Equal(1, list.Single(k => k.SkillId == 1).Level);
+        client.Send(Opcode.BuySkill, b => { b.WriteVariableInt32(1); b.WriteVariableInt32(3); });
+        Assert.Contains("one rank at a time", NextSystemLine(client));
+    }
+
     [Fact]
     public void Npc_conversations_are_matched_by_name()
     {

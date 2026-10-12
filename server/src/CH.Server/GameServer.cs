@@ -197,6 +197,14 @@ public sealed partial class GameServer : IDisposable
                 if (InWorld(s)) OnChat(s, ChatMessage.ReadFromClient(msg));
                 break;
 
+            case Opcode.AttributesUpdate:
+                if (InWorld(s)) OnAttributesUpdate(s, msg.ReadVariableUInt32(), msg.ReadVariableUInt32(), msg.ReadVariableUInt32(), msg.ReadVariableUInt32());
+                break;
+
+            case Opcode.BuySkill:
+                if (InWorld(s)) OnBuySkill(s, msg.ReadVariableInt32(), msg.ReadVariableInt32());
+                break;
+
             case Opcode.EquipItem:
                 if (InWorld(s)) OnEquipItem(s, EquipItemRequest.Read(msg));
                 break;

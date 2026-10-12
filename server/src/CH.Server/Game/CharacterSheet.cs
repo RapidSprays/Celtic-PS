@@ -29,8 +29,17 @@ public sealed class CharacterSheet
         Kit = ClassKit.For(character.Class);
 
         var level = Math.Max(1, progress.Level);
-        MaxHealth = Kit.Health + (level - 1) * HealthPerLevel;
-        MaxEnergy = Kit.Energy + (level - 1) * EnergyPerLevel;
+        var (baseVit, baseStr, baseFoc, baseDex) = ClassKit.BaseAttributes;
+        Strength = progress.Strength < 0 ? baseStr : progress.Strength;
+        Dexterity = progress.Dexterity < 0 ? baseDex : progress.Dexterity;
+        Focus = progress.Focus < 0 ? baseFoc : progress.Focus;
+        Vitality = progress.Vitality < 0 ? baseVit : progress.Vitality;
+        var spentAttributes = Strength + Dexterity + Focus + Vitality - (baseStr + baseDex + baseFoc + baseVit);
+        AttributePoints = Math.Max(0, Progression.AttributePointsPerLevel * (level - 1) - spentAttributes);
+        SkillPoints = Math.Max(0, Progression.SkillPointsPerLevel * (level - 1) - skills.Sum(k => k.Level));
+
+        MaxHealth = Kit.Health + (level - 1) * HealthPerLevel + (Vitality - baseVit) * 6;
+        MaxEnergy = Kit.Energy + (level - 1) * EnergyPerLevel + (Focus - baseFoc) * 4;
         Health = progress.Health < 0 ? MaxHealth : Math.Clamp(progress.Health, 0, MaxHealth);
         Energy = progress.Energy < 0 ? MaxEnergy : Math.Clamp(progress.Energy, 0, MaxEnergy);
 
@@ -42,8 +51,9 @@ public sealed class CharacterSheet
         AttackRange = weapon is { Range: > 0 } ? weapon.Range + (offhand is { Subtype: "Arrow" } ? offhand.Range : 0) : 1f;
         Armour = equipped.Sum(i => i.Armour);
         Encumbrance = equipped.Sum(i => i.Weight);
-        Attack = Kit.Attack + level;
-        Defence = Kit.Defence + level + Armour / 2;
+        var ranged = weapon is { Range: > 3 };
+        Attack = Kit.Attack + level + (ranged ? Dexterity - baseDex : Strength - baseStr);
+        Defence = Kit.Defence + level + Armour / 2 + (Dexterity - baseDex) / 2;
     }
 
     public CharacterRecord Character { get; }
@@ -53,6 +63,17 @@ public sealed class CharacterSheet
     public ClassKit Kit { get; }
 
     public int Level => Math.Max(1, Progress.Level);
+    public int Strength { get; }
+    public int Dexterity { get; }
+    public int Focus { get; }
+    public int Vitality { get; }
+
+    /// <summary>Unspent points. Earned per level (<see cref="Progression"/>) minus what's been spent, so level changes stay consistent.</summary>
+    public int AttributePoints { get; }
+    public int SkillPoints { get; }
+
+    /// <summary>Extra skill damage from Focus. <b>Approximated.</b></summary>
+    public int SkillDamageBonus => (Focus - ClassKit.BaseAttributes.Foc) / 2;
     public int MaxHealth { get; }
     public int MaxEnergy { get; }
     public int Health { get; }
@@ -83,8 +104,11 @@ public sealed class CharacterSheet
 
     public InventoryWithMoney InventoryWithMoney() => new(Progress.Coins, BackpackSlots());
 
+    /// <summary>The highest rank this character may train a skill to now (rises at levels 15 and 30).</summary>
+    public int MaxRank(int skillId) => _balance.Skills.TryGetValue(skillId, out var skill) && skill.Levels.Count > 0 ? skill.MaxRank(Level) : SkillMaxLevelAtStart;
+
     public IReadOnlyList<SkillEntry> SkillEntries() =>
-        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, SkillMaxLevelAtStart, 0f)).ToList();
+        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, MaxRank(s.SkillId), 0f)).ToList();
 
     public CharacterSummary Summary(int worldId)
     {
@@ -98,13 +122,13 @@ public sealed class CharacterSheet
 
     public CharacterStats Stats()
     {
-        var (vit, str, foc, dex) = ClassKit.BaseAttributes;
+        var (vit, str, foc, dex) = (Vitality, Strength, Focus, Dexterity);
         return new CharacterStats
         {
             Health = Health, MaxHealth = MaxHealth, Energy = Energy, MaxEnergy = MaxEnergy,
             Attack = Attack, Defence = Defence, AttackSpeed = AttackSpeed, WeaponDamage = WeaponDamage, ArmourValue = Armour,
             Vitality = vit, Strength = str, Focus = foc, Dexterity = dex, Encumbrance = Encumbrance,
-            SkillPoints = 0, AttributePoints = 0, Concentration = 50, MaxConcentration = 50,
+            SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
             AttackRange = AttackRange, FastTravelItemLimit = 20, MaxSpeed = 5f, Scale = 1f,
             CompiledAbilities = Abilities(), CompiledSkills = Skills.Select(s => new IdValue(s.SkillId, s.Level)).ToList(),
         };
@@ -147,10 +171,10 @@ public sealed class CharacterSheet
         Equipment = EquipmentSlots(),
         Inventory = BackpackSlots(),
         HudSets = Hud(),
-        BaseVitality = ClassKit.BaseAttributes.Vit,
-        BaseStrength = ClassKit.BaseAttributes.Str,
-        BaseFocus = ClassKit.BaseAttributes.Foc,
-        BaseDexterity = ClassKit.BaseAttributes.Dex,
+        BaseVitality = Vitality,
+        BaseStrength = Strength,
+        BaseFocus = Focus,
+        BaseDexterity = Dexterity,
         X = Character.X,
         Y = Character.Y,
         Z = Character.Z,
@@ -165,6 +189,8 @@ public sealed class CharacterSheet
 public static class Progression
 {
     public const int MaxLevel = 250;
+    public const int AttributePointsPerLevel = 3;
+    public const int SkillPointsPerLevel = 1;
 
     public static int XpToNextLevel(int level) => (int)(100 * Math.Pow(Math.Max(1, level), 1.6));
 }

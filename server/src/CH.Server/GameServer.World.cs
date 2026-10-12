@@ -390,7 +390,7 @@ public sealed partial class GameServer
         var amount = Math.Abs(level.InitialDamage) + Math.Abs(level.BaseDamage);
         if (cast.Target is { } mob)
         {
-            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4;
+            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4 + s.Sheet!.SkillDamageBonus;
             PlayerHits(zone, s, mob, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
             if (cast.Skill.StatusEffectId > 0 && mob.State != MobState.Dead) ApplyMobEffect(mob, s, cast.Skill, cast.Level, now);
             return;
@@ -519,7 +519,7 @@ public sealed partial class GameServer
         s.Health = int.MaxValue;
         s.Energy = int.MaxValue;
         Send(s, Opcode.LevelUp, new LevelUp(level).Write);
-        SendLiveStats(s);
+        SendProgress(s); // new maximums, attribute and skill points, raised skill rank caps
         _log.LogInformation("{Name} is now level {Level}", s.Name, level);
     }
 

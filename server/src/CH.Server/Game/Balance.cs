@@ -60,12 +60,15 @@ public sealed record ItemInfo(
     bool Stackable,
     string SkillLink);
 
-public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost);
+public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost, int TemplateLevel = 0, int MinLevel = 0);
 
 /// <summary>A skill template. Heals have negative damage values. <see cref="CastTarget"/> is Self, Enemy, Friendly, Group or Fish.</summary>
 public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRange, bool IncludesWeaponAttack, string CastTarget, int StatusEffectId, IReadOnlyList<SkillLevelInfo> Levels)
 {
     public SkillLevelInfo Level(int level) => Levels.Count == 0 ? new SkillLevelInfo(0, 0, 0, 5, 0) : Levels[Math.Clamp(level, 0, Levels.Count - 1)];
+
+    /// <summary>Highest rank a character of this level may train (CSkillTemplateManager.GetMaxLevel).</summary>
+    public int MaxRank(int playerLevel) => Levels.Where(l => l.MinLevel <= playerLevel).Select(l => l.TemplateLevel).DefaultIfEmpty(0).Max();
 }
 
 public sealed record ConversationInfo(int Id, string Filename);
@@ -155,7 +158,7 @@ public sealed class Balance
         {
             var id = e.TryGetProperty("SkillId", out var sid) && sid.ValueKind == JsonValueKind.Number ? sid.GetInt32() : int.Parse(key);
             var levels = e.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array
-                ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"))).ToList()
+                ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"), Int(l, "TemplateLevel"), Int(l, "MinLevel"))).ToList()
                 : [];
             skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels);
         }
