@@ -51,7 +51,8 @@ public sealed class ChestCatalog
     private static readonly Dictionary<string, int> Numbers = new()
     {
         ["a"] = 1, ["an"] = 1, ["one"] = 1, ["two"] = 2, ["three"] = 3, ["four"] = 4, ["five"] = 5, ["six"] = 6, ["seven"] = 7,
-        ["eight"] = 8, ["nine"] = 9, ["ten"] = 10, ["twelve"] = 12, ["fifteen"] = 15, ["twenty"] = 20, ["twenty-five"] = 25,
+        ["eight"] = 8, ["nine"] = 9, ["ten"] = 10, ["eleven"] = 11, ["twelve"] = 12, ["thirteen"] = 13, ["fourteen"] = 14,
+        ["fifteen"] = 15, ["sixteen"] = 16, ["seventeen"] = 17, ["eighteen"] = 18, ["nineteen"] = 19, ["twenty"] = 20, ["twenty-five"] = 25,
         ["thirty"] = 30, ["fifty"] = 50, ["hundred"] = 100,
     };
 
@@ -68,7 +69,9 @@ public sealed class ChestCatalog
         var catalog = new ChestCatalog();
         if (!balance.IsLoaded) return catalog;
         var index = new ItemIndex(balance);
-        foreach (var item in balance.Items.Values.Where(i => i.Usable && ContainerLinks.Contains(i.SkillLinkId)))
+        // Containers by skill link, plus the link-less "Bag of N Mount/Pet Tokens".
+        foreach (var item in balance.Items.Values.Where(i => i.Usable && (ContainerLinks.Contains(i.SkillLinkId)
+                     || (i.Name.StartsWith("Bag of ", StringComparison.Ordinal) && i.Name.Contains("Token", StringComparison.Ordinal)))))
         {
             var def = Classify(item, balance, index);
             if (def is not null && def.Pool.Count > 0) catalog._chests[item.Id] = def;

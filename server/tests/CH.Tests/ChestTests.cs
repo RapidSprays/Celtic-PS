@@ -23,7 +23,8 @@ public sealed class ChestTests : IAsyncDisposable
         if (!File.Exists(BalancePath)) return;
         var b = Data.Value;
         var catalog = ChestCatalog.Build(b);
-        var containers = b.Items.Values.Count(i => i.Usable && ChestCatalog.ContainerLinks.Contains(i.SkillLinkId));
+        var containers = b.Items.Values.Count(i => i.Usable && (ChestCatalog.ContainerLinks.Contains(i.SkillLinkId)
+            || (i.Name.StartsWith("Bag of ") && i.Name.Contains("Token"))));
         Assert.Equal(containers, catalog.Chests.Count);
         Assert.True(containers >= 300);
 
@@ -32,6 +33,11 @@ public sealed class ChestTests : IAsyncDisposable
 
         Assert.Equal((5, "Super Combination Elixir"), Open(34777).Items.Select(x => (x.Quantity, Name(x))).Single());       // crate of five
         Assert.Equal((48, "Mount Token"), Open(60216).Items.Select(x => (x.Quantity, Name(x))).Single());                   // "Fourty-Eight"
+        // Link-less token bags: "Bag of One Mount Token", "Eleven", "One-Hundred-Twenty-Eight Pet Tokens".
+        Assert.Equal((1, "Mount Token"), Open(60194).Items.Select(x => (x.Quantity, Name(x))).Single());
+        Assert.Equal((11, "Mount Token"), Open(60204).Items.Select(x => (x.Quantity, Name(x))).Single());
+        Assert.Equal((1, "Pet Token"), Open(58725).Items.Select(x => (x.Quantity, Name(x))).Single());
+        Assert.Equal((128, "Pet Token"), Open(65982).Items.Select(x => (x.Quantity, Name(x))).Single());
         Assert.Equal(6, Open(219).Items.Count);                                                                              // Deluxe starter kit
         Assert.EndsWith("Pirate Shirt", Name(Open(23564).Items.Single()));                                                   // one random pirate shirt
         Assert.InRange(Open(34784).Platinum, 5, 330);                                                                        // Platinum Lockbox
