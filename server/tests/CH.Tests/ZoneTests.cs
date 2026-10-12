@@ -264,4 +264,68 @@ public sealed class ZoneTests : IDisposable
         again.Login("questor");
         Assert.Contains(2, again.StartGame(id, "Muirne").CompletedQuests);
     }
+
+    [Fact]
+    public async Task A_lirs_reach_merchant_sells_and_buys_back()
+    {
+        if (!File.Exists(BalancePath) || !File.Exists(WorldPath)) return;
+        // A shop whose seller stands in Lir's Reach.
+        using var world = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(WorldPath));
+        var npcs = world.RootElement.GetProperty("npcs").EnumerateArray()
+            .Where(n => n.GetProperty("zone").GetInt32() == 2)
+            .GroupBy(n => n.GetProperty("conversation").GetInt32())
+            .ToDictionary(g => g.Key, g => g.First().GetProperty("template").GetInt32());
+        var shop = world.RootElement.GetProperty("shops").EnumerateObject()
+            .First(sh => npcs.ContainsKey(sh.Value.GetProperty("conversation").GetInt32()) && sh.Value.GetProperty("category").GetString() != "stamps");
+        var shopId = int.Parse(shop.Name);
+        var npcTemplate = npcs[shop.Value.GetProperty("conversation").GetInt32()];
+
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("shopper");
+        var id = client.CreateCharacter("Ethna").CharacterId;
+        var start = client.StartGame(id, "Ethna");
+        client.FinishZoning();
+
+        (int Coins, List<(int Template, int Buy, int Sell)> Prices, List<int> Stock, List<ItemSlot> Items) Reply()
+        {
+            var m = client.Expect(Opcode.RequestShopReply);
+            Assert.Equal(1, m.ReadByte());
+            if (m.ReadByte() == 1) { m.ReadVariableInt32(); m.ReadVariableInt32(); }
+            var inv = InventoryWithMoney.Read(m);
+            var stock = new List<int>();
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) { m.ReadVariableInt32(); stock.Add(m.ReadVariableInt32()); m.ReadVariableInt32(); }
+            var prices = new List<(int, int, int)>();
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) prices.Add((m.ReadVariableInt32(), m.ReadVariableInt32(), m.ReadVariableInt32()));
+            return (inv.Coins, prices, stock, inv.Items.ToList());
+        }
+
+        client.Send(Opcode.RequestShop, b => { b.WriteVariableInt32(npcTemplate); b.WriteVariableInt32(shopId); b.WriteVariableInt32(0); });
+        var opened = Reply();
+        Assert.NotEmpty(opened.Stock);
+        Assert.Equal(start.Coins, opened.Coins);
+        var cheapest = opened.Prices.Where(p => p.Buy > 0).MinBy(p => p.Buy);
+        Assert.True(cheapest.Buy <= start.Coins, $"cheapest item costs {cheapest.Buy}");
+
+        client.Send(Opcode.PurchaseItem, b =>
+        {
+            b.WriteVariableInt32(npcTemplate); b.WriteVariableInt32(shopId); b.WriteVariableInt32(cheapest.Template); b.WriteVariableInt32(1);
+            b.WriteVariableInt32(0);
+        });
+        var bought = Reply();
+        Assert.Equal(start.Coins - cheapest.Buy, bought.Coins);
+        var item = bought.Items.Last(i => i.TemplateId == cheapest.Template);
+
+        client.Send(Opcode.SellItem, b =>
+        {
+            b.WriteVariableInt32(npcTemplate); b.WriteVariableInt32(shopId); b.WriteVariableInt32(item.TemplateId);
+            b.WriteVariableInt32(item.ServerInventoryId); b.WriteVariableInt32(1); b.WriteVariableInt32(0);
+        });
+        var sold = Reply();
+        Assert.Equal(bought.Coins + cheapest.Sell, sold.Coins);
+        Assert.True(cheapest.Sell < cheapest.Buy);
+    }
 }

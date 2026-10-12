@@ -23,6 +23,7 @@ public sealed partial class GameServer : IDisposable
     private readonly ZoneTravel _travel;
     private readonly LootTable _loot;
     private readonly QuestBook _quests;
+    private readonly ShopCatalog _shops;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -44,6 +45,7 @@ public sealed partial class GameServer : IDisposable
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
         _loot = new LootTable(balance);
         _quests = QuestBook.Load(options.WorldPath);
+        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath));
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
@@ -234,6 +236,12 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.TradeMessage:
                 if (InWorld(s)) OnTradeMessage(s, msg);
+                break;
+
+            case Opcode.RequestShop:
+            case Opcode.PurchaseItem:
+            case Opcode.SellItem:
+                if (InWorld(s)) OnShopMessage(s, header.Opcode, msg);
                 break;
 
             case Opcode.QuestStart:

@@ -39,11 +39,12 @@ for cid, filename in lookups.items():
     starts = [(tag(b, "startCondition"), (tag(b, "startGoto") or [""])[0]) for b in re.findall(r"<start>(.*?)</start>", body, re.S)]
     lines = {}
     for b in re.findall(r"<line>(.*?)</line>", body, re.S):
-        choices = [(tag(c, "choiceCondition"), " ".join(tag(c, "choiceAction")), (tag(c, "choiceGoto") or ["-1"])[0])
+        choices = [(tag(c, "choiceCondition"), " ".join(tag(c, "choiceAction")), (tag(c, "choiceGoto") or ["-1"])[0],
+                    (tag(c, "choiceText") or [""])[0])
                    for c in re.findall(r"<choice>(.*?)</choice>", b, re.S)]
         lines[(tag(b, "lineTag") or [""])[0]] = choices
     convs[cid] = {"file": filename, "location": location, "starts": starts, "lines": lines,
-                  "actions": [a for cs in lines.values() for _, a, _ in cs if a.strip()]}
+                  "actions": [a for cs in lines.values() for _, a, _, _ in cs if a.strip()]}
 
 def conditions(conds, kind):
     out = []
@@ -67,7 +68,7 @@ for cid, c in sorted(convs.items()):
         node, done, lvl = queue.popleft()
         if node in seen or node not in c["lines"]: continue
         seen[node] = (done, lvl)
-        for conds, action, goto in c["lines"][node]:
+        for conds, action, goto, _ in c["lines"][node]:
             d2 = done | frozenset(conditions(conds, "QUEST_COMPLETE"))
             l2 = max([lvl] + conditions(conds, "LEVEL_GREATER_THAN"))
             for m in re.finditer(r"QUEST_ADD\s+(\d+)", action):
@@ -224,8 +225,42 @@ for key, coll in bal["SpawnIconInfoCollections"].items():
                      "x": round(x, 2), "y": round(y, 2), "z": round(zz, 2), "direction": round(facing, 1),
                      "roles": sorted({i.get("Type") for i in icons})})
 
+# ---- shops ------------------------------------------------------------------------------------------------------
+# The client knows which shop id a conversation opens, never what it stocks (server-only). Each shop gets a category
+# from its menu label, file and NPC name; the server stocks it from the item templates for the NPC's zone level.
+CATEGORIES = [
+    ("stamps", r"stamp"), ("fashion", r"fashion|shoe|charm|carpet|disguise|costume|\bhat|dye|tailor"),
+    ("mount", r"mount|horse|steed|stable|saddle"), ("book", r"book|manual|tome|skill|spell|train"),
+    ("armour", r"armou?r|plate|leather"), ("weapon", r"weapon|blacksmith|smith|sword|offhand|bow|dagger|axe|staff|wand|spear|totem"),
+    ("jewellery", r"jewel|ring|amulet|necklace|bangle|bracelet|trinket"), ("food", r"food|grocer|cook|bait|fish|ingredient|culinar|baker"),
+    ("potion", r"potion|alchem|apothecar|herb|suppl"),
+]
+conv_zone = {}
+conv_npc = {}
+for n in npcs:
+    conv_zone.setdefault(n["conversation"], n["zone"])
+    conv_npc.setdefault(n["conversation"], n["name"])
+shops = {}
+for cid, c in convs.items():
+    for choices in c["lines"].values():
+        for conds, action, _, text in choices:
+            for m in re.finditer(r"SHOP\s+(\d+)", action):
+                sid = int(m.group(1))
+                if str(sid) in shops and shops[str(sid)]["zone"] is not None: continue
+                classes = sorted({p.split()[1].title() for p in conds if p.startswith("CLASS ") and len(p.split()) > 1})
+                hay = " ".join([text, c["file"], conv_npc.get(cid, "")]).lower()
+                category = next((cat for cat, rx in CATEGORIES if re.search(rx, hay)), "general")
+                # Zone and conversation from a placed NPC that sells this shop (several conversations may).
+                seller = next((c2 for c2 in sorted(shop_conv.get(sid, ())) if c2 in conv_zone), cid)
+                cid_for_shop, zone = seller, conv_zone.get(seller)
+                if zone is None:
+                    votes = chdata.zone_votes(c["location"], keywords)
+                    zone = votes.most_common(1)[0][0] if votes else None
+                shops[str(sid)] = {"category": category, "classes": classes, "zone": zone, "label": text[:60], "conversation": cid_for_shop}
+
 out = f"{chdata.HOME}/extracted/{build}/world.json"
-json.dump({"build": build, "approximated": True, "quests": quests, "npcs": npcs}, open(out, "w"), indent=0)
+json.dump({"build": build, "approximated": True, "quests": quests, "npcs": npcs, "shops": shops}, open(out, "w"), indent=0)
+print(f"shops: {len(shops)}; categories: {dict(collections.Counter(v['category'] for v in shops.values()))}")
 per_zone = collections.Counter(n["zone"] for n in npcs)
 print(f"quests: {len(quests)} ({sum(1 for q in quests.values() if q['giver'] is not None)} with a giver, "
       f"{sum(1 for q in quests.values() if q['zone'] is not None)} with a zone)")
