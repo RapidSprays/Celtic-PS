@@ -20,6 +20,7 @@ public sealed partial class GameServer : IDisposable
     private readonly FrameLog _frames;
     private readonly Balance _balance;
     private readonly IReadOnlyDictionary<int, GeneratedCamp[]> _generatedCamps;
+    private readonly ZoneTravel _travel;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -36,6 +37,8 @@ public sealed partial class GameServer : IDisposable
         _chestCatalog = ChestCatalog.Build(balance);
         if (balance.IsLoaded) log.LogInformation("Chest catalogue: {Count} chests in {Ms} ms", _chestCatalog.Chests.Count, started.ElapsedMilliseconds);
         _generatedCamps = ZonePopulation.LoadGenerated(options.PopulationPath);
+        _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
+        if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
             log.LogInformation("Generated monster camps for {Zones} zones ({Mobs} monsters)", _generatedCamps.Count, _generatedCamps.Values.Sum(z => z.Sum(c => c.Count)));
         _log = log;
@@ -178,6 +181,18 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.PlayerMove:
                 OnPlayerMove(s, PlayerMove.Read(msg));
+                break;
+
+            case Opcode.CharacterZoningRequest:
+                if (InWorld(s)) OnZoningRequest(s, ZoningRequest.Read(msg));
+                break;
+
+            case Opcode.TeleportRequest:
+                if (InWorld(s)) OnTeleportRequest(s, TeleportRequest.Read(msg));
+                break;
+
+            case Opcode.CharacterStuck:
+                if (InWorld(s)) OnStuck(s);
                 break;
 
             case Opcode.StartAttackingNPC:
@@ -350,7 +365,9 @@ public sealed partial class GameServer : IDisposable
         s.Energy = sheet.Energy;
         s.Dead = false;
         s.NextRegenAt = NetTime.Now + RegenIntervalSeconds;
-        Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId).Write);
+        s.Teleports.Clear();
+        s.Teleports.UnionWith(_store.ListTeleports(character.Id));
+        Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), _travel.GateQuests.Order().ToList()).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
         s.Effects.Clear();
         SendLiveStats(s);
@@ -362,13 +379,16 @@ public sealed partial class GameServer : IDisposable
     {
         if (s.Character is null) return;
         EnterZone(s);
+        DiscoverLeystones(s);
     }
 
     private void OnPlayerMove(Session s, PlayerMove move)
     {
-        if (s.Character is null) return;
+        // PlayerMove carries no zone id: ignore moves from the old scene until the new zone has loaded.
+        if (s.Character is null || !s.InZone) return;
         s.Position = (s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
         _store.SavePosition(s.Character.Id, s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
+        DiscoverLeystones(s);
     }
 
     private bool InWorld(Session s)
@@ -431,6 +451,7 @@ public sealed partial class GameServer : IDisposable
         public List<ActiveEffect> Effects { get; } = new();
         public CharacterSheet? Sheet { get; set; }
         public int? LastChestTemplate { get; set; }
+        public HashSet<int> Teleports { get; } = new();
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";

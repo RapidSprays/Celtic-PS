@@ -127,7 +127,14 @@ public sealed record StatusEffectInfo(int Id, string Name, int Type, IReadOnlyLi
 
 public sealed record MobInfo(int Id, int TemplateId, string Name, string Race, int Type, float Radius, float AttackRange, int AttackSpeed, int Power);
 
-public sealed record ZoneInfo(int Id, string Name, string Scene, (float X, float Z) Min, (float X, float Z) Max, IReadOnlyList<(int Id, float X, float Y, float Z)> PlayerSpawns);
+public sealed record ZoneInfo(int Id, string Name, string Scene, (float X, float Z) Min, (float X, float Z) Max, IReadOnlyList<SpawnPoint> PlayerSpawns)
+{
+    /// <summary>"L" = live zone; "T" = test/dev; a zone id = shown under that zone's map (client MapScreen).</summary>
+    public string Accessibility { get; init; } = "";
+}
+
+/// <summary>A leystone / player spawn point (Zones[n].PlayerSpawnPoints). Its id is the fast-travel id.</summary>
+public sealed record SpawnPoint(int Id, string Name, float X, float Y, float Z, bool FreeTravel);
 
 /// <summary>
 /// The parts of the client's own balance data the server needs (item, skill, mob and zone templates). Read at start-up
@@ -227,13 +234,18 @@ public sealed class Balance
         foreach (var (key, e) in Entries(root, "Zones"))
         {
             var spawns = e.TryGetProperty("PlayerSpawnPoints", out var ps) && ps.ValueKind == JsonValueKind.Array
-                ? ps.EnumerateArray().Select(p => { var pos = Vec(p, "Position"); return (Int(p, "Id"), pos[0], pos[1], pos[2]); }).ToList()
+                ? ps.EnumerateArray().Select(p =>
+                {
+                    var pos = Vec(p, "Position");
+                    var name = Str(p, "Description").Replace("\\n", " ").Replace("\n", " ").Replace("(Free Travel)", "").Trim();
+                    return new SpawnPoint(Int(p, "Id"), name, pos[0], pos[1], pos[2], Int(p, "FreeTravel") != 0);
+                }).ToList()
                 : [];
             var min = Vec(e, "MinPos");
             var max = Vec(e, "MaxPos");
             zones[int.Parse(key)] = new ZoneInfo(int.Parse(key), Str(e, "ScreenName"), Str(e, "SceneFilename"),
                 (min.ElementAtOrDefault(0), min.ElementAtOrDefault(min.Length > 2 ? 2 : 1)),
-                (max.ElementAtOrDefault(0), max.ElementAtOrDefault(max.Length > 2 ? 2 : 1)), spawns);
+                (max.ElementAtOrDefault(0), max.ElementAtOrDefault(max.Length > 2 ? 2 : 1)), spawns) { Accessibility = Str(e, "Accessibility") };
         }
 
         var mobSets = new Dictionary<int, int[]>();

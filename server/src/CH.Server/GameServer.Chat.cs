@@ -32,7 +32,9 @@ public sealed partial class GameServer
         ".wear <item name or id> - give and equip an item",
         ".mount [name] | .mount off - ride a mount (random if no name), or get off",
         ".heal | .learn <skill id>",
-        ".respawn - respawn every mob in the zone");
+        ".respawn - respawn every mob in the zone",
+        ".zones - list zones | .goto <zone id or name> [leystone] - travel there",
+        ".leystones - discover every leystone (for map fast travel)");
 
     private void OnChat(Session s, ChatMessage chat)
     {
@@ -83,6 +85,32 @@ public sealed partial class GameServer
             case "help":
                 Tell(s, Help);
                 break;
+
+            case "zones":
+                Tell(s, string.Join("\n", TravelZones().Select(zz =>
+                    $"{zz.Id}: {zz.Name}" + (zz.PlayerSpawns.Count > 0 ? $" - {string.Join(", ", zz.PlayerSpawns.Select(p => p.Name))}" : ""))));
+                break;
+
+            case "goto":
+            {
+                var (to, problem) = ResolveGoto(args);
+                if (to is null)
+                {
+                    Tell(s, problem!);
+                    break;
+                }
+                Tell(s, $"Travelling to {ZoneName(to.Value.Zone)}.");
+                ChangeZone(s, to.Value);
+                break;
+            }
+
+            case "leystones":
+            {
+                var before = s.Teleports.Count;
+                foreach (var stone in TravelZones().SelectMany(zz => zz.PlayerSpawns)) DiscoverLeystone(s, stone);
+                Tell(s, $"Discovered {s.Teleports.Count - before} leystones; open the map to fast travel.");
+                break;
+            }
 
             case "where":
                 var zoneName = _balance.Zones.TryGetValue(zoneId, out var zi) ? zi.Name : "?";

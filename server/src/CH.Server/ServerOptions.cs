@@ -50,6 +50,9 @@ public sealed class ServerOptions
     /// <summary>Generated monster camps (scripts/gen-zone-population.py), read from beside the balance JSON.</summary>
     public string? PopulationPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-population.json");
 
+    /// <summary>Zone exits (scripts/extract-zone-points.py), read from beside the balance JSON.</summary>
+    public string? ZonePointsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-points.json");
+
     public void Validate()
     {
         if (!IPAddress.IsLoopback(BindAddress) && !AllowRemote)

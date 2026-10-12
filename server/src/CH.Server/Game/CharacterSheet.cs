@@ -169,7 +169,7 @@ public sealed class CharacterSheet
             Attack = Attack, Defence = Defence, AttackSpeed = AttackSpeed, WeaponDamage = WeaponDamage, ArmourValue = Armour,
             Vitality = vit, Strength = str, Focus = foc, Dexterity = dex, Encumbrance = Encumbrance,
             SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
-            AttackRange = AttackRange, FastTravelItemLimit = 20, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
+            AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
             CompiledAbilities = Abilities(),
             // Small SkillBonuses are rank bonuses (large ones are flat damage); the client indexes Levels[compiled], so clamp.
             CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, Math.Clamp(
@@ -228,7 +228,15 @@ public sealed class CharacterSheet
         return [new HudSet(0, set0), new HudSet(1, Enumerable.Repeat(new IdValue(0, -1), HudSlotsPerSet).ToArray())];
     }
 
-    public StartGameReply StartGame(int worldId) => new()
+    /// <param name="teleports">discovered leystones (PlayerSpawnPoint ids)</param>
+    /// <param name="completedQuests">quests the client should treat as done (zone-exit gates; quests aren't implemented)</param>
+    /// <summary>
+    /// Backpack size above which fast travel needs a Leystone Fragment (client default 20). The private server makes
+    /// travel free.
+    /// </summary>
+    public const int FastTravelItemLimit = 10000;
+
+    public StartGameReply StartGame(int worldId, IReadOnlyList<int>? teleports = null, IReadOnlyList<int>? completedQuests = null) => new()
     {
         Platinum = Progress.Platinum,
         Character = Summary(worldId),
@@ -250,6 +258,8 @@ public sealed class CharacterSheet
         Z = Character.Z,
         Direction = Character.Direction,
         KnownZones = [Character.Zone],
+        Teleports = teleports ?? [],
+        CompletedQuests = completedQuests ?? [],
     };
 
     public static string SerializeHud(IReadOnlyList<HudSet> sets) => JsonSerializer.Serialize(sets);

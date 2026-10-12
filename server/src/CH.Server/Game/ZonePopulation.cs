@@ -75,7 +75,7 @@ public static class ZonePopulation
             foreach (var camp in camps)
             {
                 var anchor = zone.PlayerSpawns.FirstOrDefault(p => p.Id == camp.Anchor);
-                if (anchor == default) continue;
+                if (anchor is null) continue;
                 centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius));
             }
         }

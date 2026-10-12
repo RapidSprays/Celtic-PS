@@ -98,13 +98,15 @@ public sealed partial class GameServer
         Send(s, Opcode.AllZoningMessagesSent, _ => { });
     }
 
-    private void LeaveZone(Session s)
+    /// <summary>Leaves the current zone on disconnect or zone change (buffs survive a zone change).</summary>
+    private void LeaveZone(Session s, bool changingZone = false)
     {
         if (!_zones.TryGetValue(s.Position.Zone, out var zone)) return;
         zone.Players.Remove(s);
         s.InZone = false;
         s.AttackTarget = null;
-        s.Effects.Clear();
+        s.Casts.Clear();
+        if (!changingZone) s.Effects.Clear();
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s))) StartReturn(zone, mob, NetTime.Now);
         if (s.Character is not null) _store.SaveVitals(s.Character.Id, s.Dead ? -1 : s.Health, s.Energy);
     }

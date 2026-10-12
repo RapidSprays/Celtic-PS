@@ -27,6 +27,11 @@ if lsof -nP -iTCP:5555 -sTCP:LISTEN >/dev/null 2>&1 || lsof -nP -iUDP:5556 >/dev
   exit 1
 fi
 
+EXTRACTED="$HOME/CelticHeroesAnalysis/extracted/$BUILD"
+[[ -f "$EXTRACTED/balance-client.json" ]] || python3 "$REPO/scripts/extract-balance.py" "$BUILD"
+[[ -f "$EXTRACTED/zone-points.json" ]] || python3 "$REPO/scripts/extract-zone-points.py" "$BUILD"
+[[ -f "$EXTRACTED/zone-population.json" ]] || python3 "$REPO/scripts/gen-zone-population.py" "$BUILD"
+
 mkdir -p "$LOGS"
 dotnet build -c Release "$REPO/server/src/CH.Server" >/dev/null
 dotnet "$REPO/server/src/CH.Server/bin/Release/net8.0/CH.Server.dll" --data "$DATA" > "$LOGS/server-$STAMP.log" 2>&1 &

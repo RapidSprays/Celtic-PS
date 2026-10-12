@@ -125,6 +125,16 @@ Private server policy: accept any password hash and never store or log it, nor t
 - **Monsters**: BatchZoneMonsterUpdate (13006, `2848-2875`, varuint count prefix) and ZoneMonsterAppeared (13008, `2408-2430`). Each entry is `varuint serverId, varuint templateId, float x,y,z, float dirX,dirY, varint opinion,hp,energy,convId,level, float aggroRange, float scale`. ZoneMonsterDisappeared (13007): `varuint`.
 - **mobPatrolUpdate** (23008, `2783-2802`), NewEntitiesOfInterest (`2432-2449`), EntityChangedDirection (`2804-2829`).
 
+### Zone travel and leystones (S = statically inferred; the server flow is tested with the fake client, not yet with the real client)
+- **Zone exits** come from the TextAsset `Zones/Zone<zoneId>_zone_points`, a CSV in the Addressables bundle `textfiles_assets_all_*.bundle` (CZonePointManager.loadZonePointObjects). Lines are `id,minLevel,destZone,CYLINDER,x,y,z,radius,halfHeight,questCompletedId`; `scripts/extract-zone-points.py` extracts them. The JSON `Zones[n].Points` list holds the same exits in the same order, without ids, and is only used for the map.
+- The client checks the level and the quest itself (CGame.ZonePointCollisionUpdate), asks for confirmation, then sends **CharacterZoningRequest** (12016, C→S, `5446-5455`): `float x,y,z, varint zonePointId`. There is no rejection message.
+- **There is no "change zone" message.** The server sends **CorrectPlayerPosition** (12013) with another zone id. The client unloads everything (`unloadLevelResources`), loads the scene, and sends **FinishedZoning** (13033) and MapEnterStatsMessage (22011). Only then does the server send EnteringNewZoneUpdate, monsters and AllZoningMessagesSent, which re-enables the cameras. FinishedZoning can also arrive unsolicited (a graphics change reloads the zone), so it always means "send the full snapshot". PlayerMove has no zone id, so moves are ignored until the new zone has loaded.
+- **Arrival positions** aren't in the client data (server-only spawn points). Approximation: 3 m outside the destination's return portal, towards its nearest leystone.
+- **TeleportRequest** (13022, C→S, `5457-5464`): `varuint zone, varuint spawnPointId`. The client opens its loading screen first, so the server must always reply with CorrectPlayerPosition, even to refuse (it then repeats the current position). **TeleportReply** (13023) has no client handler and must never be sent.
+- **PlayerSpawnPointDiscovered** (13035, S→C, `5466-5474`): `varint spawnPointId`. Discovery is server-driven (the client never reports it). The StartGameReply teleport list holds the discovered ids. Fast travel needs a Leystone Fragment when the backpack holds more than `fastTravelItemLimit` items (stats block; client default 20).
+- **CharacterStuck** (12019, C→S, empty) expects a CorrectPlayerPosition to a safe spot.
+- Global zones are unused: our world list's GlobalServerZone column is −1, so the Global Arena (8) is an ordinary zone.
+
 ### Chat
 - **GeneralChat** (17001): C→S `varint channel, string message` (`6024-6040`); S→C `varint channel, string, string, varint textId` (`1015-1030`).
 

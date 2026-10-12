@@ -170,6 +170,13 @@ public sealed class GameStore : IDisposable
         ALTER TABLE characters ADD COLUMN show_headgear INTEGER NOT NULL DEFAULT 1;
         ALTER TABLE characters ADD COLUMN show_fashion INTEGER NOT NULL DEFAULT 1;
         """,
+        """
+        CREATE TABLE teleports (
+            character_id    INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            spawn_point_id  INTEGER NOT NULL,
+            PRIMARY KEY (character_id, spawn_point_id)
+        );
+        """,
     ];
 
     private readonly SqliteConnection _db;
@@ -342,6 +349,24 @@ public sealed class GameStore : IDisposable
             ("$zone", s.Zone), ("$t", s.TemplateId), ("$x", s.X), ("$y", s.Y), ("$z", s.Z), ("$d", s.Direction), ("$o", s.Opinion),
             ("$l", s.Level), ("$c", s.ConversationId), ("$r", s.RespawnSeconds), ("$roam", s.RoamRadius), ("$by", s.CreatedBy));
         return s with { Id = Convert.ToInt64(cmd.ExecuteScalar()) };
+    }
+
+    /// <summary>Leystones (PlayerSpawnPoint ids) the character has discovered, for fast travel.</summary>
+    public IReadOnlyList<int> ListTeleports(long characterId)
+    {
+        using var cmd = Command("SELECT spawn_point_id FROM teleports WHERE character_id = $c ORDER BY spawn_point_id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<int>();
+        while (r.Read()) list.Add(r.GetInt32(0));
+        return list;
+    }
+
+    /// <summary>Records a discovered leystone; false when it was already known.</summary>
+    public bool AddTeleport(long characterId, int spawnPointId)
+    {
+        using var cmd = Command("INSERT OR IGNORE INTO teleports (character_id, spawn_point_id) VALUES ($c, $p)", null,
+            ("$c", characterId), ("$p", spawnPointId));
+        return cmd.ExecuteNonQuery() == 1;
     }
 
     public IReadOnlyList<SpawnRecord> ListSpawns(int zone)
