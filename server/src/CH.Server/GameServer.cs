@@ -31,6 +31,9 @@ public sealed partial class GameServer : IDisposable
         _store = store;
         _frames = frames;
         _balance = balance;
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        _chestCatalog = ChestCatalog.Build(balance);
+        if (balance.IsLoaded) log.LogInformation("Chest catalogue: {Count} chests in {Ms} ms", _chestCatalog.Chests.Count, started.ElapsedMilliseconds);
         _log = log;
         var config = new NetPeerConfiguration(Envelope.AppIdentifier)
         {

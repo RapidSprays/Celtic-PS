@@ -220,6 +220,63 @@ public sealed class CombatTests : IAsyncDisposable
         Assert.Contains("one rank at a time", NextSystemLine(client));
     }
 
+    private static (List<ItemSlot> Equipment, List<ItemSlot> Backpack) ReadEquipReply(NetIncomingMessage m)
+    {
+        Assert.Equal((byte)CommandStatus.Accepted, m.ReadByte());
+        var equipment = Enumerable.Range(0, 25).Select(_ => ItemSlot.Read(m)).ToList();
+        var backpack = Enumerable.Range(0, m.ReadVariableInt32()).Select(_ => ItemSlot.Read(m)).ToList();
+        return (equipment, backpack);
+    }
+
+    [Fact]
+    public async Task Rogue_gear_requirements_blocked_slots_gearset_and_equip_skills()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var (host, client, start) = await EnterAs("gear", "Scathach", @class: 5);
+        await using var _h = host;
+        using var _c = client;
+
+        // A level-225 dagger is refused at level 1 (by hand; .wear is a GM override).
+        Chat(client, ".give 72443");
+        var inv = client.Expect(Opcode.InventoryUpdate);
+        inv.ReadVariableInt32();
+        var dagger = Enumerable.Range(0, inv.ReadVariableInt32()).Select(_ => ItemSlot.Read(inv)).Single(i => i.TemplateId == 72443);
+        client.Send(Opcode.EquipItem, new EquipItemRequest(true, 72443, dagger.ServerInventoryId, 1, 0).Write);
+        var refused = client.Expect(Opcode.EquipItemReply);
+        Assert.Equal((byte)CommandStatus.Rejected, refused.ReadByte());
+        Assert.Contains("225 level", refused.ReadString());
+
+        // A two-handed staff blocks the offhand: wearing it bumps the offhand item, and a buckler bumps the staff back.
+        Chat(client, ".wear 10054"); // Buckler
+        Assert.Equal(10054, ReadEquipReply(client.Expect(Opcode.EquipItemReply)).Equipment[5].TemplateId);
+        Chat(client, ".wear 10052"); // Short Staff
+        var staff = ReadEquipReply(client.Expect(Opcode.EquipItemReply));
+        Assert.Equal((10052, -1), (staff.Equipment[0].TemplateId, staff.Equipment[5].TemplateId));
+        var buckler = staff.Backpack.First(i => i.TemplateId == 10054);
+        client.Send(Opcode.EquipItem, new EquipItemRequest(true, 10054, buckler.ServerInventoryId, 1, 5).Write);
+        var bumped = ReadEquipReply(client.Expect(Opcode.EquipItemReply));
+        Assert.Equal(10054, bumped.Equipment[5].TemplateId);
+        Assert.NotEqual(10052, bumped.Equipment[0].TemplateId);
+
+        // .gearset 225 dresses a level-225 rogue: dagger, leather, rings and bangles, and the stats follow the gear.
+        Chat(client, ".level 225");
+        client.Expect(Opcode.LevelUp);
+        var before = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
+        Chat(client, ".gearset");
+        var kit = ReadEquipReply(client.Expect(Opcode.EquipItemReply)).Equipment;
+        Assert.All(new[] { 0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14 }, slot => Assert.True(kit[slot].TemplateId > 0, $"slot {slot} empty"));
+        var after = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
+        Assert.True(after.Dexterity > before.Dexterity + 100, $"dexterity {before.Dexterity} -> {after.Dexterity}");
+        Assert.True(after.ArmourValue > before.ArmourValue && after.WeaponDamage > before.WeaponDamage);
+
+        // The Condemned Dagger of Slaughter grants Virulent Sunder (20062) while worn.
+        Chat(client, ".wear 72443");
+        client.Expect(Opcode.EquipItemReply);
+        client.Expect(Opcode.StatsUpdate);
+        var skills = ReadSkillList(client.Expect(Opcode.SkillListUpdate), out _);
+        Assert.Contains(skills, k => k.SkillId == 20062);
+    }
+
     [Fact]
     public void Npc_conversations_are_matched_by_name()
     {

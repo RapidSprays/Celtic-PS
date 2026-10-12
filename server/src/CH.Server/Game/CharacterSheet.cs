@@ -38,8 +38,15 @@ public sealed class CharacterSheet
         AttributePoints = Math.Max(0, Progression.AttributePointsPerLevel * (level - 1) - spentAttributes);
         SkillPoints = Math.Max(0, Progression.SkillPointsPerLevel * (level - 1) - skills.Sum(k => k.Level));
 
-        MaxHealth = Kit.Health + (level - 1) * HealthPerLevel + (Vitality - baseVit) * 6;
-        MaxEnergy = Kit.Energy + (level - 1) * EnergyPerLevel + (Focus - baseFoc) * 4;
+        var gear = Equipped.Select(i => _balance.Items.GetValueOrDefault(i.TemplateId)).OfType<ItemInfo>().ToList();
+        Gear = gear;
+        CombinedStrength = Strength + gear.Sum(g => g.StatBonus("Strength"));
+        CombinedDexterity = Dexterity + gear.Sum(g => g.StatBonus("Dexterity"));
+        CombinedFocus = Focus + gear.Sum(g => g.StatBonus("Focus"));
+        CombinedVitality = Vitality + gear.Sum(g => g.StatBonus("Vitality"));
+
+        MaxHealth = Kit.Health + (level - 1) * HealthPerLevel + (CombinedVitality - baseVit) * 6 + gear.Sum(g => g.Bonus("HealthBonus"));
+        MaxEnergy = Kit.Energy + (level - 1) * EnergyPerLevel + (CombinedFocus - baseFoc) * 4 + gear.Sum(g => g.Bonus("EnergyBonus"));
         Health = progress.Health < 0 ? MaxHealth : Math.Clamp(progress.Health, 0, MaxHealth);
         Energy = progress.Energy < 0 ? MaxEnergy : Math.Clamp(progress.Energy, 0, MaxEnergy);
 
@@ -52,8 +59,8 @@ public sealed class CharacterSheet
         Armour = equipped.Sum(i => i.Armour);
         Encumbrance = equipped.Sum(i => i.Weight);
         var ranged = weapon is { Range: > 3 };
-        Attack = Kit.Attack + level + (ranged ? Dexterity - baseDex : Strength - baseStr);
-        Defence = Kit.Defence + level + Armour / 2 + (Dexterity - baseDex) / 2;
+        Attack = Kit.Attack + level + (ranged ? CombinedDexterity - baseDex : CombinedStrength - baseStr) + gear.Sum(g => g.Bonus("AttackBonus"));
+        Defence = Kit.Defence + level + Armour / 2 + (CombinedDexterity - baseDex) / 2 + gear.Sum(g => g.Bonus("DefenceBonus"));
     }
 
     public CharacterRecord Character { get; }
@@ -72,8 +79,24 @@ public sealed class CharacterSheet
     public int AttributePoints { get; }
     public int SkillPoints { get; }
 
+    /// <summary>Base attributes plus equipment PrimaryStatBonuses: what the stats page shows and what stats derive from.</summary>
+    public int CombinedStrength { get; }
+    public int CombinedDexterity { get; }
+    public int CombinedFocus { get; }
+    public int CombinedVitality { get; }
+
+    /// <summary>Templates of everything equipped.</summary>
+    public IReadOnlyList<ItemInfo> Gear { get; }
+
     /// <summary>Extra skill damage from Focus. <b>Approximated.</b></summary>
-    public int SkillDamageBonus => (Focus - ClassKit.BaseAttributes.Foc) / 2;
+    public int SkillDamageBonus => (CombinedFocus - ClassKit.BaseAttributes.Foc) / 2;
+
+    /// <summary>Skills granted by equipped items (EquipSkillID), usable while worn, not trainable.</summary>
+    public IReadOnlyList<int> EquipSkills => Gear.Where(g => g.EquipSkillId > 0 && _balance.Skills.ContainsKey(g.EquipSkillId))
+        .Select(g => g.EquipSkillId).Distinct().Where(id => Skills.All(k => k.SkillId != id)).ToList();
+
+    /// <summary>Learned skills plus equipment skills, as (id, rank).</summary>
+    public IReadOnlyList<(int SkillId, int Level)> UsableSkills => Skills.Concat(EquipSkills.Select(id => (id, 0))).ToList();
     public int MaxHealth { get; }
     public int MaxEnergy { get; }
     public int Health { get; }
@@ -108,7 +131,9 @@ public sealed class CharacterSheet
     public int MaxRank(int skillId) => _balance.Skills.TryGetValue(skillId, out var skill) && skill.Levels.Count > 0 ? skill.MaxRank(Level) : SkillMaxLevelAtStart;
 
     public IReadOnlyList<SkillEntry> SkillEntries() =>
-        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, MaxRank(s.SkillId), 0f)).ToList();
+        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, MaxRank(s.SkillId), 0f))
+            .Concat(EquipSkills.Select(id => new SkillEntry(id, 0, 0, 0f)))
+            .ToList();
 
     public CharacterSummary Summary(int worldId)
     {
@@ -122,7 +147,7 @@ public sealed class CharacterSheet
 
     public CharacterStats Stats()
     {
-        var (vit, str, foc, dex) = (Vitality, Strength, Focus, Dexterity);
+        var (vit, str, foc, dex) = (CombinedVitality, CombinedStrength, CombinedFocus, CombinedDexterity);
         return new CharacterStats
         {
             Health = Health, MaxHealth = MaxHealth, Energy = Energy, MaxEnergy = MaxEnergy,
@@ -130,11 +155,28 @@ public sealed class CharacterSheet
             Vitality = vit, Strength = str, Focus = foc, Dexterity = dex, Encumbrance = Encumbrance,
             SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
             AttackRange = AttackRange, FastTravelItemLimit = 20, MaxSpeed = 5f, Scale = 1f,
-            CompiledAbilities = Abilities(), CompiledSkills = Skills.Select(s => new IdValue(s.SkillId, s.Level)).ToList(),
+            CompiledAbilities = Abilities(),
+            CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, s.Level + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == s.SkillId).Sum(b => b.Amount))).ToList(),
+            Avoidances = Gear.SelectMany(g => g.AvoidanceBonuses).GroupBy(a => a.Id).Select(g => new IdValue(g.Key, g.Sum(a => a.Amount))).ToList(),
+            Bonuses = GearBonuses(),
         };
     }
 
-    public IReadOnlyList<IdValue> Abilities() => Kit.Abilities.Select(a => new IdValue(a, 1)).ToList();
+    /// <summary>Ability levels: class abilities at 1, plus equipment AbilityBonuses (also for abilities the class lacks).</summary>
+    public IReadOnlyList<IdValue> Abilities()
+    {
+        var levels = Kit.Abilities.ToDictionary(a => a, _ => 1);
+        foreach (var (id, amount) in Gear.SelectMany(g => g.AbilityBonuses)) levels[id] = levels.GetValueOrDefault(id) + amount;
+        return levels.Select(kv => new IdValue(kv.Key, kv.Value)).ToList();
+    }
+
+    /// <summary>Resist and other BonusTypes for the stats page, as client BonusType ids (see <see cref="BonusTypeIds"/>).</summary>
+    public IReadOnlyList<IdValue> GearBonuses() =>
+        Gear.SelectMany(g => g.Bonuses).Where(b => BonusTypeIds.ContainsKey(b.Type))
+            .GroupBy(b => BonusTypeIds[b.Type]).Select(g => new IdValue(g.Key, g.Sum(b => b.Amount))).ToList();
+
+    /// <summary>Client BonusType enum values by name. Filled from the client enum (Balance.Model BonusType).</summary>
+    public static IReadOnlyDictionary<string, int> BonusTypeIds { get; set; } = new Dictionary<string, int>();
 
     /// <summary>XP progress into the current level, 0-100.</summary>
     public float XpPercent => Math.Clamp(100f * Progress.Xp / Progression.XpToNextLevel(Level), 0f, 100f);

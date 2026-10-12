@@ -16,9 +16,11 @@ public sealed partial class GameServer
     private const int PopupOpen = 40, PopupNext = 41, PopupFinal = 42;
     private const double ChestDropChance = 0.015;
 
-    private ChestCatalog? _chestCatalog;
+    // Built once at start-up (GameServer constructor): it scans every item name against every chest description, which
+    // takes seconds and must never run on the game thread.
+    private readonly ChestCatalog _chestCatalog;
 
-    private ChestCatalog ChestCatalog => _chestCatalog ??= ChestCatalog.Build(_balance);
+    private ChestCatalog ChestCatalog => _chestCatalog;
 
     /// <summary>Called from OnUseItem: true if the item was a chest (handled here).</summary>
     private bool TryOpenChest(Session s, ItemRecord item)

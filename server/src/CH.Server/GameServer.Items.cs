@@ -49,6 +49,7 @@ public sealed partial class GameServer
             else if (info is null || info.Slot < 0) problem = "That item can't be equipped.";
             else if (!SlotFits(info.Slot, req.Slot)) problem = "That item doesn't go there.";
             else if (info.Classes.Count > 0 && !info.Classes.Contains(((CharacterClass)s.Character!.Class).ToString())) problem = "Your class can't use that item.";
+            else problem = RequirementProblem(sheet, info, s.Character!);
         }
         else if (item.Slot == ItemRecord.Backpack) problem = "That item isn't equipped.";
 
@@ -60,19 +61,55 @@ public sealed partial class GameServer
 
         if (req.Equip)
         {
-            // Whatever is in the target slot goes back to the backpack.
-            foreach (var occupant in sheet.Equipped.Where(i => i.Slot == req.Slot)) _store.SetItemSlot(occupant.Id, ItemRecord.Backpack);
-            _store.SetItemSlot(item!.Id, req.Slot);
+            // Whatever is in the target slot goes back to the backpack, and so does anything in a slot this item blocks
+            // (two-handers block the offhand) or anything that blocks this slot.
+            var newBlocks = _balance.Items.GetValueOrDefault(item!.TemplateId)?.BlockedSlots ?? [];
+            foreach (var occupant in sheet.Equipped)
+            {
+                var occupantBlocks = _balance.Items.GetValueOrDefault(occupant.TemplateId)?.BlockedSlots ?? [];
+                if (occupant.Slot == req.Slot || newBlocks.Contains(occupant.Slot) || occupantBlocks.Contains(req.Slot))
+                    _store.SetItemSlot(occupant.Id, ItemRecord.Backpack);
+            }
+            _store.SetItemSlot(item.Id, req.Slot);
         }
         else
         {
             _store.SetItemSlot(item!.Id, ItemRecord.Backpack);
         }
 
+        SendEquipment(s);
+    }
+
+    /// <summary>
+    /// Equipment, backpack, stats and skills after any gear change. EquipItemReply doesn't refresh speed, range, damage or
+    /// armour on the client, and equip skills come and go with their items.
+    /// </summary>
+    private void SendEquipment(Session s)
+    {
         var updated = RefreshSheet(s);
         Send(s, Opcode.EquipItemReply, b => InventoryReplies.WriteEquipment(b, CommandStatus.Accepted, "", updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: false));
-        // EquipItemReply doesn't refresh speed, range, damage or armour on the client.
         SendLiveStats(s);
+        Send(s, Opcode.SkillListUpdate, new SkillListUpdate(updated.SkillPoints, updated.SkillEntries()).Write);
+    }
+
+    /// <summary>Level, attribute and gender requirements (RequirementTypes). Attributes count gear bonuses, like the stats page.</summary>
+    private static string? RequirementProblem(CharacterSheet sheet, ItemInfo info, CharacterRecord c)
+    {
+        foreach (var (type, amount) in info.Requirements)
+        {
+            var (have, label) = type switch
+            {
+                "LevelRequirement" => (sheet.Level, "level"),
+                "StrengthRequirement" => (sheet.CombinedStrength, "strength"),
+                "DexterityRequirement" => (sheet.CombinedDexterity, "dexterity"),
+                "FocusRequirement" => (sheet.CombinedFocus, "focus"),
+                "VitalityRequirement" => (sheet.CombinedVitality, "vitality"),
+                _ => (int.MaxValue, ""),
+            };
+            if (type == "GenderRequirement" && amount != c.Gender) return "That item is for the other gender.";
+            if (have < amount) return $"You need {amount} {label} to use that.";
+        }
+        return null;
     }
 
     /// <summary>Rings and bangles can go in any of their slots; everything else in its own.</summary>

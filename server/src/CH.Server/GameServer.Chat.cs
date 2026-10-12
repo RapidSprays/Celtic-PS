@@ -28,6 +28,8 @@ public sealed partial class GameServer
         ".give <item id or name> [qty] - put items in your backpack (.item is the same)",
         ".finditem <name> - search item templates",
         ".chest [name] [qty] - a random legacy chest, or chests by name (e.g. .chest mystery chest 5)",
+        ".gearset [level] - equip the best gear your class can wear at that level (old gear goes to your backpack)",
+        ".wear <item name or id> - give and equip an item",
         ".heal | .learn <skill id>",
         ".respawn - respawn every mob in the zone");
 
@@ -210,6 +212,47 @@ public sealed partial class GameServer
                     .Select(i => $"{i.Id}: {i.Name}{(i.Slot >= 0 ? $" ({i.Slot})" : "")}")
                     .ToList();
                 Tell(s, found.Count == 0 ? "No items match." : string.Join("\n", found));
+                break;
+            }
+
+            case "gearset":
+            {
+                var level = args.Length > 0 ? Math.Clamp(int.Parse(args[0], CultureInfo.InvariantCulture), 1, Progression.MaxLevel) : s.Sheet!.Level;
+                var cls = (CharacterClass)s.Character!.Class;
+                var plan = GearPlanner.Plan(_balance, cls, level, s.Character.Gender);
+                foreach (var old in s.Sheet!.Equipped.Where(i => i.Slot < (int)EquipSlot.FashHead)) _store.SetItemSlot(old.Id, ItemRecord.Backpack);
+                foreach (var (slot, info) in plan) _store.AddItem(s.Character.Id, info.Id, 1, slot);
+                SendEquipment(s);
+                Tell(s, $"Level {level} {cls} gear: " + string.Join(", ", plan.OrderBy(p => p.Key).Select(p => p.Value.Name)));
+                break;
+            }
+
+            case "wear":
+            {
+                var query = string.Join(' ', args);
+                var item = int.TryParse(query, out var wearId) ? _balance.Items.GetValueOrDefault(wearId)
+                    : _balance.Items.Values.Where(i => i.Slot >= EquipSlot.Weapon && !i.IsPlaceholder && i.Name.Equals(query, StringComparison.OrdinalIgnoreCase)).OrderBy(i => i.Id).FirstOrDefault()
+                      ?? _balance.Items.Values.Where(i => i.Slot >= EquipSlot.Weapon && !i.IsPlaceholder && i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).OrderBy(i => i.Name.Length).ThenBy(i => i.Id).FirstOrDefault();
+                if (item is null || item.Slot < EquipSlot.Weapon)
+                {
+                    Tell(s, "Usage: .wear <item name or id> (equipment only). Try .finditem first.");
+                    break;
+                }
+                // Same slot rules as equipping by hand: the occupant and blocked slots go to the backpack.
+                var slot = (int)item.Slot;
+                if (item.Slot is EquipSlot.RingR1 or EquipSlot.RingR2 or EquipSlot.RingL1 or EquipSlot.RingL2)
+                    slot = Enumerable.Range(8, 4).FirstOrDefault(i => s.Sheet!.Equipped.All(e => e.Slot != i), 8);
+                if (item.Slot is EquipSlot.BangleR or EquipSlot.BangleL)
+                    slot = Enumerable.Range(12, 2).FirstOrDefault(i => s.Sheet!.Equipped.All(e => e.Slot != i), 12);
+                foreach (var occupant in s.Sheet!.Equipped)
+                {
+                    var blocks = _balance.Items.GetValueOrDefault(occupant.TemplateId)?.BlockedSlots ?? [];
+                    if (occupant.Slot == slot || item.BlockedSlots.Contains(occupant.Slot) || blocks.Contains(slot)) _store.SetItemSlot(occupant.Id, ItemRecord.Backpack);
+                }
+                _store.AddItem(s.Character!.Id, item.Id, 1, slot);
+                SendEquipment(s);
+                var note = RequirementProblem(s.Sheet!, item, s.Character) is { } p ? $" (GM override: {p})" : "";
+                Tell(s, $"Equipped {item.Name} ({item.Id}).{note}");
                 break;
             }
 

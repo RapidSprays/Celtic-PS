@@ -63,6 +63,34 @@ public sealed record ItemInfo(
     int SkillLinkLevel = 0,
     string Description = "")
 {
+    /// <summary>BonusTypes: resists and flat Health/Energy/Attack/Defence/Concentration bonuses (names as in the client data).</summary>
+    public IReadOnlyList<(string Type, int Amount)> Bonuses { get; init; } = [];
+
+    /// <summary>RequirementTypes: LevelRequirement, Strength/Dexterity/Focus/VitalityRequirement, GenderRequirement.</summary>
+    public IReadOnlyList<(string Type, int Amount)> Requirements { get; init; } = [];
+
+    /// <summary>PrimaryStatBonuses: Strength, Dexterity, Focus, Vitality.</summary>
+    public IReadOnlyList<(string Type, int Amount)> StatBonuses { get; init; } = [];
+
+    public IReadOnlyList<(int Id, int Amount)> AbilityBonuses { get; init; } = [];
+    public IReadOnlyList<(int Id, int Amount)> AvoidanceBonuses { get; init; } = [];
+    public IReadOnlyList<(int Id, int Amount)> SkillBonuses { get; init; } = [];
+
+    /// <summary>Equipment slots this item blocks while worn (two-handers block the offhand, 5).</summary>
+    public IReadOnlyList<int> BlockedSlots { get; init; } = [];
+
+    public int ProcSkillId { get; init; }
+    public int ProcSkillLevel { get; init; }
+    public float ProcSkillChance { get; init; }
+    public int EquipSkillId { get; init; }
+    public int StarLevel { get; init; }
+    public int ModelId { get; init; }
+
+    public int Requirement(string type) => Requirements.Where(r => r.Type == type).Select(r => r.Amount).DefaultIfEmpty(0).Max();
+    public int LevelRequirement => Requirement("LevelRequirement");
+    public int StatBonus(string type) => StatBonuses.Where(b => b.Type == type).Sum(b => b.Amount);
+    public int Bonus(string type) => Bonuses.Where(b => b.Type == type).Sum(b => b.Amount);
+
     /// <summary>Test and placeholder templates ("TEST …", "… DNU", "NOT USED") never appear as rewards.</summary>
     public bool IsPlaceholder => Name.Contains("TEST", StringComparison.Ordinal) || Name.Contains("DNU", StringComparison.Ordinal)
         || Name.Contains("NOT USED", StringComparison.OrdinalIgnoreCase) || Name.EndsWith(" OLD", StringComparison.Ordinal) || Name == "INVALID ITEM";
@@ -158,7 +186,23 @@ public sealed class Balance
                 Int(e, "Armour"), Int(e, "Speed"), Int(e, "Weight"), Float(e, "Range"),
                 e.TryGetProperty("DamageTypes", out var dmg) && dmg.ValueKind == JsonValueKind.Array ? dmg.EnumerateArray().Sum(d => Int(d, "Amount")) : 0,
                 e.TryGetProperty("ClassTypes", out var cls) && cls.ValueKind == JsonValueKind.Array ? cls.EnumerateArray().Select(c => c.GetString() ?? "").ToList() : [],
-                Int(e, "Usable") == 1, Int(e, "Stackable") == 1, Str(e, "SkillLinkID"), SkillLinkId(e), Int(e, "SkillLinkLevel"), Str(e, "Description"));
+                Int(e, "Usable") == 1, Int(e, "Stackable") == 1, Str(e, "SkillLinkID"), SkillLinkId(e), Int(e, "SkillLinkLevel"), Str(e, "Description"))
+            {
+                Bonuses = Pairs(e, "BonusTypes", "BonusType"),
+                Requirements = Pairs(e, "RequirementTypes", "RequirementType"),
+                StatBonuses = Pairs(e, "PrimaryStatBonuses", "PrimaryStatType"),
+                AbilityBonuses = IdPairs(e, "AbilityBonuses", "AbilityType"),
+                AvoidanceBonuses = IdPairs(e, "AvoidanceBonuses", "AbilityType"),
+                SkillBonuses = IdPairs(e, "SkillBonuses", "SkillType"),
+                BlockedSlots = e.TryGetProperty("BlockedSlots", out var blocked) && blocked.ValueKind == JsonValueKind.Array
+                    ? blocked.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => x.GetInt32()).ToList() : [],
+                ProcSkillId = Int(e, "ProcSkillID"),
+                ProcSkillLevel = Int(e, "ProcSkillLevel"),
+                ProcSkillChance = Float(e, "ProcSkillChance"),
+                EquipSkillId = Int(e, "EquipSkillID"),
+                StarLevel = Int(e, "StarLevel"),
+                ModelId = Int(e, "ModelID"),
+            };
         }
 
         var skills = new Dictionary<int, SkillInfo>();
@@ -272,6 +316,16 @@ public sealed class Balance
         if (v.ValueKind == JsonValueKind.Number) return (int)v.GetDouble();
         return v.GetString() switch { "MagicBox" => 208, "MagicBoxNew" => 267, _ => -1 };
     }
+
+    private static List<(string, int)> Pairs(JsonElement e, string list, string key) =>
+        e.TryGetProperty(list, out var v) && v.ValueKind == JsonValueKind.Array
+            ? v.EnumerateArray().Select(x => (x.TryGetProperty(key, out var k) ? k.ValueKind == JsonValueKind.String ? k.GetString()! : k.ToString() : "", Int(x, "Amount"))).ToList()
+            : [];
+
+    private static List<(int, int)> IdPairs(JsonElement e, string list, string key) =>
+        e.TryGetProperty(list, out var v) && v.ValueKind == JsonValueKind.Array
+            ? v.EnumerateArray().Where(x => x.TryGetProperty(key, out var k) && k.ValueKind == JsonValueKind.Number).Select(x => (Int(x, key), Int(x, "Amount"))).ToList()
+            : [];
 
     private static string Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
 

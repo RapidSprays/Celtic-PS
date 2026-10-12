@@ -275,8 +275,10 @@ public sealed class ChestCatalog
     {
         private readonly List<ItemInfo> _items;
         private readonly Dictionary<string, List<ItemInfo>> _byName;
-        private readonly List<string> _namesLongestFirst;
         private readonly Dictionary<string, List<ItemInfo>> _bySquashedName;
+        private readonly Dictionary<string, List<ItemInfo>> _byNormalizedName;
+        private readonly Dictionary<(string, bool), List<int>> _matching = new();
+        private int MaxNameWords { get; }
 
         private static string Squash(string s) => Regex.Replace(s, @"(\w)\1+", "$1");
 
@@ -287,8 +289,9 @@ public sealed class ChestCatalog
             _balance = balance;
             _items = balance.Items.Values.Where(i => !i.IsPlaceholder).ToList();
             _byName = _items.GroupBy(i => i.Name.Trim().ToLowerInvariant()).ToDictionary(g => g.Key, g => g.OrderBy(i => i.Id).ToList());
-            _namesLongestFirst = _byName.Keys.Where(k => k.Length >= 6).OrderByDescending(k => k.Length).ToList();
             _bySquashedName = _byName.GroupBy(kv => Squash(kv.Key)).ToDictionary(g => g.Key, g => g.SelectMany(kv => kv.Value).ToList());
+            _byNormalizedName = _byName.GroupBy(kv => Normalize(kv.Key)).ToDictionary(g => g.Key, g => g.SelectMany(kv => kv.Value).OrderBy(i => i.Id).ToList());
+            MaxNameWords = Math.Min(10, _byNormalizedName.Keys.Max(k => k.Count(c => c == ' ') + 1));
             Elixirs = _items.Where(i => Regex.IsMatch(i.Name, @"^(Super|Heroic) .*Elixir") && i.Usable && !balance.Chests(i.Id)).Select(i => i.Id).Distinct().ToList();
         }
 
@@ -313,22 +316,43 @@ public sealed class ChestCatalog
         public List<int> Matching(string phrase, bool equipmentOnly)
         {
             if (string.IsNullOrWhiteSpace(phrase)) return [];
-            var pattern = new Regex($@"\b{Regex.Escape(phrase.Trim())}", RegexOptions.IgnoreCase);
-            return _items.Where(i => pattern.IsMatch(i.Name) && (!equipmentOnly || i.Slot >= EquipSlot.Weapon)).Select(i => i.Id).ToList();
+            var key = (phrase.Trim().ToLowerInvariant(), equipmentOnly);
+            if (_matching.TryGetValue(key, out var cached)) return cached;
+            var needle = key.Item1;
+            var result = _items.Where(i => (!equipmentOnly || i.Slot >= EquipSlot.Weapon) && StartsWordIn(i.Name.ToLowerInvariant(), needle)).Select(i => i.Id).ToList();
+            return _matching[key] = result;
         }
+
+        /// <summary>Whole-word-start match ("yule" matches "Yuletide" and "Beoite Yule", not "Joyule").</summary>
+        private static bool StartsWordIn(string haystack, string needle)
+        {
+            for (var at = haystack.IndexOf(needle, StringComparison.Ordinal); at >= 0; at = haystack.IndexOf(needle, at + 1, StringComparison.Ordinal))
+                if (at == 0 || !char.IsLetterOrDigit(haystack[at - 1])) return true;
+            return false;
+        }
+
+        private static string Normalize(string s) => Regex.Replace(s.ToLowerInvariant(), @"[^a-z0-9']+", " ").Trim();
 
         /// <summary>Items whose full names appear in a description, longest names first, without overlaps.</summary>
         public List<int> NamedIn(string description, int exclude)
         {
+            // Look up runs of words in a name dictionary (longest runs first) instead of scanning every item name.
+            var words = Normalize(description).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var used = new bool[words.Length];
             var found = new List<int>();
-            var used = new List<string>();
-            foreach (var n in _namesLongestFirst)
+            for (var length = Math.Min(MaxNameWords, words.Length); length >= 1; length--)
             {
-                if (!description.Contains(n) || used.Any(u => u.Contains(n))) continue;
-                used.Add(n);
-                // Other containers are never prizes (no "Mystery Chest" inside a Mystery Chest).
-                found.AddRange(_byName[n].Where(i => i.Id != exclude && !_balance.Chests(i.Id) && !Regex.IsMatch(i.Name, @"\d+ Platinum")).Take(1).Select(i => i.Id));
-                if (found.Count >= 12) break;
+                for (var start = 0; start + length <= words.Length; start++)
+                {
+                    if (used.AsSpan(start, length).Contains(true)) continue;
+                    var phrase = string.Join(' ', words, start, length);
+                    if (phrase.Length < 6 || !_byNormalizedName.TryGetValue(phrase, out var items)) continue;
+                    var pick = items.FirstOrDefault(i => i.Id != exclude && !_balance.Chests(i.Id) && !Regex.IsMatch(i.Name, @"\d+ Platinum"));
+                    if (pick is null) continue;
+                    found.Add(pick.Id); // other containers are never prizes (no "Mystery Chest" inside a Mystery Chest)
+                    used.AsSpan(start, length).Fill(true);
+                    if (found.Count >= 12) return found;
+                }
             }
             return found;
         }

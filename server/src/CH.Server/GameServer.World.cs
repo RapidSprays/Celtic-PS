@@ -345,7 +345,7 @@ public sealed partial class GameServer
     private void OnUseSkill(Session s, UseSkill req)
     {
         var now = NetTime.Now;
-        var known = s.Sheet!.Skills.FirstOrDefault(k => k.SkillId == (int)req.SkillId);
+        var known = s.Sheet!.UsableSkills.FirstOrDefault(k => k.SkillId == (int)req.SkillId);
         if (known == default || !_balance.Skills.TryGetValue((int)req.SkillId, out var skill) || s.Dead)
         {
             Send(s, Opcode.SkillUpdate, new SkillUpdate((int)req.SkillId, 0, 0).Write);
@@ -431,11 +431,30 @@ public sealed partial class GameServer
         }
         mob.Health -= damage;
         mob.Damage[s] = mob.Damage.GetValueOrDefault(s) + damage;
+        var procs = kind == AttackKind.Attack && damage > 0 && mob.Health > 0 ? RollProcs(s) : [];
         var entry = new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)mob.ServerId, kind, skillId, damage, mob.Health, reaction, ++_damageId, critical);
         Broadcast(zone, Opcode.CombatDamageMessage, new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Mob, (int)mob.ServerId, Math.Max(0, mob.Health))]).Write);
         if (mob.Health <= 0) KillMob(zone, mob, s, now);
         else if (mob.State is MobState.Idle or MobState.Returning) Engage(zone, mob, s, now);
+        foreach (var (proc, level) in procs)
+        {
+            if (mob.State == MobState.Dead) break;
+            var lvl = proc.Level(level);
+            var procDamage = (int)(Math.Abs(lvl.InitialDamage) + Math.Abs(lvl.BaseDamage));
+            if (procDamage > 0) PlayerHits(zone, s, mob, AttackKind.AttackTriggeredSkill, proc.Id, procDamage, now, allowMiss: false);
+            if (proc.StatusEffectId > 0 && mob.State != MobState.Dead)
+            {
+                if (proc.CastTarget == "Enemy") ApplyMobEffect(mob, s, proc, level, now);
+                else ApplyEffect(s, proc, level, now);
+            }
+        }
     }
+
+    /// <summary>Equipment procs (ProcSkillID at ProcSkillChance) that trigger on this hit.</summary>
+    private List<(SkillInfo Skill, int Level)> RollProcs(Session s) =>
+        s.Sheet!.Gear.Where(g => g.ProcSkillId > 0 && g.ProcSkillChance > 0 && Random.Shared.NextDouble() < g.ProcSkillChance)
+            .Select(g => (Skill: _balance.Skills.GetValueOrDefault(g.ProcSkillId), g.ProcSkillLevel))
+            .Where(p => p.Skill is not null).Select(p => (p.Skill!, p.ProcSkillLevel)).ToList();
 
     private void MobHits(Zone zone, Mob mob, Session target, double now)
     {
