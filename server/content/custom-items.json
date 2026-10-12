@@ -1,0 +1,12 @@
+{
+  "_comment": "Our own items. Each clones an existing client item template ('base': model, icon, slot, class rules) under a new id. Read by the server (Game/CustomItems.cs) and, via CH.Patcher, by the client mod (CHPrivateMods.CustomItems). Ids start at 90001 (the client's highest is 78974).",
+  "items": [
+    {
+      "id": 90001,
+      "base": 21526,
+      "name": "Rainbow Trident",
+      "description": "A Greater Black Trident caught in the light of every colour at once. It shimmers through the rainbow as you fight.",
+      "effect": "rainbow"
+    }
+  ]
+}

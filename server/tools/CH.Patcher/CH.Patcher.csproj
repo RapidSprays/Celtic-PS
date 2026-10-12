@@ -16,6 +16,9 @@
   <PropertyGroup>
     <ClientModsDll>$(MSBuildThisFileDirectory)../CH.ClientMods/bin/Release/netstandard2.1/CHPrivateMods.dll</ClientModsDll>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../content/custom-items.json" LogicalName="custom-items.json" />
+  </ItemGroup>
   <ItemGroup Condition="Exists('$(ClientModsDll)')">
     <EmbeddedResource Include="$(ClientModsDll)" LogicalName="CHPrivateMods.dll" />
   </ItemGroup>

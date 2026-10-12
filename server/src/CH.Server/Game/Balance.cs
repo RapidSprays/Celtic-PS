@@ -186,7 +186,7 @@ public sealed class Balance
     public IReadOnlyDictionary<int, List<int>> SpawnIconIdsByMob { get; }
     public bool IsLoaded => Items.Count > 0;
 
-    public static Balance Load(string? path)
+    public static Balance Load(string? path, string? customItemsPath = null)
     {
         if (path is null || !File.Exists(path)) return Empty;
         using var stream = File.OpenRead(path);
@@ -236,6 +236,8 @@ public sealed class Balance
                 : [];
             skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels);
         }
+
+        CustomItems.Apply(items, CustomItems.Load(customItemsPath));
 
         var mobs = new Dictionary<int, MobInfo>();
         foreach (var (_, e) in Entries(root, "MobTemplates"))

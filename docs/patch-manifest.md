@@ -57,3 +57,17 @@ Patched client running at the main menu: `lsof -a -p <pid> -i TCP` shows only `1
 - **Server side:** it accepts multi-rank BuySkill requests and clamps again.
 - **Failure safety:** if the mod were missing or failed, the try/catch leaves the popup unchanged.
 - Expected: 1 site.
+
+## P11: custom items
+- **Hook:** the start of `CItemManager.Init(BalanceClient)` calls `CHPrivateMods.CustomItems.Register(balance)`, guarded like P10.
+- **What it does:** for each entry in `server/content/custom-items.json`, the mod copies the base `ItemTemplate` (MemberwiseClone) under the new ID, Name and Description, and adds it to the client's template dictionary before the shop cache is built. Model, icon, class rules and animations come from the base.
+- **Where the list comes from:** CH.Patcher writes it next to the mod as `CHPrivateMods.items.txt`. The server applies the same file (`Game/CustomItems.cs`).
+- Expected: 1 site.
+
+## P12: rainbow weapons
+- **Hook:** `CMD5_Model.checkDownloadComplete`, right after `m_isFullyLoaded = true`, calls `CHPrivateMods.RainbowWeapons.OnModelLoaded(this)`, guarded.
+- **What it does:** if the model's visible weapon is an item with `effect: "rainbow"`, each weapon mesh gets a `RainbowCycler` that cycles hue every frame:
+  - the body through the game's own `PrimaryColour`, so fades still work;
+  - the additive glow mesh through `_TintColor`.
+- This is a script-driven effect on the existing shaders. A real new shader would need the matching Unity Editor (6000.3.10f1) to compile it per platform.
+- Expected: 1 site.

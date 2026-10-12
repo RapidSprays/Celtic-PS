@@ -69,6 +69,13 @@ public sealed class AssemblyPatcher
         // P10: a "Max" button on the skill popup (CHPrivateMods.dll, shipped next to Assembly-CSharp).
         InjectMaxButton("P10");
 
+        // P11: our own items (server/content/custom-items.json) join the client's item templates.
+        InjectModCall("P11", "CItemManager", "Init", argument: 1, modType: "CustomItems", modMethod: "Register", after: null);
+
+        // P12: the rainbow effect on weapons, once a character model has finished loading.
+        InjectModCall("P12", "CMD5_Model", "checkDownloadComplete", argument: 0, modType: "RainbowWeapons", modMethod: "OnModelLoaded",
+            after: ins => ins.OpCode == OpCodes.Stfld && ins.Operand is FieldReference { Name: "m_isFullyLoaded" } && ins.Previous?.OpCode == OpCodes.Ldc_I4_1);
+
         // Inserting instructions can push short-form branches out of range; re-pick branch sizes for every edited method.
         foreach (var method in _edited) method.Body.OptimizeMacros();
     }
@@ -213,6 +220,61 @@ public sealed class AssemblyPatcher
             sites = 1;
         }
         Record(id, "CSkillPopup..ctor: Max button (CHPrivateMods.SkillMaxButton.Attach)", sites, expected: 1);
+    }
+
+    /// <summary>
+    /// Calls <c>CHPrivateMods.&lt;modType&gt;.&lt;modMethod&gt;(object)</c> with the method's argument <paramref name="argument"/>
+    /// (0 = this), at the start of the method or right after the instruction <paramref name="after"/> matches (exactly
+    /// one site). Like P10, the call goes through a small static helper inside try/catch, so the game is unaffected if
+    /// the mod is missing or throws.
+    /// </summary>
+    private void InjectModCall(string id, string typeName, string methodName, int argument, string modType, string modMethod,
+        Func<Instruction, bool>? after)
+    {
+        var type = _module.GetType(typeName);
+        var targets = type?.Methods.Where(m => m.Name == methodName && m.HasBody && m.Parameters.Count >= (argument == 0 ? 0 : argument)).ToList() ?? [];
+        var helperName = $"CHPrivate_{modType}_{modMethod}";
+        var sites = 0;
+        if (targets.Count == 1 && type!.Methods.All(m => m.Name != helperName))
+        {
+            var target = targets[0];
+            var anchors = after is null ? [target.Body.Instructions[0]] : target.Body.Instructions.Where(after).Select(i => i.Next).ToList();
+            if (anchors.Count == 1 && anchors[0] is { } next)
+            {
+                if (_module.AssemblyReferences.All(r => r.Name != ModsAssembly))
+                    _module.AssemblyReferences.Add(new AssemblyNameReference(ModsAssembly, new Version(1, 0, 0, 0)));
+                var modTypeRef = new TypeReference("CHPrivateMods", modType, _module, _module.AssemblyReferences.First(r => r.Name == ModsAssembly));
+                var modRef = new MethodReference(modMethod, _module.TypeSystem.Void, modTypeRef) { HasThis = false };
+                modRef.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Object));
+
+                var helper = new MethodDefinition(helperName, MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig, _module.TypeSystem.Void);
+                helper.Parameters.Add(new ParameterDefinition("arg", ParameterAttributes.None, _module.TypeSystem.Object));
+                var h = helper.Body.GetILProcessor();
+                h.Emit(OpCodes.Ldarg_0);
+                h.Emit(OpCodes.Call, modRef);
+                h.Emit(OpCodes.Ret);
+                type.Methods.Add(helper);
+
+                var il = BeginEdit(target);
+                var load = argument == 0 ? il.Create(OpCodes.Ldarg_0) : il.Create(OpCodes.Ldarg, target.Parameters[argument - 1]);
+                var argType = argument == 0 ? (TypeReference)target.DeclaringType : target.Parameters[argument - 1].ParameterType;
+                var block = new List<Instruction> { load };
+                if (argType.IsValueType) block.Add(il.Create(OpCodes.Box, argType));
+                var call = il.Create(OpCodes.Call, helper);
+                var leaveTry = il.Create(OpCodes.Leave, next);
+                var catchStart = il.Create(OpCodes.Pop);
+                var leaveCatch = il.Create(OpCodes.Leave, next);
+                block.AddRange([call, leaveTry, catchStart, leaveCatch]);
+                foreach (var ins in block) il.InsertBefore(next, ins);
+                target.Body.ExceptionHandlers.Add(new ExceptionHandler(ExceptionHandlerType.Catch)
+                {
+                    TryStart = load, TryEnd = catchStart, HandlerStart = catchStart, HandlerEnd = next,
+                    CatchType = new TypeReference("System", "Exception", _module, _module.TypeSystem.CoreLibrary),
+                });
+                sites = 1;
+            }
+        }
+        Record(id, $"{typeName}.{methodName}: calls CHPrivateMods.{modType}.{modMethod}", sites, expected: 1);
     }
 
     private void Neutralize(MethodDefinition method, Instruction call, MethodReference callee)

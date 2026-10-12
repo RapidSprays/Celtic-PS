@@ -593,4 +593,17 @@ public sealed class ZoneTests : IDisposable
         Assert.Equal(3f, Recharge("Gruel"));
         Assert.Equal(0f, Recharge("Elixir of Defence"));
     }
+
+    [Fact]
+    public void The_rainbow_trident_is_a_greater_black_trident_under_its_own_id()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var content = Path.Combine(AppContext.BaseDirectory, "content", "custom-items.json");
+        var b = Balance.Load(BalancePath, content);
+        var trident = b.Items[90001];
+        var source = b.Items[21526];
+        Assert.Equal("Rainbow Trident", trident.Name);
+        Assert.Equal((source.Slot, source.Subtype, source.ModelId, source.Damage), (trident.Slot, trident.Subtype, trident.ModelId, trident.Damage));
+        Assert.Contains("90001|21526|rainbow|Rainbow Trident|", string.Join("\n", CH.Patcher.ClientMods.ItemLines()));
+    }
 }
