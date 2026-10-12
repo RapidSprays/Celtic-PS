@@ -69,7 +69,7 @@ public sealed partial class GameServer
             _store.SetItemSlot(item!.Id, ItemRecord.Backpack);
         }
 
-        var updated = Sheet(s);
+        var updated = RefreshSheet(s);
         Send(s, Opcode.EquipItemReply, b => InventoryReplies.WriteEquipment(b, CommandStatus.Accepted, "", updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: false));
         // EquipItemReply doesn't refresh speed, range, damage or armour on the client.
         Send(s, Opcode.StatsUpdate, updated.Stats().Write);
@@ -98,7 +98,7 @@ public sealed partial class GameServer
         {
             _store.SetItemQuantity(item.Id, item.Quantity - Math.Clamp(req.Quantity, 1, item.Quantity));
         }
-        var updated = Sheet(s);
+        var updated = RefreshSheet(s);
         // DeleteItemReply carries the lists even when rejected (NetworkManager.cs:5042).
         Send(s, Opcode.DeleteItemReply, b => InventoryReplies.WriteEquipment(b, status, reason, updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: true));
         if (item is { Slot: >= 0 }) Send(s, Opcode.StatsUpdate, updated.Stats().Write);
@@ -128,7 +128,7 @@ public sealed partial class GameServer
                 return;
             }
             _store.SetItemQuantity(item.Id, item.Quantity - 1);
-            var learned = Sheet(s);
+            var learned = RefreshSheet(s);
             Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", 0f, learned.InventoryWithMoney()));
             Send(s, Opcode.BuySkillReply, b => InventoryReplies.WriteBuySkill(b, 0, info.Id, learned.SkillEntries()));
             _log.LogInformation("{Name} learned {Skill} ({Id})", s.Character.Name, skill.Name, skill.Id);
@@ -138,10 +138,16 @@ public sealed partial class GameServer
         if (info.SkillLink == "InstantHeal")
         {
             // Approximated: a minor potion restores 30% of max health.
-            var healed = Math.Min(sheet.MaxHealth, sheet.Health + Math.Max(10, sheet.MaxHealth * 30 / 100));
-            _store.SaveVitals(s.Character!.Id, healed, sheet.Energy);
+            if (s.Dead)
+            {
+                Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Rejected, "You are dead.", 0, null));
+                return;
+            }
+            var healed = Math.Min(s.MaxHealth, s.Health + Math.Max(10, s.MaxHealth * 30 / 100));
+            s.Health = healed;
+            _store.SaveVitals(s.Character!.Id, healed, s.Energy);
             _store.SetItemQuantity(item.Id, item.Quantity - 1);
-            var after = Sheet(s);
+            var after = RefreshSheet(s);
             Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", PotionRechargeSeconds, after.InventoryWithMoney()));
             Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Health, healed)]).Write);
             return;

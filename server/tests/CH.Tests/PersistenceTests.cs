@@ -13,8 +13,8 @@ public sealed class PersistenceTests : IDisposable
     [Fact]
     public void Migrations_apply_once_and_record_schema_version()
     {
-        using (var store = new GameStore(Db)) Assert.Equal(2, store.SchemaVersion);
-        using (var again = new GameStore(Db)) Assert.Equal(2, again.SchemaVersion);
+        using (var store = new GameStore(Db)) Assert.Equal(3, store.SchemaVersion);
+        using (var again = new GameStore(Db)) Assert.Equal(3, again.SchemaVersion);
     }
 
     [Fact]
@@ -68,6 +68,17 @@ public sealed class PersistenceTests : IDisposable
         var potion = store.ListItems(id).Single(i => i.TemplateId == 10040);
         store.SetItemQuantity(potion.Id, 0);
         Assert.Single(store.ListItems(id));
+    }
+
+    [Fact]
+    public void Spawns_are_stored_per_zone_and_deletable()
+    {
+        using var store = new GameStore(Db);
+        var npc = store.AddSpawn(new SpawnRecord(0, 2, 9, -100f, -3f, -10f, 90f, 100, 0, 11, 60, 0, "alice"));
+        store.AddSpawn(new SpawnRecord(0, 3, 70003, 0, 0, 0, 0, 0, 2, -1, 60, 5, "alice"));
+        Assert.Equal(npc, Assert.Single(store.ListSpawns(2)));
+        Assert.True(store.DeleteSpawn(npc.Id));
+        Assert.Empty(store.ListSpawns(2));
     }
 
     [Fact]

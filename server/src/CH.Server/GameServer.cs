@@ -61,6 +61,14 @@ public sealed partial class GameServer : IDisposable
         while (!_stopping)
         {
             _server.MessageReceivedEvent.WaitOne(20);
+            try
+            {
+                MaybeTick();
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "World tick failed");
+            }
             NetIncomingMessage? msg;
             while ((msg = _server.ReadMessage()) is not null)
             {
@@ -99,6 +107,7 @@ public sealed partial class GameServer : IDisposable
                 }
                 else if (status == NetConnectionStatus.Disconnected)
                 {
+                    if (_sessions.TryGetValue(msg.SenderConnection, out var leaving) && leaving.InZone) LeaveZone(leaving);
                     _sessions.Remove(msg.SenderConnection);
                     _log.LogInformation("Disconnected {Endpoint}: {Reason}", msg.SenderEndPoint, msg.ReadString());
                 }
@@ -162,6 +171,30 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.PlayerMove:
                 OnPlayerMove(s, PlayerMove.Read(msg));
+                break;
+
+            case Opcode.StartAttackingNPC:
+                if (InWorld(s)) OnStartAttacking(s, StartAttacking.Read(msg));
+                break;
+
+            case Opcode.StopAttackingNPC:
+                s.AttackTarget = null;
+                break;
+
+            case Opcode.UseSkillOnNPC:
+                if (InWorld(s)) OnUseSkill(s, UseSkill.Read(msg));
+                break;
+
+            case Opcode.CancelSkill:
+                if (InWorld(s)) OnCancelSkill(s, msg.ReadVariableUInt32());
+                break;
+
+            case Opcode.RessurectionRequest:
+                if (InWorld(s)) OnResurrect(s, ResurrectionRequest.Read(msg));
+                break;
+
+            case Opcode.GeneralChat:
+                if (InWorld(s)) OnChat(s, ChatMessage.ReadFromClient(msg));
                 break;
 
             case Opcode.EquipItem:
@@ -287,6 +320,13 @@ public sealed partial class GameServer : IDisposable
         GrantKitIfNeeded(character);
         var sheet = LoadSheet(character);
         if (string.IsNullOrEmpty(sheet.Progress.Hud)) _store.SaveHud(character.Id, CharacterSheet.SerializeHud(sheet.DefaultHud()));
+        s.Sheet = sheet;
+        s.MaxHealth = sheet.MaxHealth;
+        s.MaxEnergy = sheet.MaxEnergy;
+        s.Health = sheet.Health > 0 ? sheet.Health : sheet.MaxHealth;
+        s.Energy = sheet.Energy;
+        s.Dead = false;
+        s.NextRegenAt = NetTime.Now + RegenIntervalSeconds;
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
         Send(s, Opcode.StatsUpdate, sheet.Stats().Write);
@@ -297,9 +337,7 @@ public sealed partial class GameServer : IDisposable
     private void OnFinishedZoning(Session s)
     {
         if (s.Character is null) return;
-        var (_, x, y, z, _) = s.Position;
-        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z).Write);
-        Send(s, Opcode.AllZoningMessagesSent, _ => { });
+        EnterZone(s);
     }
 
     private void OnPlayerMove(Session s, PlayerMove move)
@@ -352,5 +390,25 @@ public sealed partial class GameServer : IDisposable
         public Account? Account { get; set; }
         public CharacterRecord? Character { get; set; }
         public (int Zone, float X, float Y, float Z, float Direction) Position { get; set; }
+
+        // In-world state (GameServer.World.cs)
+        public bool InZone { get; set; }
+        public int Health { get; set; }
+        public int MaxHealth { get; set; }
+        public int Energy { get; set; }
+        public int MaxEnergy { get; set; }
+        public bool Dead { get; set; }
+        public Mob? AttackTarget { get; set; }
+        public double NextSwingAt { get; set; }
+        public double LastCombatAt { get; set; } = double.MinValue;
+        public double NextRegenAt { get; set; }
+        public Dictionary<int, double> Cooldowns { get; } = new();
+        public List<PendingCast> Casts { get; } = new();
+        public CharacterSheet? Sheet { get; set; }
+
+        public int CharacterId => (int)(Character?.Id ?? 0);
+        public string Name => Character?.Name ?? Account?.Username ?? "?";
     }
+
+    private sealed record PendingCast(SkillInfo Skill, int Level, Mob? Target, double ResolveAt);
 }

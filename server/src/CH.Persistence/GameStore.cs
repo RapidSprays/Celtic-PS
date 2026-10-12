@@ -35,6 +35,22 @@ public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Q
 /// <summary>Progress and vitals. Health/energy of -1 mean "full".</summary>
 public sealed record CharacterProgress(int Level, int Xp, int Coins, int Health, int Energy, string Hud, bool KitGranted);
 
+/// <summary>A hand-placed (GM) spawn point. Opinion below 50 is hostile; NPCs use 100 with level 0.</summary>
+public sealed record SpawnRecord(
+    long Id,
+    int Zone,
+    int TemplateId,
+    float X,
+    float Y,
+    float Z,
+    float Direction,
+    int Opinion,
+    int Level,
+    int ConversationId,
+    int RespawnSeconds,
+    float RoamRadius,
+    string CreatedBy);
+
 public sealed record NewCharacter(
     string Name,
     int Race,
@@ -119,6 +135,25 @@ public sealed class GameStore : IDisposable
             position     INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (character_id, skill_id)
         );
+        """,
+        """
+        CREATE TABLE spawns (
+            id              INTEGER PRIMARY KEY,
+            zone            INTEGER NOT NULL,
+            template_id     INTEGER NOT NULL,
+            x               REAL NOT NULL,
+            y               REAL NOT NULL,
+            z               REAL NOT NULL,
+            direction       REAL NOT NULL DEFAULT 0,
+            opinion         INTEGER NOT NULL,
+            level           INTEGER NOT NULL,
+            conversation_id INTEGER NOT NULL DEFAULT -1,
+            respawn_seconds INTEGER NOT NULL DEFAULT 60,
+            roam_radius     REAL NOT NULL DEFAULT 0,
+            created_by      TEXT NOT NULL DEFAULT '',
+            created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX spawns_zone ON spawns(zone);
         """,
     ];
 
@@ -263,6 +298,37 @@ public sealed class GameStore : IDisposable
             "INSERT OR IGNORE INTO skills(character_id, skill_id, level, position) " +
             "VALUES ($c, $s, 0, (SELECT COALESCE(MAX(position), -1) + 1 FROM skills WHERE character_id = $c))", null,
             ("$c", characterId), ("$s", skillId));
+        return cmd.ExecuteNonQuery() == 1;
+    }
+
+    public SpawnRecord AddSpawn(SpawnRecord s)
+    {
+        using var cmd = Command(
+            """
+            INSERT INTO spawns(zone, template_id, x, y, z, direction, opinion, level, conversation_id, respawn_seconds, roam_radius, created_by)
+            VALUES ($zone, $t, $x, $y, $z, $d, $o, $l, $c, $r, $roam, $by) RETURNING id
+            """, null,
+            ("$zone", s.Zone), ("$t", s.TemplateId), ("$x", s.X), ("$y", s.Y), ("$z", s.Z), ("$d", s.Direction), ("$o", s.Opinion),
+            ("$l", s.Level), ("$c", s.ConversationId), ("$r", s.RespawnSeconds), ("$roam", s.RoamRadius), ("$by", s.CreatedBy));
+        return s with { Id = Convert.ToInt64(cmd.ExecuteScalar()) };
+    }
+
+    public IReadOnlyList<SpawnRecord> ListSpawns(int zone)
+    {
+        using var cmd = Command(
+            "SELECT id, zone, template_id, x, y, z, direction, opinion, level, conversation_id, respawn_seconds, roam_radius, created_by " +
+            "FROM spawns WHERE zone = $z ORDER BY id", null, ("$z", zone));
+        using var r = cmd.ExecuteReader();
+        var list = new List<SpawnRecord>();
+        while (r.Read())
+            list.Add(new SpawnRecord(r.GetInt64(0), r.GetInt32(1), r.GetInt32(2), r.GetFloat(3), r.GetFloat(4), r.GetFloat(5), r.GetFloat(6),
+                r.GetInt32(7), r.GetInt32(8), r.GetInt32(9), r.GetInt32(10), r.GetFloat(11), r.GetString(12)));
+        return list;
+    }
+
+    public bool DeleteSpawn(long id)
+    {
+        using var cmd = Command("DELETE FROM spawns WHERE id = $id", null, ("$id", id));
         return cmd.ExecuteNonQuery() == 1;
     }
 

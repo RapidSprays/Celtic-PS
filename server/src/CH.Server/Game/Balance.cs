@@ -62,7 +62,13 @@ public sealed record ItemInfo(
 
 public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost);
 
-public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRange, bool IncludesWeaponAttack, IReadOnlyList<SkillLevelInfo> Levels);
+/// <summary>A skill template. Heals have negative damage values. <see cref="CastTarget"/> is Self, Enemy, Friendly, Group or Fish.</summary>
+public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRange, bool IncludesWeaponAttack, string CastTarget, IReadOnlyList<SkillLevelInfo> Levels)
+{
+    public SkillLevelInfo Level(int level) => Levels.Count == 0 ? new SkillLevelInfo(0, 0, 0, 5, 0) : Levels[Math.Clamp(level, 0, Levels.Count - 1)];
+}
+
+public sealed record ConversationInfo(int Id, string Filename);
 
 public sealed record MobInfo(int Id, int TemplateId, string Name, string Race, int Type, float Radius, float AttackRange, int AttackSpeed, int Power);
 
@@ -78,8 +84,11 @@ public sealed class Balance
     public static readonly Balance Empty = new(new(), new(), new(), new(), new(), 0);
 
     private Balance(Dictionary<int, ItemInfo> items, Dictionary<int, SkillInfo> skills, Dictionary<int, MobInfo> mobs,
-        Dictionary<int, ZoneInfo> zones, Dictionary<int, int[]> mobSets, int version)
+        Dictionary<int, ZoneInfo> zones, Dictionary<int, int[]> mobSets, int version,
+        List<ConversationInfo>? conversations = null, Dictionary<int, List<int>>? spawnIconIds = null)
     {
+        Conversations = conversations ?? [];
+        SpawnIconIdsByMob = spawnIconIds ?? new();
         Items = items;
         Skills = skills;
         Mobs = mobs;
@@ -94,6 +103,10 @@ public sealed class Balance
     public IReadOnlyDictionary<int, ZoneInfo> Zones { get; }
     public IReadOnlyDictionary<int, int[]> MobSets { get; }
     public int Version { get; }
+    public IReadOnlyList<ConversationInfo> Conversations { get; }
+
+    /// <summary>Official spawn-point ids that carry quest/shop icons for a mob template (SpawnIconInfoCollections).</summary>
+    public IReadOnlyDictionary<int, List<int>> SpawnIconIdsByMob { get; }
     public bool IsLoaded => Items.Count > 0;
 
     public static Balance Load(string? path)
@@ -125,7 +138,7 @@ public sealed class Balance
             var levels = e.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array
                 ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"))).ToList()
                 : [];
-            skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), levels);
+            skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), levels);
         }
 
         var mobs = new Dictionary<int, MobInfo>();
@@ -153,8 +166,22 @@ public sealed class Balance
         foreach (var (key, e) in Entries(root, "MobSets"))
             if (e.ValueKind == JsonValueKind.Array) mobSets[int.Parse(key)] = e.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => x.GetInt32()).ToArray();
 
+        var conversations = new List<ConversationInfo>();
+        if (root.TryGetProperty("ConversationLookupsTemplates", out var convs) && convs.ValueKind == JsonValueKind.Array)
+            foreach (var c in convs.EnumerateArray())
+                conversations.Add(new ConversationInfo(Int(c, "ConversationId"), Str(c, "Filename")));
+
+        var spawnIcons = new Dictionary<int, List<int>>();
+        foreach (var (key, e) in Entries(root, "SpawnIconInfoCollections"))
+        {
+            if (!e.TryGetProperty("IconsInfoPerMob", out var perMob) || perMob.ValueKind != JsonValueKind.Object) continue;
+            foreach (var mob in perMob.EnumerateObject())
+                if (int.TryParse(mob.Name, out var mobId))
+                    (spawnIcons.TryGetValue(mobId, out var list) ? list : spawnIcons[mobId] = []).Add(int.Parse(key));
+        }
+
         var version = root.TryGetProperty("Version", out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
-        return new Balance(items, skills, mobs, zones, mobSets, version);
+        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons);
     }
 
     /// <summary>Skill taught by a "Learn…" skill book, matched on the skill's name without spaces.</summary>
@@ -163,6 +190,26 @@ public sealed class Balance
         if (!book.SkillLink.StartsWith("Learn", StringComparison.Ordinal)) return null;
         var wanted = book.SkillLink["Learn".Length..];
         return Skills.Values.FirstOrDefault(s => s.Name.Replace(" ", "").Replace("'", "").Equals(wanted, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Best conversation for an NPC, matched on name words (e.g. "Private Duncan" → cv_private_duncan). The server-side
+    /// mob → conversation link isn't shipped, so this is a heuristic; GM commands can override it.
+    /// </summary>
+    public ConversationInfo? ConversationFor(MobInfo mob)
+    {
+        static string[] Words(string s) => s.ToLowerInvariant().Split([' ', '_', '-', '\'', '.'], StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => w is not ("the" or "of" or "cv")).ToArray();
+        var name = mob.Name.Contains(']') ? mob.Name[(mob.Name.IndexOf(']') + 1)..] : mob.Name;
+        var nameWords = Words(name);
+        if (nameWords.Length == 0) return null;
+        return Conversations
+            .Select(c => (Conv: c, Words: Words(c.Filename)))
+            .Where(c => c.Words.Contains(nameWords[0]))
+            .OrderByDescending(c => c.Words.Count(nameWords.Contains))
+            .ThenBy(c => c.Words.Length)
+            .Select(c => c.Conv)
+            .FirstOrDefault();
     }
 
     private static IEnumerable<(string Key, JsonElement Value)> Entries(JsonElement root, string name)

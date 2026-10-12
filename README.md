@@ -70,3 +70,22 @@ dotnet run --project src/CH.Server -- --data ~/CelticHeroesAnalysis/server-data
 cd server && dotnet run --project tools/CH.Patcher   # patch the pinned copy (once, or after changing the port)
 cd .. && scripts/run-private.sh                       # start server + patched client; Ctrl+C stops both
 ```
+
+## Playing (Stage F)
+New characters get their class's starter gear, skills, potions and skill books. Lir's Reach is populated with
+monster camps around its leystones (auto-placed; see `server/src/CH.Server/Game/ZonePopulation.cs`). Combat,
+XP, coins, potion drops, level-ups, death and respawn at the nearest leystone all work.
+
+GM commands are typed in normal chat with a `.` prefix (`/` commands are client-encrypted and not used):
+
+| Command | What it does |
+|---|---|
+| `.help` | list commands |
+| `.where` | zone and coordinates |
+| `.find <name>` | search mob templates (e.g. `.find duncan`) |
+| `.npc <id or name> [conv <id>]` | place a friendly NPC here, facing you; its conversation is matched by name (saved) |
+| `.spawn <id or name> [level]` | place a hostile mob here (saved) |
+| `.near [radius]` | list mobs and saved spawns around you |
+| `.delete <spawn id>` / `.delete nearest` | remove a saved spawn |
+| `.heal`, `.level <n>`, `.item <id> [qty]`, `.learn <skill id>` | testing helpers |
+| `.respawn` | respawn every mob in the zone |

@@ -383,3 +383,62 @@ public sealed record MobSpawn(
         foreach (var m in mobs) m.Write(b);
     }
 }
+
+/// <summary>One leg of mob movement for mobPatrolUpdate (23008, reader 2783). The ETA is in the server's NetTime clock.</summary>
+public readonly record struct MobLeg(uint ServerId, double EtaServerTime, float FromX, float FromZ, float ToX, float ToZ, bool Returning);
+
+/// <summary>mobPatrolUpdate (23008): the only message that moves mobs smoothly. From == to stops the mob.</summary>
+public sealed record MobPatrol(IReadOnlyList<MobLeg> Legs)
+{
+    public void Write(NetBuffer b)
+    {
+        b.WriteVariableInt32(Legs.Count);
+        foreach (var l in Legs)
+        {
+            b.WriteVariableUInt32(l.ServerId);
+            b.Write(l.EtaServerTime);
+            b.Write(l.FromX);
+            b.Write(l.FromZ);
+            b.Write(l.ToX);
+            b.Write(l.ToZ);
+            b.Write((byte)(l.Returning ? 1 : 0));
+        }
+    }
+}
+
+/// <summary>HW_CHAT_BOX_CHANNEL.</summary>
+public enum ChatChannel
+{
+    None = -1,
+    Global = 0,
+    Group = 1,
+    Clan = 2,
+    Local = 3,
+    System = 4,
+    Battle = 5,
+    WhisperIncoming = 6,
+    WhisperOutgoing = 7,
+    Zone = 8,
+    Trade = 9,
+    Command = 10,
+}
+
+/// <summary>GeneralChat (17001). Client → server: channel, text (prefix such as "s " included). Server → client: channel, sender, text, text id.</summary>
+public sealed record ChatMessage(ChatChannel Channel, string Sender, string Text)
+{
+    public static ChatMessage ReadFromClient(NetBuffer b) => new((ChatChannel)b.ReadVariableInt32(), "", b.ReadString());
+
+    public void WriteToClient(NetBuffer b)
+    {
+        b.WriteVariableInt32((int)Channel);
+        b.Write(Sender);
+        b.Write(Text);
+        b.WriteVariableInt32(0);
+    }
+
+    public void WriteFromClient(NetBuffer b)
+    {
+        b.WriteVariableInt32((int)Channel);
+        b.Write(Text);
+    }
+}
