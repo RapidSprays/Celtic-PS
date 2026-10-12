@@ -39,7 +39,7 @@ public sealed partial class GameServer
         if (_zones.TryGetValue(zoneId, out var zone)) return zone;
         zone = new Zone { Id = zoneId };
         var now = NetTime.Now;
-        foreach (var mob in ZonePopulation.Build(zoneId, _balance, now)) zone.Mobs[mob.ServerId] = mob;
+        foreach (var mob in ZonePopulation.Build(zoneId, _balance, now, _generatedCamps)) zone.Mobs[mob.ServerId] = mob;
         foreach (var spawn in _store.ListSpawns(zoneId))
             if (MobFromSpawn(zone, spawn, now) is { } mob) zone.Mobs[mob.ServerId] = mob;
         _zones[zoneId] = zone;

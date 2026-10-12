@@ -19,6 +19,7 @@ public sealed partial class GameServer : IDisposable
     private readonly GameStore _store;
     private readonly FrameLog _frames;
     private readonly Balance _balance;
+    private readonly IReadOnlyDictionary<int, GeneratedCamp[]> _generatedCamps;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -34,6 +35,9 @@ public sealed partial class GameServer : IDisposable
         var started = System.Diagnostics.Stopwatch.StartNew();
         _chestCatalog = ChestCatalog.Build(balance);
         if (balance.IsLoaded) log.LogInformation("Chest catalogue: {Count} chests in {Ms} ms", _chestCatalog.Chests.Count, started.ElapsedMilliseconds);
+        _generatedCamps = ZonePopulation.LoadGenerated(options.PopulationPath);
+        if (_generatedCamps.Count > 0)
+            log.LogInformation("Generated monster camps for {Zones} zones ({Mobs} monsters)", _generatedCamps.Count, _generatedCamps.Values.Sum(z => z.Sum(c => c.Count)));
         _log = log;
         var config = new NetPeerConfiguration(Envelope.AppIdentifier)
         {

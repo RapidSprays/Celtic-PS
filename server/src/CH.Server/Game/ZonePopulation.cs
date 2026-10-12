@@ -3,6 +3,9 @@ namespace CH.Server.Game;
 /// <summary>A cluster of monsters placed around one of the zone's player spawn points (leystones).</summary>
 public sealed record Camp(int Anchor, float OffsetX, float OffsetZ, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float RoamRadius = 6f);
 
+/// <summary>A camp from scripts/gen-zone-population.py: absolute centre (y is a nearby walkable point's height).</summary>
+public sealed record GeneratedCamp(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float RoamRadius);
+
 /// <summary>
 /// Auto-population of monsters. The client ships no spawn positions or mob levels, so these camps are <b>approximated</b>:
 /// which mobs live in a zone comes from the zone's quest chain (kill objectives in text.db) and MobSets; levels follow
@@ -38,25 +41,60 @@ public static class ZonePopulation
         ],
     };
 
-    /// <summary>Builds the monsters for a zone. Skips templates the client data doesn't have.</summary>
-    public static List<Mob> Build(int zoneId, Balance balance, double now)
+    /// <summary>
+    /// Reads zone-population.json (written next to the balance JSON by scripts/gen-zone-population.py).
+    /// Missing file → only the hand-made camps exist.
+    /// </summary>
+    public static IReadOnlyDictionary<int, GeneratedCamp[]> LoadGenerated(string? path)
+    {
+        var result = new Dictionary<int, GeneratedCamp[]>();
+        if (path is null || !File.Exists(path)) return result;
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path));
+        foreach (var zone in doc.RootElement.GetProperty("zones").EnumerateObject())
+        {
+            result[int.Parse(zone.Name)] = zone.Value.GetProperty("camps").EnumerateArray().Select(c => new GeneratedCamp(
+                c.GetProperty("x").GetSingle(), c.GetProperty("y").GetSingle(), c.GetProperty("z").GetSingle(),
+                c.GetProperty("radius").GetSingle(), c.GetProperty("count").GetInt32(),
+                c.GetProperty("templates").EnumerateArray().Select(t => t.GetInt32()).ToArray(),
+                c.GetProperty("minLevel").GetInt32(), c.GetProperty("maxLevel").GetInt32(), c.GetProperty("roam").GetSingle())).ToArray();
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Builds the monsters for a zone: the hand-made camps when the zone has them, otherwise the generated ones.
+    /// Skips templates the client data doesn't have.
+    /// </summary>
+    public static List<Mob> Build(int zoneId, Balance balance, double now, IReadOnlyDictionary<int, GeneratedCamp[]>? generated = null)
     {
         var mobs = new List<Mob>();
-        if (!Camps.TryGetValue(zoneId, out var camps) || !balance.Zones.TryGetValue(zoneId, out var zone)) return mobs;
+        if (!balance.Zones.TryGetValue(zoneId, out var zone)) return mobs;
+        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam)>();
+        if (Camps.TryGetValue(zoneId, out var camps))
+        {
+            foreach (var camp in camps)
+            {
+                var anchor = zone.PlayerSpawns.FirstOrDefault(p => p.Id == camp.Anchor);
+                if (anchor == default) continue;
+                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius));
+            }
+        }
+        else if (generated is not null && generated.TryGetValue(zoneId, out var gen))
+        {
+            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius)));
+        }
         var rng = new Random(zoneId * 7919);
         var serverId = FirstAutoServerId + (uint)zoneId * 1000;
-        foreach (var camp in camps)
+        foreach (var camp in centres)
         {
-            var anchor = zone.PlayerSpawns.FirstOrDefault(p => p.Id == camp.Anchor);
-            if (anchor == default) continue;
             for (var i = 0; i < camp.Count; i++)
             {
                 var templateId = camp.Templates[rng.Next(camp.Templates.Length)];
                 var level = rng.Next(camp.MinLevel, camp.MaxLevel + 1);
                 var angle = rng.NextDouble() * Math.PI * 2;
                 var dist = Math.Sqrt(rng.NextDouble()) * camp.Radius;
-                var x = anchor.X + camp.OffsetX + (float)(Math.Cos(angle) * dist);
-                var z = anchor.Z + camp.OffsetZ + (float)(Math.Sin(angle) * dist);
+                var x = camp.X + (float)(Math.Cos(angle) * dist);
+                var z = camp.Z + (float)(Math.Sin(angle) * dist);
                 if (zone.Max.X - zone.Min.X > 20 && zone.Max.Z - zone.Min.Z > 20)
                 {
                     x = Math.Clamp(x, zone.Min.X + 5, zone.Max.X - 5);
@@ -69,12 +107,12 @@ public static class ZonePopulation
                     Template = template,
                     Level = level,
                     HomeX = x,
-                    HomeY = anchor.Y,
+                    HomeY = camp.Y,
                     HomeZ = z,
                     Direction = (float)(rng.NextDouble() * 360),
                     Opinion = 0,
                     AggroRange = MobStats.AggroRange(template.Power),
-                    RoamRadius = camp.RoamRadius,
+                    RoamRadius = camp.Roam,
                 };
                 mob.Reset(now);
                 mobs.Add(mob);

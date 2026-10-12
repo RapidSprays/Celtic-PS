@@ -47,6 +47,9 @@ public sealed class ServerOptions
     public string? BalancePath { get; set; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CelticHeroesAnalysis", "extracted", "24928510", "balance-client.json");
 
+    /// <summary>Generated monster camps (scripts/gen-zone-population.py), read from beside the balance JSON.</summary>
+    public string? PopulationPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-population.json");
+
     public void Validate()
     {
         if (!IPAddress.IsLoopback(BindAddress) && !AllowRemote)
