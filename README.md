@@ -6,10 +6,10 @@ The aim is a private, non-commercial Celtic Heroes server that a pinned, modifie
 | Stage | State |
 |---|---|
 | A: Inventory and pinned client | **done**: build 24928510 inventoried, snapshot taken, pinned copy launches |
-| B: Client map | next: needs `ilspycmd` and REA installed |
-| C: Protocol and boot sequence | not started; first boot observations in [docs/inventory-summary.md](docs/inventory-summary.md) |
-| D: Server foundation | not started |
-| E: Real client on the private server | not started |
+| B: Client map | **done**: [client-architecture.md](docs/client-architecture.md) |
+| C: Protocol and boot sequence | **first pass done**: [boot-sequence.md](docs/boot-sequence.md), [protocol-notes.md](docs/protocol-notes.md), [opcode-map.md](docs/opcode-map.md). Unknowns U1–U4 are resolved during D/E |
+| D: Server foundation | next |
+| E: Real client on the private server | patch set drafted: [patch-manifest.md](docs/patch-manifest.md) |
 
 ## Layout
 - `docs/`: research notes. Every claim is labelled and tracked in [docs/confidence-ledger.md](docs/confidence-ledger.md).
