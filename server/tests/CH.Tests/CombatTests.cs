@@ -82,6 +82,91 @@ public sealed class CombatTests : IAsyncDisposable
         client.Expect(Opcode.ZoneMonsterDisappeared);
     }
 
+    private async Task<(ServerHost Host, CH.FakeClient.FakeClient Client, StartGameReply Start)> EnterAs(string user, string name, int @class)
+    {
+        var host = await ServerHost.StartAsync(
+            new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = Path.Combine(_dir, user), BalancePath = BalancePath },
+            NullLoggerFactory.Instance);
+        var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login(user);
+        var created = client.CreateCharacter(name, @class: @class);
+        var start = client.StartGame(created.CharacterId, name);
+        client.Send(Opcode.FinishedZoning, _ => { });
+        client.Expect(Opcode.AllZoningMessagesSent);
+        return (host, client, start);
+    }
+
+    private static (List<(int Id, int Level, int Seconds)> Effects, CharacterStats Stats) ReadEffects(NetIncomingMessage m)
+    {
+        var effects = new List<(int, int, int)>();
+        for (int i = 0, n = m.ReadVariableInt32(); i < n; i++)
+        {
+            effects.Add((m.ReadVariableInt32(), m.ReadVariableInt32(), m.ReadVariableInt32()));
+            m.ReadFloat();
+            m.ReadFloat();
+        }
+        return (effects, CharacterStats.Read(m));
+    }
+
+    [Fact]
+    public async Task Hide_shows_as_a_status_effect_keeps_mobs_off_and_breaks_when_attacking()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var (host, client, _) = await EnterAs("rogue", "Sionnach", @class: 5);
+        await using var _h = host;
+        using var _c = client;
+
+        client.Send(Opcode.UseSkillOnNPC, new UseSkill(TargetType.Self, 0, NetTime.Now, 17).Write); // Hide
+        var (effects, _) = ReadEffects(client.Expect(Opcode.StatusEffectUpdate, TimeSpan.FromSeconds(5)));
+        var hide = Assert.Single(effects);
+        Assert.Equal(9, hide.Id);
+        Assert.InRange(hide.Seconds, 40, 45);
+
+        // A 2-star (aggressive) level 4 Beastwalker right next to us doesn't notice a hidden rogue.
+        Chat(client, ".spawn Beastwalker 4");
+        var mobId = client.Expect(Opcode.ZoneMonsterAppeared).ReadVariableUInt32();
+        Assert.Throws<TimeoutException>(() => client.Expect(Opcode.AttackState, TimeSpan.FromSeconds(2)));
+
+        // Attacking breaks Hide: the effect list empties.
+        client.Send(Opcode.StartAttackingNPC, new StartAttacking(TargetType.Mob, NetTime.Now, mobId).Write);
+        var (after, _) = ReadEffects(client.Expect(Opcode.StatusEffectUpdate, TimeSpan.FromSeconds(3)));
+        Assert.Empty(after);
+    }
+
+    [Fact]
+    public async Task Protective_stance_raises_armour_and_gm_commands_change_level_and_give_items()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var (host, client, start) = await EnterAs("warrior", "Cathal", @class: 1);
+        await using var _h = host;
+        using var _c = client;
+        var baseArmour = start.Stats.ArmourValue;
+
+        client.Send(Opcode.UseSkillOnNPC, new UseSkill(TargetType.Self, 0, NetTime.Now, 2).Write); // Protective Stance
+        var (effects, stats) = ReadEffects(client.Expect(Opcode.StatusEffectUpdate, TimeSpan.FromSeconds(5)));
+        Assert.Equal(1, Assert.Single(effects).Id);
+        Assert.True(stats.ArmourValue > baseArmour + 10, $"armour {stats.ArmourValue} should be well above {baseArmour}");
+
+        Chat(client, ".give minor health potion 3");
+        var inventory = client.Expect(Opcode.InventoryUpdate);
+        inventory.ReadVariableInt32();
+        var items = Enumerable.Range(0, inventory.ReadVariableInt32()).Select(_ => ItemSlot.Read(inventory)).ToList();
+        Assert.Equal(8, items.Single(i => i.TemplateId == 10040).Quantity); // 5 from the kit + 3
+
+        Chat(client, ".level +5");
+        var up = client.Expect(Opcode.LevelUp);
+        up.ReadVariableInt32();
+        Assert.Equal(6, up.ReadVariableInt32());
+        Chat(client, ".level -3");
+        client.Expect(Opcode.LevelUp);
+        Chat(client, ".xp 100000");
+        var xpUp = client.Expect(Opcode.LevelUp);
+        xpUp.ReadVariableInt32();
+        Assert.True(xpUp.ReadVariableInt32() > 3);
+    }
+
     [Fact]
     public void Npc_conversations_are_matched_by_name()
     {

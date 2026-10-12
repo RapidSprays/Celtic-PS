@@ -74,7 +74,9 @@ cd .. && scripts/run-private.sh                       # start server + patched c
 ## Playing (Stage F)
 New characters get their class's starter gear, skills, potions and skill books. Lir's Reach is populated with
 monster camps around its leystones (auto-placed; see `server/src/CH.Server/Game/ZonePopulation.cs`). Combat,
-XP, coins, potion drops, level-ups, death and respawn at the nearest leystone all work.
+XP, coins, potion drops, level-ups, death and respawn at the nearest leystone all work. Buffs and debuffs
+(status effects) show with icons and timers and do what they say: armour/defence/attack/speed/regen changes,
+Hide and Camouflage against aggro, energy and damage shields, damage over time on mobs.
 
 GM commands are typed in normal chat with a `.` prefix (`/` commands are client-encrypted and not used):
 
@@ -87,5 +89,9 @@ GM commands are typed in normal chat with a `.` prefix (`/` commands are client-
 | `.spawn <id or name> [level]` | place a hostile mob here (saved) |
 | `.near [radius]` | list mobs and saved spawns around you |
 | `.delete <spawn id>` / `.delete nearest` | remove a saved spawn |
-| `.heal`, `.level <n>`, `.item <id> [qty]`, `.learn <skill id>` | testing helpers |
+| `.level <n>` / `.level +<n>` / `.level -<n>` | set or change your level |
+| `.xp <amount>` | gain experience (levels up as it goes) |
+| `.give <item id or name> [qty]` (or `.item`) | put items in your backpack, e.g. `.give minor health potion 5` |
+| `.finditem <name>` | search item templates (several can share a name; pick by id) |
+| `.heal`, `.learn <skill id>` | testing helpers |
 | `.respawn` | respawn every mob in the zone |

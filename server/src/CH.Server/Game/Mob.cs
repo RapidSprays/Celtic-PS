@@ -46,6 +46,7 @@ public sealed class Mob
     public double RespawnAt { get; set; }
     public bool Removed { get; set; }
     public Dictionary<object, int> Damage { get; } = new();
+    public List<ActiveEffect> Effects { get; } = new();
 
     public float FromX { get; private set; }
     public float FromZ { get; private set; }
@@ -94,6 +95,7 @@ public sealed class Mob
         AttackAnnounced = false;
         Removed = false;
         Damage.Clear();
+        Effects.Clear();
         FromX = ToX = HomeX;
         FromZ = ToZ = HomeZ;
         LegStart = LegEta = now;

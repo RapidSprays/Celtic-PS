@@ -329,7 +329,8 @@ public sealed partial class GameServer : IDisposable
         s.NextRegenAt = NetTime.Now + RegenIntervalSeconds;
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
-        Send(s, Opcode.StatsUpdate, sheet.Stats().Write);
+        s.Effects.Clear();
+        SendLiveStats(s);
         Send(s, Opcode.GameDataMessage, new GameData(MaxChatLength: 200, AttackDelaySeconds: 0.1f).Write);
         _log.LogInformation("{Name} entering zone {Zone} at ({X:F1}, {Y:F1}, {Z:F1})", character.Name, character.Zone, character.X, character.Y, character.Z);
     }
@@ -404,6 +405,7 @@ public sealed partial class GameServer : IDisposable
         public double NextRegenAt { get; set; }
         public Dictionary<int, double> Cooldowns { get; } = new();
         public List<PendingCast> Casts { get; } = new();
+        public List<ActiveEffect> Effects { get; } = new();
         public CharacterSheet? Sheet { get; set; }
 
         public int CharacterId => (int)(Character?.Id ?? 0);

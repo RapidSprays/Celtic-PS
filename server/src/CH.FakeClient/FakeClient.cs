@@ -164,9 +164,14 @@ public sealed class FakeClient : IDisposable
     /// <summary>Waits for a Data message with the given opcode, applying the real client's session check. Returns it positioned after the header.</summary>
     public NetIncomingMessage Expect(Opcode opcode, TimeSpan? timeout = null)
     {
+        // One deadline for the whole wait: other messages (mob movement, regen) must not extend it.
+        var deadline = Stopwatch.StartNew();
+        var limit = timeout ?? DefaultTimeout;
         while (true)
         {
-            var msg = Next(m => m.MessageType == NetIncomingMessageType.Data, timeout);
+            var remaining = limit - deadline.Elapsed;
+            if (remaining <= TimeSpan.Zero) throw new TimeoutException($"no {opcode} from the server within {limit.TotalSeconds:F1}s");
+            var msg = Next(m => m.MessageType == NetIncomingMessageType.Data, remaining);
             var header = Envelope.ReadServerHeader(msg);
             if (header.SessionId is { } sid && sid != _session)
                 throw new InvalidDataException($"{header.Opcode}: session {sid} does not match {_session} (the real client would drop it)");

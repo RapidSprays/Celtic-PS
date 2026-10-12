@@ -23,7 +23,11 @@ public sealed partial class GameServer
         ".near [radius] - spawns and mobs around you",
         ".delete <spawn id> | .delete nearest - remove a saved spawn",
         ".find <name> - search mob templates",
-        ".heal | .level <n> | .item <template id> [qty] | .learn <skill id>",
+        ".level <n> | .level +<n> | .level -<n> - set or change your level",
+        ".xp <amount> - gain experience (levels up as it goes)",
+        ".give <item id or name> [qty] - put items in your backpack (.item is the same)",
+        ".finditem <name> - search item templates",
+        ".heal | .learn <skill id>",
         ".respawn - respawn every mob in the zone");
 
     private void OnChat(Session s, ChatMessage chat)
@@ -168,31 +172,78 @@ public sealed partial class GameServer
 
             case "level":
             {
-                var level = Math.Clamp(int.Parse(args[0], CultureInfo.InvariantCulture), 1, Progression.MaxLevel);
+                if (args.Length == 0)
+                {
+                    Tell(s, $"You are level {s.Sheet!.Level}. Usage: .level <n>, .level +<n> or .level -<n>");
+                    break;
+                }
+                var current = s.Sheet!.Level;
+                var arg = args[0];
+                var value = int.Parse(arg.TrimStart('+'), CultureInfo.InvariantCulture);
+                var level = Math.Clamp(arg.StartsWith('+') || arg.StartsWith('-') ? current + value : value, 1, Progression.MaxLevel);
                 var progress = _store.GetProgress(s.Character!.Id);
                 _store.SaveProgress(s.Character.Id, level, 0, progress.Coins);
-                var sheet = RefreshSheet(s);
-                s.Health = s.MaxHealth;
-                s.Energy = s.MaxEnergy;
-                Send(s, Opcode.LevelUp, new LevelUp(level).Write);
-                Send(s, Opcode.StatsUpdate, sheet.Stats().Write);
-                Tell(s, $"You are now level {level}.");
+                RefreshSheet(s);
+                AnnounceLevel(s, level);
+                Tell(s, $"Level {current} -> {level}.");
                 break;
             }
 
+            case "xp":
+            {
+                var amount = int.Parse(args[0], CultureInfo.InvariantCulture);
+                var before = s.Sheet!.Level;
+                var level = AddXp(s, amount, out var sheet);
+                if (level != before) AnnounceLevel(s, level);
+                else SendLiveStats(s);
+                Tell(s, $"+{amount} xp: level {level}, {sheet.XpPercent:F0}% to next.");
+                break;
+            }
+
+            case "finditem":
+            {
+                var query = string.Join(' ', args);
+                var found = _balance.Items.Values
+                    .Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(i => i.Name.Length).ThenBy(i => i.Id).Take(12)
+                    .Select(i => $"{i.Id}: {i.Name}{(i.Slot >= 0 ? $" ({i.Slot})" : "")}")
+                    .ToList();
+                Tell(s, found.Count == 0 ? "No items match." : string.Join("\n", found));
+                break;
+            }
+
+            case "give":
             case "item":
             {
-                var templateId = int.Parse(args[0], CultureInfo.InvariantCulture);
-                var qty = args.Length > 1 ? Math.Clamp(int.Parse(args[1], CultureInfo.InvariantCulture), 1, 999) : 1;
-                if (!_balance.Items.TryGetValue(templateId, out var info))
+                // ".give 10040 5", ".give minor health potion 5", ".give Tempered Small Sword"
+                var qtyGiven = args.Length > 1 && int.TryParse(args[^1], out var q) && !(args.Length == 1);
+                var nameArgs = qtyGiven ? args[..^1] : args;
+                var qty = qtyGiven ? Math.Clamp(int.Parse(args[^1], CultureInfo.InvariantCulture), 1, 999) : 1;
+                ItemInfo? info;
+                if (nameArgs.Length == 1 && int.TryParse(nameArgs[0], out var templateId)) info = _balance.Items.GetValueOrDefault(templateId);
+                else
                 {
-                    Tell(s, $"No item template {templateId}.");
+                    // Several templates can share a name (three "Minor Health Potion"s): prefer one already carried, then the lowest id.
+                    var name = string.Join(' ', nameArgs);
+                    var carried = s.Sheet!.Items.Select(i => i.TemplateId).ToHashSet();
+                    info = _balance.Items.Values.Where(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                               .OrderByDescending(i => carried.Contains(i.Id)).ThenBy(i => i.Id).FirstOrDefault()
+                           ?? _balance.Items.Values.Where(i => i.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+                               .OrderByDescending(i => carried.Contains(i.Id)).ThenBy(i => i.Name.Length).ThenBy(i => i.Id).FirstOrDefault();
+                }
+                if (info is null || nameArgs.Length == 0)
+                {
+                    Tell(s, "Usage: .give <item id or name> [qty]. Try .finditem first.");
                     break;
                 }
-                _store.AddItem(s.Character!.Id, templateId, qty);
+                // Stackable items join an existing stack; everything else is one entry per item.
+                var stack = info.Stackable ? s.Sheet!.Backpack.FirstOrDefault(i => i.TemplateId == info.Id) : null;
+                if (stack is not null) _store.SetItemQuantity(stack.Id, stack.Quantity + qty);
+                else if (info.Stackable) _store.AddItem(s.Character!.Id, info.Id, qty);
+                else for (var i = 0; i < Math.Min(qty, 20); i++) _store.AddItem(s.Character!.Id, info.Id, 1);
                 var sheet = RefreshSheet(s);
                 Send(s, Opcode.InventoryUpdate, sheet.InventoryWithMoney().Write);
-                Tell(s, $"Added {qty} x {info.Name}.");
+                Tell(s, $"Added {qty} x {info.Name} ({info.Id}).");
                 break;
             }
 
@@ -207,6 +258,7 @@ public sealed partial class GameServer
                 _store.LearnSkill(s.Character!.Id, skillId);
                 var sheet = RefreshSheet(s);
                 Send(s, Opcode.SkillListUpdate, new SkillListUpdate(0, sheet.SkillEntries()).Write);
+                SendLiveStats(s);
                 Tell(s, $"Learned {skill.Name}.");
                 break;
             }

@@ -104,6 +104,7 @@ public sealed partial class GameServer
         zone.Players.Remove(s);
         s.InZone = false;
         s.AttackTarget = null;
+        s.Effects.Clear();
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s))) StartReturn(zone, mob, NetTime.Now);
         if (s.Character is not null) _store.SaveVitals(s.Character.Id, s.Dead ? -1 : s.Health, s.Energy);
     }
@@ -151,6 +152,8 @@ public sealed partial class GameServer
             return;
         }
         if (mob.IsNpc) return;
+        TickMobEffects(zone, mob, now);
+        if (mob.State == MobState.Dead) return;
 
         switch (mob.State)
         {
@@ -239,9 +242,9 @@ public sealed partial class GameServer
     {
         var (mx, mz) = mob.PositionAt(now);
         return zone.Players
-            .Where(p => p.InZone && !p.Dead)
+            .Where(p => p.InZone && !p.Dead && !IsHiddenFrom(p, mob))
             .Select(p => (Player: p, Dist: MathF.Sqrt((p.Position.X - mx) * (p.Position.X - mx) + (p.Position.Z - mz) * (p.Position.Z - mz))))
-            .Where(p => p.Dist <= range)
+            .Where(p => p.Dist <= range * (100 - Modifiers(p.Player).CamouflagePercent) / 100f)
             .OrderBy(p => p.Dist)
             .Select(p => p.Player)
             .FirstOrDefault();
@@ -285,9 +288,11 @@ public sealed partial class GameServer
                 var sheet = s.Sheet!;
                 if (InReach(s, target, sheet.AttackRange + MeleeTolerance, now))
                 {
-                    var damage = sheet.WeaponDamage + sheet.Attack / 3 + sheet.Level;
+                    var stats = LiveStats(s);
+                    var ranged = sheet.AttackRange > 3 ? Modifiers(s).RangedDamage : 0;
+                    var damage = sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged;
                     PlayerHits(zone, s, target, AttackKind.Attack, 0, damage, now);
-                    s.NextSwingAt = now + sheet.AttackSpeed / 1000.0 + 0.1;
+                    s.NextSwingAt = now + stats.AttackSpeed / 1000.0 + 0.1;
                 }
                 else
                 {
@@ -302,12 +307,15 @@ public sealed partial class GameServer
             ResolveCast(zone, s, cast, now);
         }
 
+        TickEffects(zone, s, now);
+
         if (now >= s.NextRegenAt)
         {
             s.NextRegenAt = now + RegenIntervalSeconds;
             var outOfCombat = now - s.LastCombatAt > OutOfCombatSeconds;
-            var health = Math.Min(s.MaxHealth, s.Health + (outOfCombat ? Math.Max(1, s.MaxHealth / 20) : 0));
-            var energy = Math.Min(s.MaxEnergy, s.Energy + (outOfCombat ? Math.Max(1, s.MaxEnergy / 10) : 1));
+            var m = Modifiers(s);
+            var health = Math.Min(s.MaxHealth, s.Health + (outOfCombat ? Math.Max(1, s.MaxHealth / 20) : 0) + m.HealthRegen);
+            var energy = Math.Min(s.MaxEnergy, s.Energy + (outOfCombat ? Math.Max(1, s.MaxEnergy / 10) : 1) + m.EnergyRegen);
             if (health != s.Health || energy != s.Energy)
             {
                 s.Health = health;
@@ -331,6 +339,7 @@ public sealed partial class GameServer
         if (!zone.Mobs.TryGetValue(req.TargetId, out var mob) || mob.IsNpc || mob.State == MobState.Dead) return;
         s.AttackTarget = mob;
         s.NextSwingAt = Math.Max(s.NextSwingAt, NetTime.Now + 0.3);
+        BreakStealth(s);
     }
 
     private void OnUseSkill(Session s, UseSkill req)
@@ -381,10 +390,13 @@ public sealed partial class GameServer
         var amount = Math.Abs(level.InitialDamage) + Math.Abs(level.BaseDamage);
         if (cast.Target is { } mob)
         {
-            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + s.Sheet!.Attack / 4;
-            PlayerHits(zone, s, mob, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now);
+            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4;
+            PlayerHits(zone, s, mob, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
+            if (cast.Skill.StatusEffectId > 0 && mob.State != MobState.Dead) ApplyMobEffect(mob, s, cast.Skill, cast.Level, now);
+            return;
         }
-        else if (level.InitialDamage < 0 || level.BaseDamage < 0)
+        if (cast.Skill.StatusEffectId > 0) ApplyEffect(s, cast.Skill, cast.Level, now);
+        if (level.InitialDamage < 0 || level.BaseDamage < 0)
         {
             var heal = Math.Max(1, (int)amount);
             s.Health = Math.Min(s.MaxHealth, s.Health + heal);
@@ -394,14 +406,15 @@ public sealed partial class GameServer
         }
     }
 
-    private void PlayerHits(Zone zone, Session s, Mob mob, AttackKind kind, int skillId, int baseDamage, double now)
+    private void PlayerHits(Zone zone, Session s, Mob mob, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
     {
         s.LastCombatAt = now;
+        BreakStealth(s);
         var roll = Random.Shared.NextDouble();
-        var reaction = kind == AttackKind.Skill ? Reaction.SkillHitAggressive : Reaction.Hit;
+        var reaction = kind is AttackKind.Skill or AttackKind.StatusEffect ? Reaction.SkillHitAggressive : Reaction.Hit;
         var critical = false;
         int damage;
-        if (kind == AttackKind.Attack && roll < 0.08)
+        if (allowMiss && kind == AttackKind.Attack && roll < 0.08)
         {
             reaction = Reaction.Miss;
             damage = 0;
@@ -427,13 +440,26 @@ public sealed partial class GameServer
     private void MobHits(Zone zone, Mob mob, Session target, double now)
     {
         target.LastCombatAt = now;
-        var miss = Random.Shared.NextDouble() < 0.1;
-        var damage = miss ? 0 : Math.Max(1, (int)Math.Round(MobStats.HitDamage(mob.Level, mob.Template.Power) * (0.8 + Random.Shared.NextDouble() * 0.4)) - target.Sheet!.Armour / 10);
-        target.Health = Math.Max(0, target.Health - damage);
+        BreakStealth(target);
+        var m = Modifiers(target);
+        var miss = Random.Shared.NextDouble() < Math.Min(0.5, 0.1 + m.Defence / 200.0);
+        var armour = target.Sheet!.Armour + m.Armour;
+        var damage = miss ? 0 : Math.Max(1, (int)Math.Round(MobStats.HitDamage(mob.Level, mob.Template.Power) * (0.8 + Random.Shared.NextDouble() * 0.4)) - armour / 10);
+        var absorbed = damage - AbsorbWithShields(target, damage);
+        target.Health = Math.Max(0, target.Health - (damage - absorbed));
         var entry = new DamageEntry(DamageDirection.MobToPlayer, (int)mob.ServerId, target.CharacterId, AttackKind.Attack, 0, damage, target.Health,
             miss ? Reaction.Miss : Reaction.Hit, ++_damageId, false);
         Send(target, Opcode.CombatDamageMessage, new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Player, target.CharacterId, target.Health)]).Write);
-        if (target.Health <= 0) PlayerDies(zone, target, now);
+        if (target.Health <= 0)
+        {
+            PlayerDies(zone, target, now);
+            return;
+        }
+        if (!miss && m.DamageShield > 0 && mob.State != MobState.Dead)
+        {
+            var shield = target.Effects.First(e => e.Type == EffectType.DamageShield);
+            PlayerHits(zone, target, mob, AttackKind.StatusEffect, shield.Info.Id, m.DamageShield, now, allowMiss: false);
+        }
     }
 
     private void KillMob(Zone zone, Mob mob, Session killer, double now)
@@ -465,26 +491,36 @@ public sealed partial class GameServer
             else _store.AddItem(c.Id, ClassKit.MinorHealthPotion, 1);
         }
 
+        _store.SaveProgress(c.Id, progress.Level, progress.Xp, progress.Coins + coins);
+        var newLevel = AddXp(s, xp, out var sheet);
+        Send(s, Opcode.WonCombat, new WonCombat(mob.Template.Id, (int)mob.ServerId, s.CharacterId, xp, sheet.XpPercent, coins, loot, sheet.InventoryWithMoney()).Write);
+        if (newLevel > progress.Level) AnnounceLevel(s, newLevel);
+    }
+
+    /// <summary>Adds XP, levelling up as many times as it covers. Returns the new level.</summary>
+    private int AddXp(Session s, int xp, out CharacterSheet sheet)
+    {
+        var progress = _store.GetProgress(s.Character!.Id);
         var level = Math.Max(1, progress.Level);
-        var totalXp = progress.Xp + xp;
-        var levelsGained = 0;
+        var totalXp = Math.Max(0, progress.Xp + xp);
         while (level < Progression.MaxLevel && totalXp >= Progression.XpToNextLevel(level))
         {
             totalXp -= Progression.XpToNextLevel(level);
             level++;
-            levelsGained++;
         }
-        _store.SaveProgress(c.Id, level, totalXp, progress.Coins + coins);
-        var sheet = RefreshSheet(s);
-        Send(s, Opcode.WonCombat, new WonCombat(mob.Template.Id, (int)mob.ServerId, s.CharacterId, xp, sheet.XpPercent, coins, loot, sheet.InventoryWithMoney()).Write);
-        if (levelsGained > 0)
-        {
-            s.Health = s.MaxHealth;
-            s.Energy = s.MaxEnergy;
-            Send(s, Opcode.LevelUp, new LevelUp(level).Write);
-            Send(s, Opcode.StatsUpdate, sheet.Stats().Write);
-            _log.LogInformation("{Name} reached level {Level}", s.Name, level);
-        }
+        _store.SaveProgress(s.Character.Id, level, totalXp, progress.Coins);
+        sheet = RefreshSheet(s);
+        return level;
+    }
+
+    /// <summary>Tells the client about a new level and refills health and energy.</summary>
+    private void AnnounceLevel(Session s, int level)
+    {
+        s.Health = int.MaxValue;
+        s.Energy = int.MaxValue;
+        Send(s, Opcode.LevelUp, new LevelUp(level).Write);
+        SendLiveStats(s);
+        _log.LogInformation("{Name} is now level {Level}", s.Name, level);
     }
 
     /// <summary>Reloads the sheet after progress or gear changes, carrying current HP and energy over.</summary>
@@ -492,10 +528,7 @@ public sealed partial class GameServer
     {
         var sheet = LoadSheet(s.Character!);
         s.Sheet = sheet;
-        s.MaxHealth = sheet.MaxHealth;
-        s.MaxEnergy = sheet.MaxEnergy;
-        s.Health = Math.Min(s.Health, s.MaxHealth);
-        s.Energy = Math.Min(s.Energy, s.MaxEnergy);
+        _ = LiveStats(s); // recomputes maxima with active effects and clamps current values
         return sheet;
     }
 
@@ -504,6 +537,7 @@ public sealed partial class GameServer
         s.Dead = true;
         s.AttackTarget = null;
         s.Casts.Clear();
+        s.Effects.Clear();
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s)).ToList()) StartReturn(zone, mob, now);
         _log.LogInformation("{Name} died", s.Name);
     }
@@ -525,6 +559,6 @@ public sealed partial class GameServer
         _store.SavePosition(s.Character!.Id, zoneId, x, y, z, dir);
         _store.SaveVitals(s.Character.Id, s.Health, s.Energy);
         Send(s, Opcode.RespawnPlayer, new RespawnPlayer([((uint)s.CharacterId, x, y, z, s.Health)]).Write);
-        Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Health, s.Health), (StatKey.Energy, s.Energy)]).Write);
+        SendEffects(s); // clears buff icons and resends full stats
     }
 }

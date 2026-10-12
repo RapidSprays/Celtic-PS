@@ -63,12 +63,28 @@ public sealed record ItemInfo(
 public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost);
 
 /// <summary>A skill template. Heals have negative damage values. <see cref="CastTarget"/> is Self, Enemy, Friendly, Group or Fish.</summary>
-public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRange, bool IncludesWeaponAttack, string CastTarget, IReadOnlyList<SkillLevelInfo> Levels)
+public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRange, bool IncludesWeaponAttack, string CastTarget, int StatusEffectId, IReadOnlyList<SkillLevelInfo> Levels)
 {
     public SkillLevelInfo Level(int level) => Levels.Count == 0 ? new SkillLevelInfo(0, 0, 0, 5, 0) : Levels[Math.Clamp(level, 0, Levels.Count - 1)];
 }
 
 public sealed record ConversationInfo(int Id, string Filename);
+
+public sealed record StatusEffectLevel(float Amount, float BaseAmount, float Duration)
+{
+    /// <summary>
+    /// The client's own formula for an effect's strength (StatusEffectLevel.GetModifiedAmount), so tooltips match what
+    /// the server applies.
+    /// </summary>
+    public int ModifiedAmount(float abilityLevel, float statModifier = 0) =>
+        (int)Math.Ceiling(BaseAmount + Amount * (1.0 + Math.Sqrt(abilityLevel / 100f) + Math.Sqrt(statModifier)));
+}
+
+/// <summary>A status effect template. <see cref="Type"/> is the client's EffectType enum value.</summary>
+public sealed record StatusEffectInfo(int Id, string Name, int Type, IReadOnlyList<StatusEffectLevel> Levels)
+{
+    public StatusEffectLevel? Level(int index) => Levels.Count == 0 ? null : Levels[Math.Clamp(index, 0, Levels.Count - 1)];
+}
 
 public sealed record MobInfo(int Id, int TemplateId, string Name, string Race, int Type, float Radius, float AttackRange, int AttackSpeed, int Power);
 
@@ -85,8 +101,10 @@ public sealed class Balance
 
     private Balance(Dictionary<int, ItemInfo> items, Dictionary<int, SkillInfo> skills, Dictionary<int, MobInfo> mobs,
         Dictionary<int, ZoneInfo> zones, Dictionary<int, int[]> mobSets, int version,
-        List<ConversationInfo>? conversations = null, Dictionary<int, List<int>>? spawnIconIds = null)
+        List<ConversationInfo>? conversations = null, Dictionary<int, List<int>>? spawnIconIds = null,
+        Dictionary<int, StatusEffectInfo>? statusEffects = null)
     {
+        StatusEffects = statusEffects ?? new();
         Conversations = conversations ?? [];
         SpawnIconIdsByMob = spawnIconIds ?? new();
         Items = items;
@@ -104,6 +122,7 @@ public sealed class Balance
     public IReadOnlyDictionary<int, int[]> MobSets { get; }
     public int Version { get; }
     public IReadOnlyList<ConversationInfo> Conversations { get; }
+    public IReadOnlyDictionary<int, StatusEffectInfo> StatusEffects { get; }
 
     /// <summary>Official spawn-point ids that carry quest/shop icons for a mob template (SpawnIconInfoCollections).</summary>
     public IReadOnlyDictionary<int, List<int>> SpawnIconIdsByMob { get; }
@@ -138,7 +157,7 @@ public sealed class Balance
             var levels = e.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array
                 ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"))).ToList()
                 : [];
-            skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), levels);
+            skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels);
         }
 
         var mobs = new Dictionary<int, MobInfo>();
@@ -180,8 +199,18 @@ public sealed class Balance
                     (spawnIcons.TryGetValue(mobId, out var list) ? list : spawnIcons[mobId] = []).Add(int.Parse(key));
         }
 
+        var statusEffects = new Dictionary<int, StatusEffectInfo>();
+        foreach (var (_, e) in Entries(root, "StatusEffects"))
+        {
+            var id = Int(e, "Id");
+            var levels = e.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array
+                ? lv.EnumerateArray().Select(l => new StatusEffectLevel(Float(l, "Amount"), Float(l, "BaseAmount"), Float(l, "Duration"))).ToList()
+                : [];
+            statusEffects[id] = new StatusEffectInfo(id, Str(e, "Name"), Int(e, "EffectType"), levels);
+        }
+
         var version = root.TryGetProperty("Version", out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
-        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons);
+        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects);
     }
 
     /// <summary>Skill taught by a "Learn…" skill book, matched on the skill's name without spaces.</summary>

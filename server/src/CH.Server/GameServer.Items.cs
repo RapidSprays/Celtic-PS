@@ -72,7 +72,7 @@ public sealed partial class GameServer
         var updated = RefreshSheet(s);
         Send(s, Opcode.EquipItemReply, b => InventoryReplies.WriteEquipment(b, CommandStatus.Accepted, "", updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: false));
         // EquipItemReply doesn't refresh speed, range, damage or armour on the client.
-        Send(s, Opcode.StatsUpdate, updated.Stats().Write);
+        SendLiveStats(s);
     }
 
     /// <summary>Rings and bangles can go in any of their slots; everything else in its own.</summary>
@@ -101,7 +101,7 @@ public sealed partial class GameServer
         var updated = RefreshSheet(s);
         // DeleteItemReply carries the lists even when rejected (NetworkManager.cs:5042).
         Send(s, Opcode.DeleteItemReply, b => InventoryReplies.WriteEquipment(b, status, reason, updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: true));
-        if (item is { Slot: >= 0 }) Send(s, Opcode.StatsUpdate, updated.Stats().Write);
+        if (item is { Slot: >= 0 }) SendLiveStats(s);
     }
 
     private void OnUseItem(Session s, UseItemRequest req)
