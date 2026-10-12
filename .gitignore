@@ -32,3 +32,6 @@ obj/
 TestResults/
 logs/
 .DS_Store
+
+# Personal Claude Code settings
+.claude/settings.local.json
