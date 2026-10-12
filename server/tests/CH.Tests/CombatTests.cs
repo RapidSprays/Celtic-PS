@@ -40,7 +40,7 @@ public sealed class CombatTests : IAsyncDisposable
         client.Expect(Opcode.EnteringNewZoneUpdate);
         var batch = client.Expect(Opcode.BatchZoneMonsterUpdate);
         var count = batch.ReadVariableUInt32();
-        Assert.InRange(count, 40u, 80u);
+        Assert.InRange(count, 80u, 130u); // ~60 monsters plus Lir's Reach's generated NPCs
         client.Expect(Opcode.AllZoningMessagesSent);
 
         Chat(client, ".where");

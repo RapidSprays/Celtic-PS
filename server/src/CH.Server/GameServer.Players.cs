@@ -320,10 +320,10 @@ public sealed partial class GameServer
     }
 
     /// <summary>
-    /// Kill XP for party members near the killer: each gets the full amount (<b>approximated</b>; the live split is
+    /// Kill XP (and quest credit) for party members near the killer: each gets the full amount (<b>approximated</b>; the live split is
     /// unknown). Loot and coins stay with the killer.
     /// </summary>
-    private void SharePartyXp(Session killer, int xp)
+    private void SharePartyXp(Session killer, int xp, Mob mob)
     {
         if (killer.Party is not { } party) return;
         var (zoneId, x, _, z, _) = killer.Position;
@@ -335,6 +335,7 @@ public sealed partial class GameServer
             if (level != before) AnnounceLevel(m, level);
             else SendLiveStats(m);
             Tell(m, $"+{xp} xp (party, {killer.Name}'s kill): {sheet.XpPercent:F0}% to next level.");
+            QuestKill(m, mob); // party members' kill and loot stages count too
         }
     }
 }

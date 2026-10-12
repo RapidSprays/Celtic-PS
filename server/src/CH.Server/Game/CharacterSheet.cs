@@ -236,7 +236,8 @@ public sealed class CharacterSheet
     /// </summary>
     public const int FastTravelItemLimit = 10000;
 
-    public StartGameReply StartGame(int worldId, IReadOnlyList<int>? teleports = null, IReadOnlyList<int>? completedQuests = null) => new()
+    public StartGameReply StartGame(int worldId, IReadOnlyList<int>? teleports = null, IReadOnlyList<int>? completedQuests = null,
+        IReadOnlyList<ActiveQuest>? activeQuests = null) => new()
     {
         Platinum = Progress.Platinum,
         Character = Summary(worldId),
@@ -260,6 +261,7 @@ public sealed class CharacterSheet
         KnownZones = [Character.Zone],
         Teleports = teleports ?? [],
         CompletedQuests = completedQuests ?? [],
+        ActiveQuests = activeQuests ?? [],
     };
 
     public static string SerializeHud(IReadOnlyList<HudSet> sets) => JsonSerializer.Serialize(sets);

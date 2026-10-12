@@ -184,6 +184,7 @@ public sealed record StartGameReply
     public float Z { get; init; }
     public float Direction { get; init; }
     public IReadOnlyList<int> CompletedQuests { get; init; } = [];
+    public IReadOnlyList<ActiveQuest> ActiveQuests { get; init; } = [];
     public IReadOnlyList<int> Teleports { get; init; } = [];
     public IReadOnlyList<int> KnownZones { get; init; } = [];
 
@@ -245,10 +246,7 @@ public sealed record StartGameReply
         b.Write(Z);
         b.Write(Direction);
 
-        // FullQuestList: completed ids, then active quests (none yet)
-        b.WriteVariableInt32(CompletedQuests.Count);
-        foreach (var q in CompletedQuests) b.WriteVariableInt32(q);
-        b.WriteVariableInt32(0);
+        QuestMessages.WriteFullList(b, CompletedQuests, ActiveQuests);
 
         b.WriteVariableInt32(Teleports.Count);
         foreach (var t in Teleports) b.WriteVariableInt32(t);
@@ -296,8 +294,7 @@ public sealed record StartGameReply
         }
         int bv = b.ReadVariableInt32(), bs = b.ReadVariableInt32(), bf = b.ReadVariableInt32(), bd = b.ReadVariableInt32();
         float x = b.ReadFloat(), y = b.ReadFloat(), z = b.ReadFloat(), dir = b.ReadFloat();
-        var completed = Wire.ReadInts(b);
-        if (b.ReadVariableInt32() != 0) throw new NotSupportedException("active quests not supported by the mirror reader");
+        var (completed, activeQuests) = QuestMessages.ReadFullList(b);
         var teleports = Wire.ReadInts(b);
         if (b.ReadVariableInt32() >= 0) throw new NotSupportedException("clan block not supported by the mirror reader");
         var zones = Wire.ReadInts(b);
@@ -308,7 +305,7 @@ public sealed record StartGameReply
             PvpExperience = pvpXp, FishingExperience = fishXp, Abilities = abilities, Skills = skills, Stats = stats, Level = level,
             FishingLevel = fishLevel, CookingLevel = cookLevel, CookingExperience = cookXp, Coins = coins, Equipment = equipment,
             Inventory = inventory, HudSets = hud, BaseVitality = bv, BaseStrength = bs, BaseFocus = bf, BaseDexterity = bd,
-            X = x, Y = y, Z = z, Direction = dir, CompletedQuests = completed, Teleports = teleports, KnownZones = zones,
+            X = x, Y = y, Z = z, Direction = dir, CompletedQuests = completed, ActiveQuests = activeQuests, Teleports = teleports, KnownZones = zones,
         };
     }
 }

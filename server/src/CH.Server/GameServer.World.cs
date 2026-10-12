@@ -41,6 +41,7 @@ public sealed partial class GameServer
         zone = new Zone { Id = zoneId };
         var now = NetTime.Now;
         foreach (var mob in ZonePopulation.Build(zoneId, _balance, now, _generatedCamps)) zone.Mobs[mob.ServerId] = mob;
+        foreach (var npc in NpcsFor(zoneId, now)) zone.Mobs.TryAdd(npc.ServerId, npc);
         foreach (var spawn in _store.ListSpawns(zoneId))
             if (MobFromSpawn(zone, spawn, now) is { } mob) zone.Mobs[mob.ServerId] = mob;
         _zones[zoneId] = zone;
@@ -93,7 +94,9 @@ public sealed partial class GameServer
         var now = NetTime.Now;
         var (_, x, y, z, _) = s.Position;
         var others = Others(zone, s).Select(Basic).ToList();
-        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z) { Players = others }.Write);
+        var (available, notYet) = QuestLists(s);
+        // Quest lists before monsters: the client works out NPC quest icons as each one is added.
+        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z) { Players = others, AvailableQuests = available, NotYetAvailableQuests = notYet }.Write);
         var alive = zone.Mobs.Values.Where(m => m.State != MobState.Dead).ToList();
         if (alive.Count > 0) Send(s, Opcode.BatchZoneMonsterUpdate, b => MobSpawn.WriteBatch(b, alive.Select(m => ToWire(m, now)).ToList()));
         var moving = alive.Where(m => m.IsMoving(now)).Select(m => Leg(m, returning: m.State == MobState.Returning)).ToList();
@@ -425,10 +428,12 @@ public sealed partial class GameServer
         if (cast.Target is { } mob)
         {
             var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4 + s.Sheet!.SkillDamageBonus;
+            QuestCast(s, cast.Skill.Id, mob);
             PlayerHits(zone, s, mob, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
             if (cast.Skill.StatusEffectId > 0 && mob.State != MobState.Dead) ApplyMobEffect(mob, s, cast.Skill, cast.Level, now);
             return;
         }
+        QuestCast(s, cast.Skill.Id, null);
         if (cast.Skill.StatusEffectId > 0) ApplyEffect(s, cast.Skill, cast.Level, now);
         if (level.InitialDamage < 0 || level.BaseDamage < 0)
         {
@@ -541,6 +546,7 @@ public sealed partial class GameServer
             loot.Add((drop, 1));
             GrantItem(c.Id, drop, 1);
         }
+        loot.AddRange(QuestKill(s, mob));
         if (RollChestDrop() is { } chestDrop)
         {
             loot.Add((chestDrop, 1));
@@ -558,7 +564,7 @@ public sealed partial class GameServer
         var newLevel = AddXp(s, xp, out var sheet);
         Send(s, Opcode.WonCombat, new WonCombat(mob.Template.Id, (int)mob.ServerId, s.CharacterId, xp, sheet.XpPercent, coins, loot, sheet.InventoryWithMoney()).Write);
         if (newLevel > progress.Level) AnnounceLevel(s, newLevel);
-        SharePartyXp(s, xp);
+        SharePartyXp(s, xp, mob);
     }
 
     /// <summary>Adds XP, levelling up as many times as it covers. Returns the new level.</summary>
@@ -582,8 +588,10 @@ public sealed partial class GameServer
     {
         s.Health = int.MaxValue;
         s.Energy = int.MaxValue;
-        Send(s, Opcode.LevelUp, new LevelUp(level).Write);
+        var (available, notYet) = QuestLists(s);
+        Send(s, Opcode.LevelUp, new LevelUp(level) { AvailableQuests = available, NotYetAvailableQuests = notYet }.Write);
         SendProgress(s); // new maximums, attribute and skill points, raised skill rank caps
+        SendQuestData(s); // the client recomputes NPC quest icons on this, not on LevelUp
         BroadcastAppearance(s); // the level shown to others
         if (s.Party is { } party) SendRoster(party);
         _log.LogInformation("{Name} is now level {Level}", s.Name, level);

@@ -41,6 +41,7 @@ EXTRACTED="$HOME/CelticHeroesAnalysis/extracted/$BUILD"
 [[ -f "$EXTRACTED/balance-client.json" ]] || python3 "$REPO/scripts/extract-balance.py" "$BUILD"
 [[ -f "$EXTRACTED/zone-points.json" ]] || python3 "$REPO/scripts/extract-zone-points.py" "$BUILD"
 [[ -f "$EXTRACTED/zone-population.json" ]] || python3 "$REPO/scripts/gen-zone-population.py" "$BUILD"
+[[ -f "$EXTRACTED/world.json" ]] || python3 "$REPO/scripts/gen-world.py" "$BUILD"
 
 mkdir -p "$LOGS"
 dotnet build -c Release "$REPO/server/src/CH.Server" >/dev/null

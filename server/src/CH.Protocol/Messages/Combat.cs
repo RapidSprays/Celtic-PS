@@ -301,12 +301,14 @@ public sealed record WonCombat(
 /// <summary>LevelUp (13018), server → client (reader 1550): level type, new level, then available quest lists.</summary>
 public sealed record LevelUp(int NewLevel)
 {
+    public IReadOnlyList<int> AvailableQuests { get; init; } = [];
+    public IReadOnlyList<int> NotYetAvailableQuests { get; init; } = [];
+
     public void Write(NetBuffer b)
     {
         b.WriteVariableInt32(0); // combat level
         b.WriteVariableInt32(NewLevel);
-        b.WriteVariableInt32(0); // available quests
-        b.WriteVariableInt32(0); // not yet available quests
+        QuestMessages.WriteAvailable(b, AvailableQuests, NotYetAvailableQuests);
     }
 }
 

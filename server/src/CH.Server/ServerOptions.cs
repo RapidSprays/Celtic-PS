@@ -60,6 +60,9 @@ public sealed class ServerOptions
     /// <summary>Generated monster camps (scripts/gen-zone-population.py), read from beside the balance JSON.</summary>
     public string? PopulationPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-population.json");
 
+    /// <summary>Quests and NPC placements (scripts/gen-world.py), read from beside the balance JSON.</summary>
+    public string? WorldPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "world.json");
+
     /// <summary>Zone exits (scripts/extract-zone-points.py), read from beside the balance JSON.</summary>
     public string? ZonePointsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-points.json");
 

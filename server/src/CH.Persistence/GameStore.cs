@@ -5,6 +5,12 @@ namespace CH.Persistence;
 
 public sealed record Account(long Id, string Username, bool IsGm = false);
 
+/// <summary>One stage of a quest in progress: done, active, and its counter (kills, items, ...).</summary>
+public sealed record QuestStageRecord(bool Done, bool Active, int Sum);
+
+/// <summary>A character's quest: in progress, or completed (stages then don't matter).</summary>
+public sealed record QuestRecord(int QuestId, bool Completed, IReadOnlyList<QuestStageRecord> Stages, bool Tracked);
+
 /// <summary>Outcome of checking a login secret against an account.</summary>
 public enum PasswordCheck
 {
@@ -191,6 +197,16 @@ public sealed class GameStore : IDisposable
         ALTER TABLE accounts ADD COLUMN password_hash BLOB;
         ALTER TABLE accounts ADD COLUMN password_salt BLOB;
         ALTER TABLE accounts ADD COLUMN is_gm INTEGER NOT NULL DEFAULT 0;
+        """,
+        """
+        CREATE TABLE quests (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            quest_id     INTEGER NOT NULL,
+            completed    INTEGER NOT NULL DEFAULT 0,
+            stages       TEXT NOT NULL DEFAULT '[]',
+            tracked      INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (character_id, quest_id)
+        );
         """,
     ];
 
@@ -423,6 +439,32 @@ public sealed class GameStore : IDisposable
             ("$l", s.Level), ("$c", s.ConversationId), ("$r", s.RespawnSeconds), ("$roam", s.RoamRadius), ("$by", s.CreatedBy));
         return s with { Id = Convert.ToInt64(cmd.ExecuteScalar()) };
     }
+
+    public IReadOnlyList<QuestRecord> ListQuests(long characterId)
+    {
+        using var cmd = Command("SELECT quest_id, completed, stages, tracked FROM quests WHERE character_id = $c ORDER BY quest_id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<QuestRecord>();
+        while (r.Read())
+        {
+            var stages = System.Text.Json.JsonSerializer.Deserialize<int[][]>(r.GetString(2)) ?? [];
+            list.Add(new QuestRecord(r.GetInt32(0), r.GetInt64(1) != 0,
+                stages.Select(s => new QuestStageRecord(s[0] != 0, s[1] != 0, s[2])).ToList(), r.GetInt64(3) != 0));
+        }
+        return list;
+    }
+
+    public void SaveQuest(long characterId, QuestRecord quest)
+    {
+        var stages = System.Text.Json.JsonSerializer.Serialize(quest.Stages.Select(s => new[] { s.Done ? 1 : 0, s.Active ? 1 : 0, s.Sum }));
+        Exec("""
+            INSERT INTO quests(character_id, quest_id, completed, stages, tracked) VALUES ($c, $q, $done, $s, $t)
+            ON CONFLICT(character_id, quest_id) DO UPDATE SET completed = $done, stages = $s, tracked = $t
+            """, null, ("$c", characterId), ("$q", quest.QuestId), ("$done", quest.Completed ? 1 : 0), ("$s", stages), ("$t", quest.Tracked ? 1 : 0));
+    }
+
+    public void DeleteQuest(long characterId, int questId) =>
+        Exec("DELETE FROM quests WHERE character_id = $c AND quest_id = $q", null, ("$c", characterId), ("$q", questId));
 
     /// <summary>Leystones (PlayerSpawnPoint ids) the character has discovered, for fast travel.</summary>
     public IReadOnlyList<int> ListTeleports(long characterId)

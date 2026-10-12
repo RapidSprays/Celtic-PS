@@ -162,14 +162,14 @@ for zid in sorted(LEVELS):
         level = round(lo + frac * (hi - lo) * 0.85)
         power = mobs[mid]["Power"]
         for _ in range(2 if i < 4 else 1):
-            spot = place(15)
+            spot = place(28)  # clear of the NPC rings around leystones (gen-world.py)
             if not spot: break
             camps.append({"x": spot[0], "y": spot[1], "z": spot[2], "radius": 9 if power == 1 else 6, "count": {1: 5, 2: 3, 3: 2}[power],
                           "templates": [mid], "minLevel": max(1, level - 1), "maxLevel": level + 1, "roam": 6})
     for i, mid in enumerate(bosses):
         frac = i / max(1, len(bosses) - 1)
         level = round(lo + frac * (hi - lo)) + 2
-        spot = place(25)
+        spot = place(35)
         if not spot: continue
         camps.append({"x": spot[0], "y": spot[1], "z": spot[2], "radius": 2, "count": 1, "templates": [mid],
                       "minLevel": level, "maxLevel": level, "roam": 3})

@@ -22,6 +22,7 @@ public sealed partial class GameServer : IDisposable
     private readonly IReadOnlyDictionary<int, GeneratedCamp[]> _generatedCamps;
     private readonly ZoneTravel _travel;
     private readonly LootTable _loot;
+    private readonly QuestBook _quests;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -42,6 +43,8 @@ public sealed partial class GameServer : IDisposable
         _generatedCamps = ZonePopulation.LoadGenerated(options.PopulationPath);
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
         _loot = new LootTable(balance);
+        _quests = QuestBook.Load(options.WorldPath);
+        if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
             log.LogInformation("Generated monster camps for {Zones} zones ({Mobs} monsters)", _generatedCamps.Count, _generatedCamps.Values.Sum(z => z.Sum(c => c.Count)));
@@ -233,6 +236,16 @@ public sealed partial class GameServer : IDisposable
                 if (InWorld(s)) OnTradeMessage(s, msg);
                 break;
 
+            case Opcode.QuestStart:
+            case Opcode.QuestStageComplete:
+            case Opcode.RequestAccurateQuestData:
+            case Opcode.PreviewQuestRewards:
+            case Opcode.DeleteQuest:
+            case Opcode.TrackQuest:
+            case Opcode.TrackAllQuests:
+                if (InWorld(s)) OnQuestMessage(s, header.Opcode, msg);
+                break;
+
             case Opcode.CharacterPlayingEmote:
                 if (InWorld(s)) OnEmote(s, EmoteRequest.Read(msg));
                 break;
@@ -325,7 +338,6 @@ public sealed partial class GameServer : IDisposable
             case Opcode.InactivityMessage:
             // Sent by the client during login and zone load; replies are optional (docs/protocol-notes.md §4).
             case Opcode.DailyRewardMessage:
-            case Opcode.RequestAccurateQuestData:
             case Opcode.MapEnterStatsMessage:
             case Opcode.ClientBackgrounded:
             case Opcode.ClientResumed:
@@ -433,7 +445,8 @@ public sealed partial class GameServer : IDisposable
         s.NextRegenAt = NetTime.Now + RegenIntervalSeconds;
         s.Teleports.Clear();
         s.Teleports.UnionWith(_store.ListTeleports(character.Id));
-        Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), _travel.GateQuests.Order().ToList()).Write);
+        LoadQuests(s);
+        Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), CompletedQuestIds(s), ActiveQuests(s)).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
         s.Effects.Clear();
         SendLiveStats(s);
@@ -446,6 +459,7 @@ public sealed partial class GameServer : IDisposable
         if (s.Character is null) return;
         EnterZone(s);
         DiscoverLeystones(s);
+        QuestMove(s);
     }
 
     private void OnPlayerMove(Session s, PlayerMove move)
@@ -457,6 +471,7 @@ public sealed partial class GameServer : IDisposable
         s.LastMoveAt = NetTime.Now;
         _store.SavePosition(s.Character.Id, s.Position.Zone, move.X, move.Y, move.Z, move.YAngle);
         DiscoverLeystones(s);
+        QuestMove(s);
     }
 
     private bool InWorld(Session s)
@@ -534,6 +549,7 @@ public sealed partial class GameServer : IDisposable
         public HashSet<int> DuelInvites { get; } = new();
         public Trade? Trade { get; set; }
         public HashSet<int> TradeRequests { get; } = new();
+        public Dictionary<int, QuestState> Quests { get; } = new();
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";
