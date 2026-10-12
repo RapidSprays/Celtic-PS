@@ -12,7 +12,8 @@ public sealed partial class GameServer
     private const int SkillBooksInKit = 2;
 
     private CharacterSheet LoadSheet(CharacterRecord c) =>
-        new(c, _store.GetProgress(c.Id), _store.ListItems(c.Id), _store.ListSkills(c.Id), _balance) { LearnedAbilities = _store.ListAbilities(c.Id) };
+        new(c, _store.GetProgress(c.Id), _store.ListItems(c.Id), _store.ListSkills(c.Id), _balance, _tree.Totals(TreeNodes(c)))
+        { LearnedAbilities = _store.ListAbilities(c.Id) };
 
     private CharacterSheet Sheet(Session s) => LoadSheet(s.Character!);
 

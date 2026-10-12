@@ -230,6 +230,13 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, recipe_id)
         );
         """,
+        """
+        CREATE TABLE tree_nodes (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            node_id      INTEGER NOT NULL,
+            PRIMARY KEY (character_id, node_id)
+        );
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -514,6 +521,27 @@ public sealed class GameStore : IDisposable
     }
 
     /// <summary>Abilities learnt from trainers (LEARN_ABILITY).</summary>
+    /// <summary>Passive-tree nodes the character has taken (docs/passive-tree.md).</summary>
+    public IReadOnlyList<int> ListTreeNodes(long characterId)
+    {
+        using var cmd = Command("SELECT node_id FROM tree_nodes WHERE character_id = $c ORDER BY node_id", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<int>();
+        while (r.Read()) list.Add(r.GetInt32(0));
+        return list;
+    }
+
+    public bool AddTreeNode(long characterId, int nodeId)
+    {
+        using var cmd = Command("INSERT OR IGNORE INTO tree_nodes(character_id, node_id) VALUES ($c, $n)", null, ("$c", characterId), ("$n", nodeId));
+        return cmd.ExecuteNonQuery() == 1;
+    }
+
+    public void RemoveTreeNode(long characterId, int nodeId) =>
+        Exec("DELETE FROM tree_nodes WHERE character_id = $c AND node_id = $n", null, ("$c", characterId), ("$n", nodeId));
+
+    public void ResetTree(long characterId) => Exec("DELETE FROM tree_nodes WHERE character_id = $c", null, ("$c", characterId));
+
     public IReadOnlyList<int> ListAbilities(long characterId)
     {
         using var cmd = Command("SELECT ability_id FROM abilities WHERE character_id = $c ORDER BY ability_id", null, ("$c", characterId));

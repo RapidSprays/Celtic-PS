@@ -1,0 +1,1723 @@
+{
+ "version": 1,
+ "pointsPerLevels": 5,
+ "keystones": {
+  "ironHide": "50% more armour, but enemies never miss you",
+  "assassinsMark": "Double critical strike chance and double the extra damage of critical strikes, but 25% less maximum health",
+  "windrunner": "25% faster attacks and running, but 30% less armour",
+  "glassCannon": "30% more skill and auto-attack damage, but 30% less maximum health",
+  "lifeTap": "5% of the damage you deal heals you, but you no longer regenerate health out of combat"
+ },
+ "nodes": [
+  {
+   "id": 1,
+   "kind": "notable",
+   "name": "Fortune's Favour",
+   "x": 0,
+   "y": 0,
+   "stats": [
+    {
+     "stat": "xpPct",
+     "amount": 5
+    },
+    {
+     "stat": "goldPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    20,
+    21,
+    22,
+    23,
+    24
+   ]
+  },
+  {
+   "id": 10,
+   "kind": "small",
+   "name": "Learning",
+   "x": 0,
+   "y": -220,
+   "stats": [
+    {
+     "stat": "xpPct",
+     "amount": 2
+    }
+   ],
+   "links": [
+    100,
+    20,
+    24
+   ]
+  },
+  {
+   "id": 11,
+   "kind": "small",
+   "name": "Fortune",
+   "x": 209,
+   "y": -68,
+   "stats": [
+    {
+     "stat": "goldPct",
+     "amount": 2
+    }
+   ],
+   "links": [
+    200,
+    20,
+    21
+   ]
+  },
+  {
+   "id": 12,
+   "kind": "small",
+   "name": "Learning",
+   "x": 129,
+   "y": 178,
+   "stats": [
+    {
+     "stat": "xpPct",
+     "amount": 2
+    }
+   ],
+   "links": [
+    300,
+    21,
+    22
+   ]
+  },
+  {
+   "id": 13,
+   "kind": "small",
+   "name": "Fortune",
+   "x": -129,
+   "y": 178,
+   "stats": [
+    {
+     "stat": "goldPct",
+     "amount": 2
+    }
+   ],
+   "links": [
+    400,
+    22,
+    23
+   ]
+  },
+  {
+   "id": 14,
+   "kind": "small",
+   "name": "Learning",
+   "x": -209,
+   "y": -68,
+   "stats": [
+    {
+     "stat": "xpPct",
+     "amount": 2
+    }
+   ],
+   "links": [
+    500,
+    23,
+    24
+   ]
+  },
+  {
+   "id": 20,
+   "kind": "small",
+   "name": "Strength and Dexterity",
+   "x": 129,
+   "y": -178,
+   "stats": [
+    {
+     "stat": "str",
+     "amount": 8
+    },
+    {
+     "stat": "dex",
+     "amount": 8
+    }
+   ],
+   "links": [
+    10,
+    11,
+    1
+   ]
+  },
+  {
+   "id": 21,
+   "kind": "small",
+   "name": "Dexterity and Dexterity",
+   "x": 209,
+   "y": 68,
+   "stats": [
+    {
+     "stat": "dex",
+     "amount": 8
+    },
+    {
+     "stat": "vit",
+     "amount": 8
+    }
+   ],
+   "links": [
+    11,
+    12,
+    1
+   ]
+  },
+  {
+   "id": 22,
+   "kind": "small",
+   "name": "Dexterity and Vitality",
+   "x": 0,
+   "y": 220,
+   "stats": [
+    {
+     "stat": "dex",
+     "amount": 8
+    },
+    {
+     "stat": "vit",
+     "amount": 8
+    }
+   ],
+   "links": [
+    12,
+    13,
+    1
+   ]
+  },
+  {
+   "id": 23,
+   "kind": "small",
+   "name": "Vitality and Focus",
+   "x": -209,
+   "y": 68,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 8
+    },
+    {
+     "stat": "foc",
+     "amount": 8
+    }
+   ],
+   "links": [
+    13,
+    14,
+    1
+   ]
+  },
+  {
+   "id": 24,
+   "kind": "small",
+   "name": "Focus and Strength",
+   "x": -129,
+   "y": -178,
+   "stats": [
+    {
+     "stat": "foc",
+     "amount": 8
+    },
+    {
+     "stat": "str",
+     "amount": 8
+    }
+   ],
+   "links": [
+    14,
+    10,
+    1
+   ]
+  },
+  {
+   "id": 30,
+   "kind": "small",
+   "name": "Warrior and Rogue",
+   "x": 491,
+   "y": -676,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 10
+    },
+    {
+     "stat": "str",
+     "amount": 10
+    }
+   ],
+   "links": [
+    117,
+    213
+   ]
+  },
+  {
+   "id": 31,
+   "kind": "small",
+   "name": "Rogue and Ranger",
+   "x": 795,
+   "y": 258,
+   "stats": [
+    {
+     "stat": "str",
+     "amount": 10
+    },
+    {
+     "stat": "vit",
+     "amount": 10
+    }
+   ],
+   "links": [
+    217,
+    313
+   ]
+  },
+  {
+   "id": 32,
+   "kind": "small",
+   "name": "Ranger and Druid",
+   "x": 0,
+   "y": 836,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 10
+    },
+    {
+     "stat": "foc",
+     "amount": 10
+    }
+   ],
+   "links": [
+    317,
+    413
+   ]
+  },
+  {
+   "id": 33,
+   "kind": "small",
+   "name": "Druid and Mage",
+   "x": -795,
+   "y": 258,
+   "stats": [
+    {
+     "stat": "foc",
+     "amount": 10
+    },
+    {
+     "stat": "vit",
+     "amount": 10
+    }
+   ],
+   "links": [
+    417,
+    513
+   ]
+  },
+  {
+   "id": 34,
+   "kind": "small",
+   "name": "Mage and Warrior",
+   "x": -491,
+   "y": -676,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 10
+    },
+    {
+     "stat": "vit",
+     "amount": 10
+    }
+   ],
+   "links": [
+    517,
+    113
+   ]
+  },
+  {
+   "id": 100,
+   "kind": "start",
+   "name": "Warrior's Path",
+   "x": 0,
+   "y": -352,
+   "stats": [],
+   "links": [
+    10,
+    101,
+    110,
+    114
+   ],
+   "class": 1
+  },
+  {
+   "id": 101,
+   "kind": "small",
+   "name": "Strength",
+   "x": 0,
+   "y": -462,
+   "stats": [
+    {
+     "stat": "str",
+     "amount": 15
+    }
+   ],
+   "links": [
+    100,
+    102
+   ]
+  },
+  {
+   "id": 102,
+   "kind": "small",
+   "name": "Vitality",
+   "x": 0,
+   "y": -572,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 15
+    }
+   ],
+   "links": [
+    101,
+    103
+   ]
+  },
+  {
+   "id": 103,
+   "kind": "small",
+   "name": "Vigour",
+   "x": 0,
+   "y": -682,
+   "stats": [
+    {
+     "stat": "healthPct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    102,
+    104
+   ]
+  },
+  {
+   "id": 104,
+   "kind": "small",
+   "name": "Strength",
+   "x": 0,
+   "y": -792,
+   "stats": [
+    {
+     "stat": "str",
+     "amount": 15
+    }
+   ],
+   "links": [
+    103,
+    120
+   ]
+  },
+  {
+   "id": 110,
+   "kind": "small",
+   "name": "Plating",
+   "x": -110,
+   "y": -440,
+   "stats": [
+    {
+     "stat": "armourPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    100,
+    111
+   ]
+  },
+  {
+   "id": 111,
+   "kind": "small",
+   "name": "Plating",
+   "x": -170,
+   "y": -550,
+   "stats": [
+    {
+     "stat": "armourPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    110,
+    112
+   ]
+  },
+  {
+   "id": 112,
+   "kind": "small",
+   "name": "Plating",
+   "x": -231,
+   "y": -660,
+   "stats": [
+    {
+     "stat": "armourPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    111,
+    113
+   ]
+  },
+  {
+   "id": 113,
+   "kind": "notable",
+   "name": "Bulwark",
+   "x": -264,
+   "y": -770,
+   "stats": [
+    {
+     "stat": "armourPct",
+     "amount": 12
+    },
+    {
+     "stat": "healthPct",
+     "amount": 8
+    }
+   ],
+   "links": [
+    112,
+    118,
+    34
+   ]
+  },
+  {
+   "id": 114,
+   "kind": "small",
+   "name": "Might",
+   "x": 110,
+   "y": -440,
+   "stats": [
+    {
+     "stat": "attackPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    100,
+    115
+   ]
+  },
+  {
+   "id": 115,
+   "kind": "small",
+   "name": "Might",
+   "x": 171,
+   "y": -550,
+   "stats": [
+    {
+     "stat": "attackPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    114,
+    116
+   ]
+  },
+  {
+   "id": 116,
+   "kind": "small",
+   "name": "Might",
+   "x": 231,
+   "y": -660,
+   "stats": [
+    {
+     "stat": "attackPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    115,
+    117
+   ]
+  },
+  {
+   "id": 117,
+   "kind": "notable",
+   "name": "Cleaving Fury",
+   "x": 264,
+   "y": -770,
+   "stats": [],
+   "links": [
+    116,
+    119,
+    30
+   ],
+   "skillMods": [
+    {
+     "tag": "warrior",
+     "damagePct": 20,
+     "cooldownPct": 10,
+     "ranks": 2
+    }
+   ]
+  },
+  {
+   "id": 118,
+   "kind": "small",
+   "name": "Vigour",
+   "x": -143,
+   "y": -902,
+   "stats": [
+    {
+     "stat": "healthPct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    113,
+    120
+   ]
+  },
+  {
+   "id": 119,
+   "kind": "small",
+   "name": "Plating",
+   "x": 143,
+   "y": -902,
+   "stats": [
+    {
+     "stat": "armourPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    117,
+    120
+   ]
+  },
+  {
+   "id": 120,
+   "kind": "keystone",
+   "name": "Iron Hide",
+   "x": 0,
+   "y": -990,
+   "stats": [],
+   "links": [
+    104,
+    118,
+    119
+   ],
+   "keystone": "ironHide"
+  },
+  {
+   "id": 200,
+   "kind": "start",
+   "name": "Rogue's Path",
+   "x": 335,
+   "y": -109,
+   "stats": [],
+   "links": [
+    11,
+    201,
+    210,
+    214
+   ],
+   "class": 5
+  },
+  {
+   "id": 201,
+   "kind": "small",
+   "name": "Dexterity",
+   "x": 439,
+   "y": -143,
+   "stats": [
+    {
+     "stat": "dex",
+     "amount": 15
+    }
+   ],
+   "links": [
+    200,
+    202
+   ]
+  },
+  {
+   "id": 202,
+   "kind": "small",
+   "name": "Ruthlessness",
+   "x": 544,
+   "y": -177,
+   "stats": [
+    {
+     "stat": "critMulti",
+     "amount": 10
+    }
+   ],
+   "links": [
+    201,
+    203
+   ]
+  },
+  {
+   "id": 203,
+   "kind": "small",
+   "name": "Dexterity",
+   "x": 649,
+   "y": -211,
+   "stats": [
+    {
+     "stat": "dex",
+     "amount": 15
+    }
+   ],
+   "links": [
+    202,
+    204
+   ]
+  },
+  {
+   "id": 204,
+   "kind": "small",
+   "name": "Sharpness",
+   "x": 753,
+   "y": -245,
+   "stats": [
+    {
+     "stat": "attackDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    203,
+    220
+   ]
+  },
+  {
+   "id": 210,
+   "kind": "small",
+   "name": "Precision",
+   "x": 384,
+   "y": -241,
+   "stats": [
+    {
+     "stat": "critChance",
+     "amount": 1
+    }
+   ],
+   "links": [
+    200,
+    211
+   ]
+  },
+  {
+   "id": 211,
+   "kind": "small",
+   "name": "Precision",
+   "x": 470,
+   "y": -332,
+   "stats": [
+    {
+     "stat": "critChance",
+     "amount": 1
+    }
+   ],
+   "links": [
+    210,
+    212
+   ]
+  },
+  {
+   "id": 212,
+   "kind": "small",
+   "name": "Precision",
+   "x": 556,
+   "y": -424,
+   "stats": [
+    {
+     "stat": "critChance",
+     "amount": 1
+    }
+   ],
+   "links": [
+    211,
+    213
+   ]
+  },
+  {
+   "id": 213,
+   "kind": "notable",
+   "name": "Opportunist",
+   "x": 651,
+   "y": -489,
+   "stats": [
+    {
+     "stat": "critChance",
+     "amount": 3
+    },
+    {
+     "stat": "critMulti",
+     "amount": 25
+    }
+   ],
+   "links": [
+    212,
+    218,
+    30
+   ]
+  },
+  {
+   "id": 214,
+   "kind": "small",
+   "name": "Haste",
+   "x": 452,
+   "y": -31,
+   "stats": [
+    {
+     "stat": "attackSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    200,
+    215
+   ]
+  },
+  {
+   "id": 215,
+   "kind": "small",
+   "name": "Haste",
+   "x": 576,
+   "y": -8,
+   "stats": [
+    {
+     "stat": "attackSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    214,
+    216
+   ]
+  },
+  {
+   "id": 216,
+   "kind": "small",
+   "name": "Haste",
+   "x": 699,
+   "y": 16,
+   "stats": [
+    {
+     "stat": "attackSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    215,
+    217
+   ]
+  },
+  {
+   "id": 217,
+   "kind": "notable",
+   "name": "Flurry",
+   "x": 814,
+   "y": 13,
+   "stats": [
+    {
+     "stat": "attackSpeedPct",
+     "amount": 10
+    },
+    {
+     "stat": "attackDamagePct",
+     "amount": 10
+    }
+   ],
+   "links": [
+    216,
+    219,
+    31
+   ]
+  },
+  {
+   "id": 218,
+   "kind": "small",
+   "name": "Ruthlessness",
+   "x": 814,
+   "y": -415,
+   "stats": [
+    {
+     "stat": "critMulti",
+     "amount": 10
+    }
+   ],
+   "links": [
+    213,
+    220
+   ]
+  },
+  {
+   "id": 219,
+   "kind": "small",
+   "name": "Precision",
+   "x": 902,
+   "y": -143,
+   "stats": [
+    {
+     "stat": "critChance",
+     "amount": 1
+    }
+   ],
+   "links": [
+    217,
+    220
+   ]
+  },
+  {
+   "id": 220,
+   "kind": "keystone",
+   "name": "Assassin's Mark",
+   "x": 942,
+   "y": -306,
+   "stats": [],
+   "links": [
+    204,
+    218,
+    219
+   ],
+   "keystone": "assassinsMark"
+  },
+  {
+   "id": 300,
+   "kind": "start",
+   "name": "Ranger's Path",
+   "x": 207,
+   "y": 285,
+   "stats": [],
+   "links": [
+    12,
+    301,
+    310,
+    314
+   ],
+   "class": 4
+  },
+  {
+   "id": 301,
+   "kind": "small",
+   "name": "Dexterity",
+   "x": 272,
+   "y": 374,
+   "stats": [
+    {
+     "stat": "dex",
+     "amount": 15
+    }
+   ],
+   "links": [
+    300,
+    302
+   ]
+  },
+  {
+   "id": 302,
+   "kind": "small",
+   "name": "Evasion",
+   "x": 336,
+   "y": 463,
+   "stats": [
+    {
+     "stat": "evadePct",
+     "amount": 1
+    }
+   ],
+   "links": [
+    301,
+    303
+   ]
+  },
+  {
+   "id": 303,
+   "kind": "small",
+   "name": "Dexterity",
+   "x": 401,
+   "y": 552,
+   "stats": [
+    {
+     "stat": "dex",
+     "amount": 15
+    }
+   ],
+   "links": [
+    302,
+    304
+   ]
+  },
+  {
+   "id": 304,
+   "kind": "small",
+   "name": "Haste",
+   "x": 466,
+   "y": 641,
+   "stats": [
+    {
+     "stat": "attackSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    303,
+    320
+   ]
+  },
+  {
+   "id": 310,
+   "kind": "small",
+   "name": "Sharpness",
+   "x": 348,
+   "y": 291,
+   "stats": [
+    {
+     "stat": "attackDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    300,
+    311
+   ]
+  },
+  {
+   "id": 311,
+   "kind": "small",
+   "name": "Sharpness",
+   "x": 461,
+   "y": 345,
+   "stats": [
+    {
+     "stat": "attackDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    310,
+    312
+   ]
+  },
+  {
+   "id": 312,
+   "kind": "small",
+   "name": "Sharpness",
+   "x": 575,
+   "y": 398,
+   "stats": [
+    {
+     "stat": "attackDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    311,
+    313
+   ]
+  },
+  {
+   "id": 313,
+   "kind": "notable",
+   "name": "Deadeye",
+   "x": 666,
+   "y": 468,
+   "stats": [],
+   "links": [
+    312,
+    318,
+    31
+   ],
+   "skillMods": [
+    {
+     "tag": "ranger",
+     "damagePct": 20,
+     "costPct": 15,
+     "ranks": 2
+    }
+   ]
+  },
+  {
+   "id": 314,
+   "kind": "small",
+   "name": "Swiftness",
+   "x": 170,
+   "y": 421,
+   "stats": [
+    {
+     "stat": "runSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    300,
+    315
+   ]
+  },
+  {
+   "id": 315,
+   "kind": "small",
+   "name": "Swiftness",
+   "x": 185,
+   "y": 545,
+   "stats": [
+    {
+     "stat": "runSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    314,
+    316
+   ]
+  },
+  {
+   "id": 316,
+   "kind": "small",
+   "name": "Swiftness",
+   "x": 201,
+   "y": 670,
+   "stats": [
+    {
+     "stat": "runSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    315,
+    317
+   ]
+  },
+  {
+   "id": 317,
+   "kind": "notable",
+   "name": "Fleet Foot",
+   "x": 239,
+   "y": 778,
+   "stats": [
+    {
+     "stat": "runSpeedPct",
+     "amount": 10
+    },
+    {
+     "stat": "attackSpeedPct",
+     "amount": 6
+    }
+   ],
+   "links": [
+    316,
+    319,
+    32
+   ]
+  },
+  {
+   "id": 318,
+   "kind": "small",
+   "name": "Swiftness",
+   "x": 646,
+   "y": 646,
+   "stats": [
+    {
+     "stat": "runSpeedPct",
+     "amount": 3
+    }
+   ],
+   "links": [
+    313,
+    320
+   ]
+  },
+  {
+   "id": 319,
+   "kind": "small",
+   "name": "Evasion",
+   "x": 414,
+   "y": 814,
+   "stats": [
+    {
+     "stat": "evadePct",
+     "amount": 1
+    }
+   ],
+   "links": [
+    317,
+    320
+   ]
+  },
+  {
+   "id": 320,
+   "kind": "keystone",
+   "name": "Windrunner",
+   "x": 582,
+   "y": 801,
+   "stats": [],
+   "links": [
+    304,
+    318,
+    319
+   ],
+   "keystone": "windrunner"
+  },
+  {
+   "id": 400,
+   "kind": "start",
+   "name": "Druid's Path",
+   "x": -207,
+   "y": 285,
+   "stats": [],
+   "links": [
+    13,
+    401,
+    410,
+    414
+   ],
+   "class": 2
+  },
+  {
+   "id": 401,
+   "kind": "small",
+   "name": "Vitality",
+   "x": -272,
+   "y": 374,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 15
+    }
+   ],
+   "links": [
+    400,
+    402
+   ]
+  },
+  {
+   "id": 402,
+   "kind": "small",
+   "name": "Focus",
+   "x": -336,
+   "y": 463,
+   "stats": [
+    {
+     "stat": "foc",
+     "amount": 15
+    }
+   ],
+   "links": [
+    401,
+    403
+   ]
+  },
+  {
+   "id": 403,
+   "kind": "small",
+   "name": "Vigour",
+   "x": -401,
+   "y": 552,
+   "stats": [
+    {
+     "stat": "healthPct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    402,
+    404
+   ]
+  },
+  {
+   "id": 404,
+   "kind": "small",
+   "name": "Mending",
+   "x": -466,
+   "y": 641,
+   "stats": [
+    {
+     "stat": "healPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    403,
+    420
+   ]
+  },
+  {
+   "id": 410,
+   "kind": "small",
+   "name": "Mending",
+   "x": -170,
+   "y": 421,
+   "stats": [
+    {
+     "stat": "healPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    400,
+    411
+   ]
+  },
+  {
+   "id": 411,
+   "kind": "small",
+   "name": "Mending",
+   "x": -185,
+   "y": 545,
+   "stats": [
+    {
+     "stat": "healPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    410,
+    412
+   ]
+  },
+  {
+   "id": 412,
+   "kind": "small",
+   "name": "Mending",
+   "x": -201,
+   "y": 670,
+   "stats": [
+    {
+     "stat": "healPct",
+     "amount": 5
+    }
+   ],
+   "links": [
+    411,
+    413
+   ]
+  },
+  {
+   "id": 413,
+   "kind": "notable",
+   "name": "Verdant Grace",
+   "x": -239,
+   "y": 778,
+   "stats": [],
+   "links": [
+    412,
+    418,
+    32
+   ],
+   "skillMods": [
+    {
+     "tag": "heal",
+     "damagePct": 20,
+     "cooldownPct": 10,
+     "ranks": 2
+    }
+   ]
+  },
+  {
+   "id": 414,
+   "kind": "small",
+   "name": "Renewal",
+   "x": -348,
+   "y": 291,
+   "stats": [
+    {
+     "stat": "healthRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    400,
+    415
+   ]
+  },
+  {
+   "id": 415,
+   "kind": "small",
+   "name": "Renewal",
+   "x": -461,
+   "y": 345,
+   "stats": [
+    {
+     "stat": "healthRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    414,
+    416
+   ]
+  },
+  {
+   "id": 416,
+   "kind": "small",
+   "name": "Renewal",
+   "x": -575,
+   "y": 398,
+   "stats": [
+    {
+     "stat": "healthRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    415,
+    417
+   ]
+  },
+  {
+   "id": 417,
+   "kind": "notable",
+   "name": "Deep Roots",
+   "x": -666,
+   "y": 468,
+   "stats": [
+    {
+     "stat": "healthRegenPct",
+     "amount": 1.5
+    },
+    {
+     "stat": "healthPct",
+     "amount": 8
+    }
+   ],
+   "links": [
+    416,
+    419,
+    33
+   ]
+  },
+  {
+   "id": 418,
+   "kind": "small",
+   "name": "Renewal",
+   "x": -414,
+   "y": 814,
+   "stats": [
+    {
+     "stat": "healthRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    413,
+    420
+   ]
+  },
+  {
+   "id": 419,
+   "kind": "small",
+   "name": "Vitality",
+   "x": -646,
+   "y": 646,
+   "stats": [
+    {
+     "stat": "vit",
+     "amount": 15
+    }
+   ],
+   "links": [
+    417,
+    420
+   ]
+  },
+  {
+   "id": 420,
+   "kind": "keystone",
+   "name": "Life Tap",
+   "x": -582,
+   "y": 801,
+   "stats": [],
+   "links": [
+    404,
+    418,
+    419
+   ],
+   "keystone": "lifeTap"
+  },
+  {
+   "id": 500,
+   "kind": "start",
+   "name": "Mage's Path",
+   "x": -335,
+   "y": -109,
+   "stats": [],
+   "links": [
+    14,
+    501,
+    510,
+    514
+   ],
+   "class": 3
+  },
+  {
+   "id": 501,
+   "kind": "small",
+   "name": "Focus",
+   "x": -439,
+   "y": -143,
+   "stats": [
+    {
+     "stat": "foc",
+     "amount": 15
+    }
+   ],
+   "links": [
+    500,
+    502
+   ]
+  },
+  {
+   "id": 502,
+   "kind": "small",
+   "name": "Clarity",
+   "x": -544,
+   "y": -177,
+   "stats": [
+    {
+     "stat": "energyPct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    501,
+    503
+   ]
+  },
+  {
+   "id": 503,
+   "kind": "small",
+   "name": "Focus",
+   "x": -649,
+   "y": -211,
+   "stats": [
+    {
+     "stat": "foc",
+     "amount": 15
+    }
+   ],
+   "links": [
+    502,
+    504
+   ]
+  },
+  {
+   "id": 504,
+   "kind": "small",
+   "name": "Potency",
+   "x": -753,
+   "y": -245,
+   "stats": [
+    {
+     "stat": "skillDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    503,
+    520
+   ]
+  },
+  {
+   "id": 510,
+   "kind": "small",
+   "name": "Focus Flow",
+   "x": -452,
+   "y": -31,
+   "stats": [
+    {
+     "stat": "energyRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    500,
+    511
+   ]
+  },
+  {
+   "id": 511,
+   "kind": "small",
+   "name": "Focus Flow",
+   "x": -576,
+   "y": -8,
+   "stats": [
+    {
+     "stat": "energyRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    510,
+    512
+   ]
+  },
+  {
+   "id": 512,
+   "kind": "small",
+   "name": "Focus Flow",
+   "x": -699,
+   "y": 16,
+   "stats": [
+    {
+     "stat": "energyRegenPct",
+     "amount": 0.5
+    }
+   ],
+   "links": [
+    511,
+    513
+   ]
+  },
+  {
+   "id": 513,
+   "kind": "notable",
+   "name": "Arcane Flow",
+   "x": -814,
+   "y": 13,
+   "stats": [],
+   "links": [
+    512,
+    518,
+    33
+   ],
+   "skillMods": [
+    {
+     "tag": "mage",
+     "cooldownPct": 15,
+     "costPct": 10,
+     "ranks": 2
+    }
+   ]
+  },
+  {
+   "id": 514,
+   "kind": "small",
+   "name": "Potency",
+   "x": -384,
+   "y": -241,
+   "stats": [
+    {
+     "stat": "skillDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    500,
+    515
+   ]
+  },
+  {
+   "id": 515,
+   "kind": "small",
+   "name": "Potency",
+   "x": -470,
+   "y": -332,
+   "stats": [
+    {
+     "stat": "skillDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    514,
+    516
+   ]
+  },
+  {
+   "id": 516,
+   "kind": "small",
+   "name": "Potency",
+   "x": -556,
+   "y": -424,
+   "stats": [
+    {
+     "stat": "skillDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    515,
+    517
+   ]
+  },
+  {
+   "id": 517,
+   "kind": "notable",
+   "name": "Spellweaver",
+   "x": -651,
+   "y": -489,
+   "stats": [
+    {
+     "stat": "skillDamagePct",
+     "amount": 15
+    },
+    {
+     "stat": "energyPct",
+     "amount": 10
+    }
+   ],
+   "links": [
+    516,
+    519,
+    34
+   ]
+  },
+  {
+   "id": 518,
+   "kind": "small",
+   "name": "Clarity",
+   "x": -902,
+   "y": -143,
+   "stats": [
+    {
+     "stat": "energyPct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    513,
+    520
+   ]
+  },
+  {
+   "id": 519,
+   "kind": "small",
+   "name": "Potency",
+   "x": -814,
+   "y": -415,
+   "stats": [
+    {
+     "stat": "skillDamagePct",
+     "amount": 4
+    }
+   ],
+   "links": [
+    517,
+    520
+   ]
+  },
+  {
+   "id": 520,
+   "kind": "keystone",
+   "name": "Glass Cannon",
+   "x": -942,
+   "y": -306,
+   "stats": [],
+   "links": [
+    504,
+    518,
+    519
+   ],
+   "keystone": "glassCannon"
+  }
+ ]
+}

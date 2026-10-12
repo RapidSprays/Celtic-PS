@@ -25,6 +25,7 @@ public sealed partial class GameServer : IDisposable
     private readonly QuestBook _quests;
     private readonly ShopCatalog _shops;
     private readonly TokenVendorCatalog _tokenVendors;
+    private readonly PassiveTree _tree;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -48,6 +49,8 @@ public sealed partial class GameServer : IDisposable
         _quests = QuestBook.Load(options.WorldPath);
         _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath));
         _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
+        _tree = PassiveTree.Load(options.PassiveTreePath);
+        if (_tree.IsLoaded) log.LogInformation("Passive tree: {Nodes} nodes", _tree.Nodes.Count);
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
@@ -469,6 +472,7 @@ public sealed partial class GameServer : IDisposable
         s.Character = character;
         s.Position = (character.Zone, character.X, character.Y, character.Z, character.Direction);
         GrantKitIfNeeded(character);
+        PruneTree(character);
         var sheet = LoadSheet(character);
         if (string.IsNullOrEmpty(sheet.Progress.Hud)) _store.SaveHud(character.Id, CharacterSheet.SerializeHud(sheet.DefaultHud()));
         s.Sheet = sheet;
@@ -590,6 +594,7 @@ public sealed partial class GameServer : IDisposable
         public HashSet<int> TradeRequests { get; } = new();
         public Dictionary<int, QuestState> Quests { get; } = new();
         public int? PetTemplate { get; set; }
+        public string? TreeLayoutVersion { get; set; }
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";

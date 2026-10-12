@@ -19,8 +19,10 @@ public sealed class CharacterSheet
     private readonly Balance _balance;
 
     public CharacterSheet(CharacterRecord character, CharacterProgress progress, IReadOnlyList<ItemRecord> items,
-        IReadOnlyList<(int SkillId, int Level)> skills, Balance balance)
+        IReadOnlyList<(int SkillId, int Level)> skills, Balance balance, TreeBonuses? tree = null)
     {
+        Tree = tree ?? TreeBonuses.None;
+        var t = Tree;
         Character = character;
         Progress = progress;
         Items = items;
@@ -40,13 +42,17 @@ public sealed class CharacterSheet
 
         var gear = Equipped.Select(i => _balance.Items.GetValueOrDefault(i.TemplateId)).OfType<ItemInfo>().ToList();
         Gear = gear;
-        CombinedStrength = Strength + gear.Sum(g => g.StatBonus("Strength"));
-        CombinedDexterity = Dexterity + gear.Sum(g => g.StatBonus("Dexterity"));
-        CombinedFocus = Focus + gear.Sum(g => g.StatBonus("Focus"));
-        CombinedVitality = Vitality + gear.Sum(g => g.StatBonus("Vitality"));
+        // Passive-tree attributes count as bonuses (combined), never as spent base points.
+        CombinedStrength = Strength + gear.Sum(g => g.StatBonus("Strength")) + (int)t["str"];
+        CombinedDexterity = Dexterity + gear.Sum(g => g.StatBonus("Dexterity")) + (int)t["dex"];
+        CombinedFocus = Focus + gear.Sum(g => g.StatBonus("Focus")) + (int)t["foc"];
+        CombinedVitality = Vitality + gear.Sum(g => g.StatBonus("Vitality")) + (int)t["vit"];
 
-        MaxHealth = Kit.Health + (level - 1) * HealthPerLevel + (CombinedVitality - baseVit) * 6 + gear.Sum(g => g.Bonus("HealthBonus"));
-        MaxEnergy = Kit.Energy + (level - 1) * EnergyPerLevel + (CombinedFocus - baseFoc) * 4 + gear.Sum(g => g.Bonus("EnergyBonus"));
+        var healthKeystones = (t.Has(PassiveTree.AssassinsMark) ? 0.75 : 1) * (t.Has(PassiveTree.GlassCannon) ? 0.7 : 1);
+        MaxHealth = Math.Max(1, (int)((Kit.Health + (level - 1) * HealthPerLevel + (CombinedVitality - baseVit) * 6 + gear.Sum(g => g.Bonus("HealthBonus")) + t["health"])
+            * (1 + t["healthPct"] / 100) * healthKeystones));
+        MaxEnergy = Math.Max(1, (int)((Kit.Energy + (level - 1) * EnergyPerLevel + (CombinedFocus - baseFoc) * 4 + gear.Sum(g => g.Bonus("EnergyBonus")) + t["energy"])
+            * (1 + t["energyPct"] / 100)));
         Health = progress.Health < 0 ? MaxHealth : Math.Clamp(progress.Health, 0, MaxHealth);
         Energy = progress.Energy < 0 ? MaxEnergy : Math.Clamp(progress.Energy, 0, MaxEnergy);
 
@@ -56,12 +62,51 @@ public sealed class CharacterSheet
         WeaponDamage = weapon?.Damage ?? 1;
         AttackSpeed = weapon is { Speed: > 0 } ? weapon.Speed : 1000;
         AttackRange = weapon is { Range: > 0 } ? weapon.Range + (offhand is { Subtype: "Arrow" } ? offhand.Range : 0) : 1f;
-        Armour = equipped.Sum(i => i.Armour);
+        Armour = (int)((equipped.Sum(i => i.Armour) + t["armour"]) * (1 + t["armourPct"] / 100)
+            * (t.Has(PassiveTree.IronHide) ? 1.5 : 1) * (t.Has(PassiveTree.Windrunner) ? 0.7 : 1));
         Encumbrance = equipped.Sum(i => i.Weight);
         var ranged = weapon is { Range: > 3 };
-        Attack = Kit.Attack + level + (ranged ? CombinedDexterity - baseDex : CombinedStrength - baseStr) + gear.Sum(g => g.Bonus("AttackBonus"));
-        Defence = Kit.Defence + level + Armour / 2 + (CombinedDexterity - baseDex) / 2 + gear.Sum(g => g.Bonus("DefenceBonus"));
+        Attack = (int)((Kit.Attack + level + (ranged ? CombinedDexterity - baseDex : CombinedStrength - baseStr) + gear.Sum(g => g.Bonus("AttackBonus")) + t["attack"])
+            * (1 + t["attackPct"] / 100));
+        Defence = (int)((Kit.Defence + level + Armour / 2 + (CombinedDexterity - baseDex) / 2 + gear.Sum(g => g.Bonus("DefenceBonus")) + t["defence"])
+            * (1 + t["defencePct"] / 100));
     }
+
+    /// <summary>The character's passive-tree bonuses (docs/passive-tree.md).</summary>
+    public TreeBonuses Tree { get; }
+
+    /// <summary>Base 5% critical strike chance, plus passives; Assassin's Mark doubles it.</summary>
+    public double CritChance => (0.05 + Tree["critChance"] / 100) * (Tree.Has(PassiveTree.AssassinsMark) ? 2 : 1);
+
+    /// <summary>Base ×1.5 on a critical strike; passives add to the extra, Assassin's Mark doubles the extra.</summary>
+    public double CritMultiplier => 1 + (0.5 + Tree["critMulti"] / 100) * (Tree.Has(PassiveTree.AssassinsMark) ? 2 : 1);
+
+    public double AttackDamageFactor => (1 + (Tree["damagePct"] + Tree["attackDamagePct"]) / 100) * (Tree.Has(PassiveTree.GlassCannon) ? 1.3 : 1);
+
+    public double SkillDamageFactor(int skillId) =>
+        (1 + (Tree["damagePct"] + Tree["skillDamagePct"] + Tree.For(_balance.SkillTags(skillId)).DamagePct) / 100) * (Tree.Has(PassiveTree.GlassCannon) ? 1.3 : 1);
+
+    public double HealFactor(int skillId) => 1 + (Tree["healPct"] + Tree.For(_balance.SkillTags(skillId)).DamagePct) / 100;
+
+    public double RechargeFactor(int skillId) => Math.Max(0, 1 - Tree.For(_balance.SkillTags(skillId)).CooldownPct / 100);
+
+    public int EnergyCost(int skillId, int cost) => (int)Math.Ceiling(cost * Math.Max(0, 1 - Tree.For(_balance.SkillTags(skillId)).CostPct / 100));
+
+    /// <summary>Extra chance for monsters to miss; Iron Hide means they never miss.</summary>
+    public double EvadeChance => Tree["evadePct"] / 100;
+
+    public int AttackSpeedPercent => (int)Tree["attackSpeedPct"] + (Tree.Has(PassiveTree.Windrunner) ? 25 : 0);
+
+    public int RunSpeedPercent => (int)Tree["runSpeedPct"] + (Tree.Has(PassiveTree.Windrunner) ? 25 : 0);
+
+    /// <summary>
+    /// The rank a skill works at: trained rank, plus small gear SkillBonuses (large ones are flat damage), plus passive
+    /// ranks. The client indexes Levels[compiled], so stay inside the (extended) table.
+    /// </summary>
+    public int EffectiveRank(int skillId, int trained) => Math.Clamp(
+        trained + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == skillId && Math.Abs(b.Amount) <= 10).Sum(b => b.Amount)
+            + Tree.For(_balance.SkillTags(skillId)).Ranks,
+        0, Math.Max(0, (_balance.Skills.GetValueOrDefault(skillId)?.Levels.Count ?? 1) - 1));
 
     public CharacterRecord Character { get; }
     public CharacterProgress Progress { get; }
@@ -168,10 +213,7 @@ public sealed class CharacterSheet
             SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
             AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, SoloBankItemLimit = BankSlots, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
             CompiledAbilities = Abilities(),
-            // Small SkillBonuses are rank bonuses (large ones are flat damage); the client indexes Levels[compiled], so clamp.
-            CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, Math.Clamp(
-                s.Level + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == s.SkillId && Math.Abs(b.Amount) <= 10).Sum(b => b.Amount),
-                0, Math.Max(0, (_balance.Skills.GetValueOrDefault(s.SkillId)?.Levels.Count ?? 1) - 1)))).ToList(),
+            CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, EffectiveRank(s.SkillId, s.Level))).ToList(),
             Avoidances = Gear.SelectMany(g => g.AvoidanceBonuses).GroupBy(a => a.Id).Select(g => new IdValue(g.Key, g.Sum(a => a.Amount))).ToList(),
             Bonuses = GearBonuses(),
         };

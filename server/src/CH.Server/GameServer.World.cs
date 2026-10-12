@@ -307,7 +307,7 @@ public sealed partial class GameServer
                 {
                     var stats = LiveStats(s);
                     var ranged = sheet.AttackRange > 3 ? Modifiers(s).RangedDamage : 0;
-                    var damage = sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged;
+                    var damage = (int)((sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged) * sheet.AttackDamageFactor);
                     PlayerHits(zone, s, target, AttackKind.Attack, 0, damage, now);
                     s.NextSwingAt = now + stats.AttackSpeed / 1000.0;
                 }
@@ -331,8 +331,11 @@ public sealed partial class GameServer
             s.NextRegenAt = now + RegenIntervalSeconds;
             var outOfCombat = now - s.LastCombatAt > OutOfCombatSeconds;
             var m = Modifiers(s);
-            var health = Math.Min(s.MaxHealth, s.Health + (outOfCombat ? Math.Max(1, s.MaxHealth / 20) : 0) + m.HealthRegen);
-            var energy = Math.Min(s.MaxEnergy, s.Energy + (outOfCombat ? Math.Max(1, s.MaxEnergy / 10) : 1) + m.EnergyRegen);
+            var tree = s.Sheet!.Tree;
+            var restHealth = outOfCombat && !tree.Has(PassiveTree.LifeTap) ? Math.Max(1, s.MaxHealth / 20) : 0;
+            var health = Math.Min(s.MaxHealth, s.Health + restHealth + m.HealthRegen + (int)(s.MaxHealth * tree["healthRegenPct"] / 100));
+            var energy = Math.Min(s.MaxEnergy, s.Energy + (outOfCombat ? Math.Max(1, s.MaxEnergy / 10) : 1) + m.EnergyRegen
+                + (int)(s.MaxEnergy * tree["energyRegenPct"] / 100));
             if (health != s.Health || energy != s.Energy)
             {
                 s.Health = health;
@@ -380,7 +383,9 @@ public sealed partial class GameServer
             Send(s, Opcode.SkillUpdate, new SkillUpdate((int)req.SkillId, 0, 0).Write);
             return;
         }
-        var level = skill.Level(known.Level);
+        var rank = s.Sheet.EffectiveRank(skill.Id, known.Level); // trained rank plus gear and passive ranks
+        var level = skill.Level(rank);
+        var cost = s.Sheet.EnergyCost(skill.Id, level.EnergyCost);
         Mob? target = null;
         Session? enemy = null;
         if (skill.CastTarget == "Enemy" && req.TargetType == TargetType.OtherPlayer)
@@ -396,12 +401,12 @@ public sealed partial class GameServer
                 target = mob;
         }
         var onCooldown = s.Cooldowns.TryGetValue(skill.Id, out var readyAt) && now < readyAt - 0.25;
-        if ((skill.CastTarget == "Enemy" && target is null && enemy is null) || onCooldown || s.Energy < level.EnergyCost)
+        if ((skill.CastTarget == "Enemy" && target is null && enemy is null) || onCooldown || s.Energy < cost)
         {
-            Send(s, Opcode.SkillUpdate, new SkillUpdate(skill.Id, known.Level, 0).Write); // tells the client the skill failed
+            Send(s, Opcode.SkillUpdate, new SkillUpdate(skill.Id, rank, 0).Write); // tells the client the skill failed
             return;
         }
-        s.Casts.Add(new PendingCast(skill, known.Level, target, now + level.CastingTime, enemy));
+        s.Casts.Add(new PendingCast(skill, rank, target, now + level.CastingTime, enemy));
     }
 
     private void OnCancelSkill(Session s, uint skillId)
@@ -413,26 +418,30 @@ public sealed partial class GameServer
     private void ResolveCast(Zone zone, Session s, PendingCast cast, double now)
     {
         var level = cast.Skill.Level(cast.Level);
-        if (s.Energy < level.EnergyCost || (cast.Target is { } t && t.State == MobState.Dead))
+        var sheet = s.Sheet!;
+        var cost = sheet.EnergyCost(cast.Skill.Id, level.EnergyCost);
+        if (s.Energy < cost || (cast.Target is { } t && t.State == MobState.Dead))
         {
             Send(s, Opcode.SkillUpdate, new SkillUpdate(cast.Skill.Id, cast.Level, 0).Write);
             return;
         }
-        s.Energy -= level.EnergyCost;
-        s.Cooldowns[cast.Skill.Id] = now + level.RechargeTime;
-        Send(s, Opcode.SkillUpdate, new SkillUpdate(cast.Skill.Id, cast.Level, Math.Max(0.5f, level.RechargeTime)).Write);
+        s.Energy -= cost;
+        var recharge = (float)(level.RechargeTime * sheet.RechargeFactor(cast.Skill.Id)); // passives can shorten it
+        s.Cooldowns[cast.Skill.Id] = now + recharge;
+        Send(s, Opcode.SkillUpdate, new SkillUpdate(cast.Skill.Id, cast.Level, Math.Max(0.5f, recharge)).Write);
         Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Energy, s.Energy)]).Write);
 
         var amount = Math.Abs(level.InitialDamage) + Math.Abs(level.BaseDamage);
+        var factor = sheet.SkillDamageFactor(cast.Skill.Id);
         if (cast.PlayerTarget is { } enemy)
         {
-            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4 + s.Sheet!.SkillDamageBonus;
+            var damage = (int)(((int)amount + (cast.Skill.IncludesWeaponAttack ? sheet.WeaponDamage : 0) + LiveStats(s).Attack / 4 + sheet.SkillDamageBonus) * factor);
             if (Enemy(s, enemy.CharacterId) is not null) PlayerHitsPlayer(zone, s, enemy, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
             return;
         }
         if (cast.Target is { } mob)
         {
-            var damage = (int)amount + (cast.Skill.IncludesWeaponAttack ? s.Sheet!.WeaponDamage : 0) + LiveStats(s).Attack / 4 + s.Sheet!.SkillDamageBonus;
+            var damage = (int)(((int)amount + (cast.Skill.IncludesWeaponAttack ? sheet.WeaponDamage : 0) + LiveStats(s).Attack / 4 + sheet.SkillDamageBonus) * factor);
             QuestCast(s, cast.Skill.Id, mob);
             PlayerHits(zone, s, mob, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
             if (cast.Skill.StatusEffectId > 0 && mob.State != MobState.Dead) ApplyMobEffect(mob, s, cast.Skill, cast.Level, now);
@@ -442,7 +451,7 @@ public sealed partial class GameServer
         if (cast.Skill.StatusEffectId > 0) ApplyEffect(s, cast.Skill, cast.Level, now);
         if (level.InitialDamage < 0 || level.BaseDamage < 0)
         {
-            var heal = Math.Max(1, (int)amount);
+            var heal = Math.Max(1, (int)(amount * sheet.HealFactor(cast.Skill.Id)));
             s.Health = Math.Min(s.MaxHealth, s.Health + heal);
             var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, s.CharacterId, AttackKind.Skill, cast.Skill.Id,
                 -heal, s.Health, Reaction.SkillHitPositive, ++_damageId, false);
@@ -466,14 +475,15 @@ public sealed partial class GameServer
         else
         {
             damage = (int)Math.Round(baseDamage * (0.8 + Random.Shared.NextDouble() * 0.4));
-            if (roll > 0.95)
+            if (Random.Shared.NextDouble() < s.Sheet!.CritChance)
             {
                 critical = true;
-                damage = (int)(damage * 1.5);
+                damage = (int)(damage * s.Sheet.CritMultiplier);
             }
             damage = Math.Max(1, damage);
         }
         mob.Health -= damage;
+        LifeTap(s, damage);
         mob.Damage[s] = mob.Damage.GetValueOrDefault(s) + damage;
         var procs = kind == AttackKind.Attack && damage > 0 && mob.Health > 0 ? RollProcs(s) : [];
         var entry = new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)mob.ServerId, kind, skillId, damage, mob.Health, reaction, ++_damageId, critical);
@@ -494,6 +504,14 @@ public sealed partial class GameServer
         }
     }
 
+    /// <summary>Life Tap keystone: 5% of damage dealt heals the attacker.</summary>
+    private void LifeTap(Session s, int damage)
+    {
+        if (damage <= 0 || s.Dead || !s.Sheet!.Tree.Has(PassiveTree.LifeTap) || s.Health >= s.MaxHealth) return;
+        s.Health = Math.Min(s.MaxHealth, s.Health + Math.Max(1, damage / 20));
+        Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Health, s.Health)]).Write);
+    }
+
     /// <summary>Equipment procs (ProcSkillID at ProcSkillChance) that trigger on this hit.</summary>
     private List<(SkillInfo Skill, int Level)> RollProcs(Session s) =>
         s.Sheet!.Gear.Where(g => g.ProcSkillId > 0 && g.ProcSkillChance > 0 && Random.Shared.NextDouble() < g.ProcSkillChance)
@@ -505,7 +523,8 @@ public sealed partial class GameServer
         target.LastCombatAt = now;
         BreakStealth(target);
         var m = Modifiers(target);
-        var miss = Random.Shared.NextDouble() < Math.Min(0.5, 0.1 + m.Defence / 200.0);
+        var tree = target.Sheet!.Tree;
+        var miss = !tree.Has(PassiveTree.IronHide) && Random.Shared.NextDouble() < Math.Min(0.5, 0.1 + m.Defence / 200.0 + target.Sheet.EvadeChance);
         var armour = target.Sheet!.Armour + m.Armour;
         var damage = miss ? 0 : Math.Max(1, (int)Math.Round(MobStats.HitDamage(mob.Level, mob.Template.Power) * (0.8 + Random.Shared.NextDouble() * 0.4)) - armour / 10);
         var absorbed = damage - AbsorbWithShields(target, damage);
@@ -544,8 +563,9 @@ public sealed partial class GameServer
         var c = s.Character!;
         var progress = _store.GetProgress(c.Id);
         var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects
-        var xp = MobStats.Xp(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.XpBoostPercent)) / 100;
-        var coins = MobStats.Coins(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.GoldBoostPercent)) / 100;
+        var tree = s.Sheet!.Tree;
+        var xp = MobStats.Xp(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.XpBoostPercent) + (int)tree["xpPct"]) / 100;
+        var coins = MobStats.Coins(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.GoldBoostPercent) + (int)tree["goldPct"]) / 100;
         var loot = new List<(int, int)>();
         foreach (var drop in _loot.Roll(mob.Level, mob.Template.Power, (CharacterClass)c.Class, Random.Shared))
         {

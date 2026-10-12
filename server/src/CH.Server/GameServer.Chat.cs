@@ -35,15 +35,17 @@ public sealed partial class GameServer
         ".respawn - respawn every mob in the zone",
         ".zones - list zones | .goto <zone id or name> [leystone] - travel there",
         ".leystones - discover every leystone (for map fast travel)",
-        ".who - who is online | .gm <account> [off] - grant or remove GM | .resetpassword <account> - forget a password");
+        ".who - who is online | .gm <account> [off] - grant or remove GM | .resetpassword <account> - forget a password",
+        TreeHelp);
 
-    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones"];
+    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree"];
 
     private static readonly string PlayerHelp = string.Join("\n",
         "Commands:",
         ".who - who is online",
         ".where - your zone and position",
         ".zones - list the zones",
+        TreeHelp,
         "Chat: w Name, message - whisper | g message - party | s message - zone");
 
     private void OnChat(Session s, ChatMessage chat)
@@ -110,7 +112,7 @@ public sealed partial class GameServer
         var verb = parts[0].ToLowerInvariant();
         if (!s.IsGm && !PlayerCommands.Contains(verb))
         {
-            Tell(s, "That command is for GMs. Commands: .help, .who, .where, .zones");
+            Tell(s, "That command is for GMs. Commands: .help, .who, .where, .zones, .tree");
             return;
         }
         _log.LogInformation("{Role} {Name}: .{Command}", s.IsGm ? "GM" : "Player", s.Name, command);
@@ -262,6 +264,10 @@ public sealed partial class GameServer
                 Tell(s, $"Deleted spawn #{spawnId} ({target.Template.Name}).");
                 break;
             }
+
+            case "tree":
+                TreeCommand(s, args);
+                break;
 
             case "heal":
                 s.Health = s.MaxHealth;

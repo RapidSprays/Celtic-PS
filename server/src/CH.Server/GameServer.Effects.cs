@@ -41,8 +41,8 @@ public sealed partial class GameServer
             ArmourValue = Math.Max(0, stats.ArmourValue + m.Armour),
             Defence = Math.Max(0, stats.Defence + m.Defence),
             Attack = Math.Max(0, stats.Attack + m.Attack),
-            AttackSpeed = AttackSpeedWith(stats.AttackSpeed, m.AttackSpeedPercent),
-            MaxSpeed = RunSpeedWith(stats.MaxSpeed, m.RunSpeedPercent), // riding: the Mounted effect
+            AttackSpeed = AttackSpeedWith(stats.AttackSpeed, m.AttackSpeedPercent + sheet.AttackSpeedPercent),
+            MaxSpeed = RunSpeedWith(stats.MaxSpeed, m.RunSpeedPercent + sheet.RunSpeedPercent), // riding: the Mounted effect
         };
     }
 

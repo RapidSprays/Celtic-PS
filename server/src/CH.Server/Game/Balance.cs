@@ -323,6 +323,34 @@ public sealed class Balance
         return Skills.Values.FirstOrDefault(s => !s.Name.StartsWith("Learn", StringComparison.OrdinalIgnoreCase) && NameKey(s.Name) == key);
     }
 
+    private static readonly IReadOnlySet<string> NoTags = new HashSet<string>();
+    private Dictionary<int, HashSet<string>>? _skillTags;
+
+    /// <summary>
+    /// Passive-tree tags for a skill: the classes that can learn it (lower case, from skill books' class rules and the
+    /// class kits) and "heal" for healing skills.
+    /// </summary>
+    public IReadOnlySet<string> SkillTags(int skillId) =>
+        LazyInitializer.EnsureInitialized(ref _skillTags, BuildSkillTags).TryGetValue(skillId, out var tags) ? tags : NoTags;
+
+    private Dictionary<int, HashSet<string>> BuildSkillTags()
+    {
+        var tags = new Dictionary<int, HashSet<string>>();
+        void Add(int skill, string tag)
+        {
+            if (!tags.TryGetValue(skill, out var set)) tags[skill] = set = [];
+            set.Add(tag);
+        }
+        foreach (var kit in ClassKit.All.Values)
+            foreach (var skill in kit.Skills) Add(skill, kit.Class.ToString().ToLowerInvariant());
+        foreach (var book in Items.Values.Where(i => i.Classes.Count > 0 && i.SkillLink.StartsWith("Learn", StringComparison.Ordinal) || i.SkillLinkId > 0 && i.Classes.Count > 0))
+            if (SkillTaughtBy(book) is { } skill)
+                foreach (var cls in book.Classes) Add(skill.Id, cls.ToLowerInvariant());
+        foreach (var skill in Skills.Values.Where(k => k.Levels.Count > 0 && (k.Levels[0].InitialDamage < 0 || k.Levels[0].BaseDamage < 0)))
+            Add(skill.Id, "heal");
+        return tags;
+    }
+
     /// <summary>Cooking recipe taught by a recipe book ("'Broth' Recipe Book" → recipe "Broth").</summary>
     public int? RecipeTaughtBy(ItemInfo book)
     {

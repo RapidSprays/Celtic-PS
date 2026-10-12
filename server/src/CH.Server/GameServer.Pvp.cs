@@ -213,7 +213,7 @@ public sealed partial class GameServer
         }
         var stats = LiveStats(s);
         var ranged = sheet.AttackRange > 3 ? Modifiers(s).RangedDamage : 0;
-        PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged, now);
+        PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, (int)((sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged) * sheet.AttackDamageFactor), now);
         s.NextSwingAt = now + stats.AttackSpeed / 1000.0;
     }
 
@@ -225,15 +225,17 @@ public sealed partial class GameServer
         BreakStealth(s);
         BreakStealth(target);
         var m = Modifiers(target);
-        var miss = allowMiss && Random.Shared.NextDouble() < Math.Min(0.5, 0.08 + m.Defence / 400.0);
-        var critical = !miss && Random.Shared.NextDouble() > 0.95;
+        var miss = allowMiss && !target.Sheet!.Tree.Has(PassiveTree.IronHide)
+            && Random.Shared.NextDouble() < Math.Min(0.5, 0.08 + m.Defence / 400.0 + target.Sheet.EvadeChance);
+        var critical = !miss && Random.Shared.NextDouble() < s.Sheet!.CritChance;
         var damage = 0;
         if (!miss)
         {
-            damage = (int)Math.Round(baseDamage * (0.8 + Random.Shared.NextDouble() * 0.4) * (critical ? 1.5 : 1));
+            damage = (int)Math.Round(baseDamage * (0.8 + Random.Shared.NextDouble() * 0.4) * (critical ? s.Sheet.CritMultiplier : 1));
             damage = Math.Max(1, damage - (target.Sheet!.Armour + m.Armour) / 10);
             damage = AbsorbWithShields(target, damage); // what's left after energy shields
         }
+        LifeTap(s, damage);
         // Duels stop at 1 HP: nobody dies.
         var lethal = target.Health - damage <= 0;
         target.Health = Math.Max(1, target.Health - damage);

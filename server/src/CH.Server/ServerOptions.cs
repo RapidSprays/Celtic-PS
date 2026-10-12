@@ -75,6 +75,9 @@ public sealed class ServerOptions
     /// <summary>Our own items (server/content/custom-items.json, copied next to the server binary).</summary>
     public string? CustomItemsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "custom-items.json");
 
+    /// <summary>The passive tree (server/content/passive-tree.json, copied next to the server binary).</summary>
+    public string? PassiveTreePath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "passive-tree.json");
+
     public void Validate()
     {
         if (!IPAddress.IsLoopback(BindAddress) && !AllowRemote)
