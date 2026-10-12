@@ -34,3 +34,7 @@ Labels: **O** observed · **SI** statically inferred · **EC** experimentally co
 | 28 | The patched client takes all its endpoints from our server and boots to the main menu in env Test | EC | high | Player.log `db ENVIRONMENT:Test`, server log, 2026-10-12 | — |
 | 29 | Unity engine telemetry (config.uca / cdp.cloud.unity3d.com) is started natively from UnityConnectSettings in globalgamemanagers | EC | high | `dig` on the connection IPs + POSTs arriving at `/u/…` after P8 | — |
 | 30 | The patched client opens no non-local TCP connections at the menu | EC | high | `lsof -a -p <pid> -i TCP` | Later screens may open others; re-check per milestone |
+| 31 | The real client logs in, creates a character, enters zone 2 and moves on our server | EC | high | Owner's play session 2026-10-12; server log (Login, Created character, entering zone 2), frame log | — |
+| 32 | Stock upstream Lidgren interoperates with the client's fork (resolves U1) | EC | high | #31 | — |
+| 33 | The client ships the WorldPlacer spawn-editor *model* (MobSpawnPoint: position, angle, respawn, patrol, movement AI) but no loader, UI or data | O | high | no implementers or constructors of ISpawnPointsLoader/MobSpawnPointManager in any assembly | Data may sit in editor-only tooling we don't have |
+| 34 | Client balance gives mob/NPC identities (9,077 MobTemplates), class starting equipment, skills and zone exits, but no spawn positions | O | high | `extracted/24928510/balance-client.json` | — |

@@ -9,7 +9,7 @@ The aim is a private, non-commercial Celtic Heroes server that a pinned, modifie
 | B: Client map | **done**: [client-architecture.md](docs/client-architecture.md) |
 | C: Protocol and boot sequence | **first pass done**: [boot-sequence.md](docs/boot-sequence.md), [protocol-notes.md](docs/protocol-notes.md), [opcode-map.md](docs/opcode-map.md). Unknowns U1–U4 are resolved during D/E |
 | D: Server foundation | **done**: HTTP patch server + Lidgren game server + SQLite, fake client, 20 tests (see below) |
-| E: Real client on the private server | **in progress**: patch set applied ([patch-manifest.md](docs/patch-manifest.md)); patched client boots fully isolated to the main menu; login → world next |
+| E: Real client on the private server | **E-a to E-c done (2026-10-12)**: the real patched client logs in, creates a character, enters Lir's Reach and walks around, fully isolated. The world is empty (no server-side spawn data); Stage F next |
 
 ## Layout
 - `docs/`: research notes. Every claim is labelled and tracked in [docs/confidence-ledger.md](docs/confidence-ledger.md).
