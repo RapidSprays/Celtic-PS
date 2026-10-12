@@ -44,6 +44,19 @@ public sealed class PatchServer : IAsyncDisposable
             _log.LogWarning("Client requested balance download for version {Version}; not served", version);
             return Results.NotFound();
         });
+        // Redirected by the client patch set (docs/patch-manifest.md): Unity engine telemetry (P8) and live web links (P4).
+        _app.MapMethods("/u/{**rest}", ["GET", "POST", "PUT"], (HttpContext ctx) =>
+        {
+            _log.LogInformation("Blocked Unity telemetry request {Method} {Path}", ctx.Request.Method, ctx.Request.Path);
+            return Results.NotFound();
+        });
+        _app.MapGet("/external/{**rest}", (HttpContext ctx) =>
+        {
+            _log.LogInformation("Client asked for external page {Path}", ctx.Request.Path);
+            return Results.NotFound();
+        });
+        // Connectivity check (P4b): the client only needs a 200.
+        _app.MapGet("/ping", () => Results.Text("ok"));
         _app.MapFallback((HttpContext ctx) =>
         {
             _log.LogWarning("HTTP unhandled {Path}", ctx.Request.Path);

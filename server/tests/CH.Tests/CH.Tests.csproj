@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\CH.Persistence\CH.Persistence.csproj" />
     <ProjectReference Include="..\..\src\CH.Server\CH.Server.csproj" />
     <ProjectReference Include="..\..\src\CH.FakeClient\CH.FakeClient.csproj" />
+    <ProjectReference Include="..\..\tools\CH.Patcher\CH.Patcher.csproj" />
   </ItemGroup>
 
 </Project>

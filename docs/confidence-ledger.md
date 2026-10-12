@@ -31,3 +31,6 @@ Labels: **O** observed · **SI** statically inferred · **EC** experimentally co
 | 25 | Upstream lidgren-network-gen3 matches the client fork's wire code (message types, constants, packet header encode, handshake, ping/pong) | O | high | side-by-side diff 2026-10-12 (`vendor/Lidgren.Network/VENDOR.md`) | Non-wire differences only (address family, Deny, null-check fix) |
 | 26 | Our server and fake client interoperate through the full login → world → move → restart flow | EC | high | `EndToEndTests` (6 consecutive green runs) | Shows self-consistency only; the real client is the final check (E-a) |
 | 27 | LoginReply must go out without the session flag (the client's session id is still 0 when it arrives) | SI | high | `NetworkManager.cs:747-757` + `770-778` | — |
+| 28 | The patched client takes all its endpoints from our server and boots to the main menu in env Test | EC | high | Player.log `db ENVIRONMENT:Test`, server log, 2026-10-12 | — |
+| 29 | Unity engine telemetry (config.uca / cdp.cloud.unity3d.com) is started natively from UnityConnectSettings in globalgamemanagers | EC | high | `dig` on the connection IPs + POSTs arriving at `/u/…` after P8 | — |
+| 30 | The patched client opens no non-local TCP connections at the menu | EC | high | `lsof -a -p <pid> -i TCP` | Later screens may open others; re-check per milestone |

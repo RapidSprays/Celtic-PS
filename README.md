@@ -9,7 +9,7 @@ The aim is a private, non-commercial Celtic Heroes server that a pinned, modifie
 | B: Client map | **done**: [client-architecture.md](docs/client-architecture.md) |
 | C: Protocol and boot sequence | **first pass done**: [boot-sequence.md](docs/boot-sequence.md), [protocol-notes.md](docs/protocol-notes.md), [opcode-map.md](docs/opcode-map.md). Unknowns U1–U4 are resolved during D/E |
 | D: Server foundation | **done**: HTTP patch server + Lidgren game server + SQLite, fake client, 20 tests (see below) |
-| E: Real client on the private server | patch set drafted: [patch-manifest.md](docs/patch-manifest.md) |
+| E: Real client on the private server | **in progress**: patch set applied ([patch-manifest.md](docs/patch-manifest.md)); patched client boots fully isolated to the main menu; login → world next |
 
 ## Layout
 - `docs/`: research notes. Every claim is labelled and tracked in [docs/confidence-ledger.md](docs/confidence-ledger.md).
@@ -64,3 +64,9 @@ dotnet run --project src/CH.Server -- --data ~/CelticHeroesAnalysis/server-data
 - Implemented: environment, world list, account-conflict, privacy and patch pages; discovery; VersionCheck; Login; character list and create; RequestTweak; StartGame with full character data; FinishedZoning → EnteringNewZoneUpdate + AllZoningMessagesSent; PlayerMove (persisted).
 - New characters start in Lir's Reach (zone 2) at the Highshore Village spawn, taken from the client balance data (approximated).
 - `server/vendor/Lidgren.Network`: upstream lidgren-network-gen3 (MIT), wire-compared with the client's fork. See its `VENDOR.md` for the two local changes.
+
+## Private client (Stage E)
+```bash
+cd server && dotnet run --project tools/CH.Patcher   # patch the pinned copy (once, or after changing the port)
+cd .. && scripts/run-private.sh                       # start server + patched client; Ctrl+C stops both
+```

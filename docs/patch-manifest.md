@@ -1,27 +1,45 @@
-# Private-client patch manifest: build 24928510 (DRAFT, not yet applied)
+# Private-client patch manifest: build 24928510 (APPLIED 2026-10-12)
 
-These patches apply **only** to the pinned copy at `~/CelticHeroesAnalysis/client/24928510/`. They will be applied by `server/tools/CH.Patcher` (Mono.Cecil), which refuses to run unless the input hashes match `inventories/sha256.txt`. It then re-signs the copy ad hoc. The Steam install is never touched.
+These patches apply **only** to the pinned copy at `~/CelticHeroesAnalysis/client/24928510/`. They are applied by `server/tools/CH.Patcher` (Mono.Cecil):
+```bash
+cd server && dotnet run --project tools/CH.Patcher            # patch (add --http-port N to use another port)
+dotnet run --project tools/CH.Patcher -- --dry-run            # check without writing
+dotnet run --project tools/CH.Patcher -- --inspect out.dll    # write a patched DLL elsewhere for decompiling
+```
 
-Stage B findings made this set much smaller than planned. There are **no active anti-cheat detectors and no file-integrity checks to strip** (see [client-architecture.md](client-architecture.md)).
+How the patcher protects the inputs:
+- It always starts from pristine inputs, hash-verified against `inventories/sha256.txt`:
+  - the snapshot's `Assembly-CSharp.dll`
+  - `client/<build>/pristine/globalgamemanagers`, backed up on the first run
+- Every patch has a **pinned site count**. A different client build fails the run rather than leaving the copy half-patched.
+- After patching it re-signs the copy ad hoc and writes `client/<build>/patch-state.json` with hashes and the patch list.
+- The Steam install is refused as a target and never touched.
 
-| # | Target | Change | Why | Evidence |
+| # | Target | Change | Sites | Why |
 |---|---|---|---|---|
-| P1 | `Info.plist` `CFBundleIdentifier` | `com.onethumbmobile.celticheroes` → `com.onethumbmobile.celticheroes.private` | **Separates PlayerPrefs and persistentDataPath from the live game.** The live prefs hold `USER`, `PASS`, `REFRESH_TOKEN` and `WORLD_ID`, and the private client must never send those to any server, ours included. It also stops the private client from overwriting live settings | Shared plist observed (`~/Library/Preferences/com.onethumbmobile.celticheroes.plist`). Unity on macOS keys PlayerPrefs by bundle id (SI) |
-| P2 | `EnvironmentSetup.Init` (`EnvironmentSetup.cs:93`) | Use a **local environment URL** (`http://127.0.0.1:<httpPort>/patchserver/PatchServerURL.aspx?iav={0}&platform={1}`, from a config file next to the app) instead of the serialized `remoteEnvironmentRequestUrl` | The single root endpoint. Our reply `0,http://127.0.0.1:<httpPort>/patchserver/,0,http://127.0.0.1:<httpPort>/patchserver/balancefiles/{0}/balance-client.json` sends every patch server, world list and balance request to us and selects env Test | `boot-sequence.md` steps 3 and 9 |
-| P3 | `EnvironmentSetup` defaults (`defaultPatchServerUrl`, `defaultBalanceCdnUrlFormat`) | Point them to the same local URLs | If our env endpoint is down, the client must fail over to localhost, never to production | `EnvironmentSetup.cs:150-157` |
-| P4 | `CUtilities` static ctor (`CUtilities.cs:21-23`) | Point the server-status URLs at the local HTTP server | Removes the `celtic-heroes.com` live calls | AsmIndex `endpoints.csv` |
-| P5 | `CController.Awake` `Services.Init(...)` (`CController.cs:740`) | Skip it, and invoke its completion callback directly | Stops Firebase analytics, Crashlytics and FCM telemetry to the live project | `st/SharedTech/Services.cs:68-111`. The callback contract still needs checking before patching |
-| P6 | `UnityServices.InitializeAsync` (`CController.cs:1151`), Zendesk init (`CController.cs:1663`) | No-op | Telemetry and support SDKs talk to live projects | — |
-| P7 | IAP: `CController.InitialisePurchaseManager` (`CController.cs:1409`) | No-op | No store calls or purchases from the private client | `InAppPurchaseManager.cs:27-44`, `SteamStore.cs:59-124` |
+| P1 | `Info.plist` `CFBundleIdentifier` | → `com.onethumbmobile.celticheroes.private` | 1 | Gives the private client its own PlayerPrefs and persistentDataPath. The live prefs hold `USER`, `PASS` and `REFRESH_TOKEN`; the private client never sees them. |
+| P2 | `EnvironmentSetup`: every `ldfld` of `remoteEnvironmentRequestUrl`, `defaultPatchServerUrl`, `defaultBalanceCdnUrlFormat` and the `local*` fields | → localhost constants (`http://127.0.0.1:<port>/patchserver/…`) | 6 | The single root endpoint plus all fallbacks, so the client can never fall back to production. |
+| P4 | Live URL literals (`CUtilities` server status ×2, `XMLPopUpUGUI` support link) | → `http://127.0.0.1:<port>/external/<host><path>` | 3 | Removes the remaining DECA and celtic-heroes.com endpoints. |
+| P4b | `NetworkManager.CheckInternetSettings` `"http://www.google.com"` | → `http://127.0.0.1:<port>/ping` | 1 | Full network isolation (the server answers 200). |
+| P5 | `CController.Awake`: `SharedTech.Services::Init(...)` | call removed (arguments popped) | 1 | No Firebase analytics, Crashlytics or FCM. |
+| P6a | `CController.Start`: `UnityServices.InitializeAsync()` | removed | 1 | No Unity Gaming Services. |
+| P6b | `CController.Init` coroutine: `ZendeskSdk.InitializeAsync(...).ContinueWith(...)` | both calls removed | 1 | No Zendesk SDK (support and analytics). |
+| P7 | `InAppPurchaseManager..ctor`: `UnityPurchasing.Initialize(...)` | removed | 1 | The store never initializes, so no purchases. The manager object still exists, which avoids null references. |
+| P8 | `globalgamemanagers` (UnityConnectSettings) | 7 Unity service URLs (analytics config and events, crash, performance, dashboard) → same-length `http://127.0.0.1:<port>/u/…` | 7 | Unity engine telemetry starts natively before any script. Same-length rewrite, so no re-serialization is needed. |
+
+Patch IDs P3 and P6 from the draft were folded into P2 and P6a/P6b.
 
 **Not patched:**
-- Steam (`SteamManager`, ownership, `RestartAppIfNecessary`). Steam stays running and there is no DRM bypass.
-- ACTk `Obscured*` types (in-memory encoding only).
-- The HMAC signing on client messages (our server simply doesn't verify it).
-- `http://www.google.com` internet check (not a DECA endpoint).
-- External links (support, Facebook), which only open when clicked.
+- Steam (`SteamManager`, ownership, `RestartAppIfNecessary`): no DRM bypass.
+- ACTk: no detectors run.
+- ObscuredTypes (in-memory only).
+- Client HMAC signing: the server ignores it.
 
-## Isolation check (run after patching)
-1. Search the patched `Assembly-CSharp.dll`, `resources.assets` overrides and `Info.plist` for `decagames.com` and `celtic-heroes.com`. The literals in `resources.assets` stay, but P2 and P3 make them unreachable from code. The check lists them as "present, unreferenced".
-2. While the private client runs: `lsof -a -p <pid> -i -n -P` must show only `127.0.0.1` and the Steam IPC loopback.
-3. `scripts/inventory.sh --verify` on the Steam install must still pass.
+## IL safety
+Edited methods are expanded with `SimplifyMacros` before editing and re-optimized with `OptimizeMacros` afterwards. The first real-client run hit an `InvalidProgramException` in `EnvironmentSetup.OnEnvironmentRequestCompleted`, where a short branch had been pushed out of range. That is fixed, and `PatcherTests.Edited_methods_have_valid_branch_targets_after_round_trip` guards against it.
+
+## Isolation check (experimentally confirmed 2026-10-12)
+Patched client running at the main menu: `lsof -a -p <pid> -i TCP` shows only `127.0.0.1:5555` (our server) and the Steam IPC loopback.
+- The server log shows Unity telemetry POSTs arriving at `/u/…` and being refused.
+- The environment, privacy, patch-level and server-status requests are all served locally.
+- `scripts/inventory.sh --verify` on the Steam install still passes.
