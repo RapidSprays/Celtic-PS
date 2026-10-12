@@ -55,17 +55,24 @@ public sealed partial class GameServer
         var stats = LiveStats(s);
         Send(s, Opcode.StatusEffectUpdate, b =>
         {
-            b.WriteVariableInt32(s.Effects.Count);
-            foreach (var e in s.Effects)
-            {
-                b.WriteVariableInt32(e.Info.Id);
-                b.WriteVariableInt32(e.LevelIndex);
-                b.WriteVariableInt32((int)Math.Ceiling(Math.Max(0, e.ExpiresAt - now)));
-                b.Write(ActiveEffect.CasterAbilityLevel);
-                b.Write(0f);
-            }
+            WriteEffectList(b, s, now);
             stats.Write(b);
         });
+        BroadcastEffects(s);
+    }
+
+    /// <summary>The status list shared by StatusEffectUpdate and OthersStatusEffect (NetworkManager.readStatusEffectsFromMessage).</summary>
+    private static void WriteEffectList(NetBuffer b, Session s, double now)
+    {
+        b.WriteVariableInt32(s.Effects.Count);
+        foreach (var e in s.Effects)
+        {
+            b.WriteVariableInt32(e.Info.Id);
+            b.WriteVariableInt32(e.LevelIndex);
+            b.WriteVariableInt32((int)Math.Ceiling(Math.Max(0, e.ExpiresAt - now)));
+            b.Write(ActiveEffect.CasterAbilityLevel);
+            b.Write(0f);
+        }
     }
 
     /// <summary>Applies a skill's status effect to the caster (self and friendly buffs). Re-casting refreshes it.</summary>

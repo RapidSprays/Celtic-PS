@@ -192,4 +192,37 @@ public sealed class MultiplayerTests : IDisposable
         Say(again, ChatChannel.Local, ".level 50");
         again.Expect(Opcode.LevelUp);
     }
+
+    [Fact]
+    public async Task A_hidden_rogue_vanishes_for_others_and_buffs_are_shared()
+    {
+        if (!File.Exists(BalancePath)) return;
+        await using var host = await ServerHost.StartAsync(
+            new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath }, NullLoggerFactory.Instance);
+        var (rogue, rogueId) = Join(host, "sionnach", "Sionnach", @class: 5);
+        using var _r = rogue;
+        rogue.FinishZoning();
+        var (watcher, _) = Join(host, "eithne", "Eithne");
+        using var _w = watcher;
+        watcher.FinishZoning();
+
+        // Visible at first: the rogue is in Eithne's snapshots.
+        rogue.Move(-105f, -3.6f, -15f, 0, speed: 5f);
+        BatchZonePositionUpdate seen;
+        do seen = BatchZonePositionUpdate.Read(watcher.Expect(Opcode.BatchZonePositionUpdate));
+        while (seen.Players.Count == 0);
+        Assert.Equal(rogueId, seen.Players[0].ServerId);
+
+        // Hide (skill 17): Eithne gets the rogue in the "hidden" list, and the next snapshots leave him out.
+        rogue.Send(Opcode.UseSkillOnNPC, new UseSkill(TargetType.Self, 0, NetTime.Now, 17).Write);
+        var effects = watcher.Expect(Opcode.OthersStatusEffect, TimeSpan.FromSeconds(5));
+        Assert.Equal(0, effects.ReadVariableInt32());              // visible players
+        Assert.Equal(1, effects.ReadVariableInt32());              // hidden players
+        Assert.Equal((0, rogueId), (effects.ReadByte(), effects.ReadVariableUInt32()));
+        Assert.Equal(1, effects.ReadVariableInt32());              // one effect
+        Assert.Equal(9, effects.ReadVariableInt32());              // Hide
+        rogue.Move(-104f, -3.6f, -15f, 0, speed: 5f);
+        var empty = BatchZonePositionUpdate.Read(watcher.Expect(Opcode.BatchZonePositionUpdate));
+        Assert.Empty(empty.Players);
+    }
 }

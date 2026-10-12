@@ -517,6 +517,7 @@ public sealed partial class GameServer : IDisposable
         public double LastMoveAt { get; set; } = double.MinValue;
         public Party? Party { get; set; }
         public HashSet<int> PartyInvites { get; } = new();
+        public int SharedHealthPercent { get; set; } = -1;
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";

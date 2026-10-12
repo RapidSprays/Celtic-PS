@@ -328,6 +328,7 @@ public sealed partial class GameServer
                 s.Health = health;
                 s.Energy = energy;
                 Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Health, s.Health), (StatKey.Energy, s.Energy)]).Write);
+                ShareHealth(zone, s);
             }
         }
     }

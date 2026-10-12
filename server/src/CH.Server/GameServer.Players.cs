@@ -56,6 +56,12 @@ public sealed partial class GameServer
         var basic = Basic(s);
         SendToOthers(zone, s, Opcode.CharacterZoningIn, basic.Write);
         zone.NextBatchAt = 0; // place the newcomer on everyone's screen right away
+        var now = NetTime.Now;
+        foreach (var other in Others(zone, s).ToList())
+        {
+            if (s.Effects.Count > 0) SendEffectsOf(s, other, now);
+            if (other.Effects.Count > 0) SendEffectsOf(other, s, now);
+        }
     }
 
     private void AnnounceDeparture(Zone zone, Session s) =>
@@ -77,7 +83,8 @@ public sealed partial class GameServer
             p.MoveSpeed <= 0 || now - p.LastMoveAt > MovingWindowSeconds)).ToList();
         foreach (var recipient in present)
         {
-            var batch = new BatchZonePositionUpdate(now, all.Where(e => e.ServerId != (uint)recipient.CharacterId).ToList());
+            var hidden = present.Where(p => !ReferenceEquals(p, recipient) && IsHiddenFromPlayer(p, recipient)).Select(p => (uint)p.CharacterId).ToHashSet();
+            var batch = new BatchZonePositionUpdate(now, all.Where(e => e.ServerId != (uint)recipient.CharacterId && !hidden.Contains(e.ServerId)).ToList());
             Send(recipient, Opcode.BatchZonePositionUpdate, batch.Write, delivery: NetDeliveryMethod.UnreliableSequenced);
         }
     }
@@ -105,6 +112,54 @@ public sealed partial class GameServer
         }
     }
 
+    /// <summary>
+    /// Hide makes a player invisible to other players (<b>approximated</b>: party members still see them). Hidden
+    /// players are left out of the viewer's position snapshots, which is what hides a model on the client.
+    /// </summary>
+    private bool IsHiddenFromPlayer(Session p, Session viewer) =>
+        Modifiers(p).HiddenUpToLevel > 0 && (p.Party is null || !ReferenceEquals(p.Party, viewer.Party));
+
+    /// <summary>
+    /// OthersStatusEffect (15018): <c>varint n × {byte isMob, varuint id, status list}</c> for players the viewer sees,
+    /// then the same for players hidden from it (the client marks those invisible).
+    /// </summary>
+    private void SendEffectsOf(Session p, Session viewer, double now)
+    {
+        var hidden = IsHiddenFromPlayer(p, viewer);
+        Send(viewer, Opcode.OthersStatusEffect, b =>
+        {
+            b.WriteVariableInt32(hidden ? 0 : 1);
+            if (!hidden) WriteOther(b);
+            b.WriteVariableInt32(hidden ? 1 : 0);
+            if (hidden) WriteOther(b);
+        });
+
+        void WriteOther(NetBuffer b)
+        {
+            b.Write((byte)0);
+            b.WriteVariableUInt32((uint)p.CharacterId);
+            WriteEffectList(b, p, now);
+        }
+    }
+
+    /// <summary>A player's effects changed: everyone else in the zone sees the new buffs (and whether they're hidden).</summary>
+    private void BroadcastEffects(Session s)
+    {
+        if (!s.InZone || !_zones.TryGetValue(s.Position.Zone, out var zone)) return;
+        var now = NetTime.Now;
+        foreach (var viewer in Others(zone, s).ToList()) SendEffectsOf(s, viewer, now);
+        zone.NextBatchAt = 0; // a hidden/unhidden player appears or vanishes with the next snapshot
+    }
+
+    /// <summary>Health regen and other non-combat changes: other players' health bars (percent) follow.</summary>
+    private void ShareHealth(Zone zone, Session s)
+    {
+        var percent = HealthPercent(s);
+        if (percent == s.SharedHealthPercent) return;
+        s.SharedHealthPercent = percent;
+        SendToOthers(zone, s, Opcode.CombatDamageMessage, new CombatDamage([], [new HealthUpdate(HealthUpdate.Player, s.CharacterId, percent)]).Write);
+    }
+
     // ---- combat seen by others ---------------------------------------------------------------
 
     /// <summary>Sets a player's auto-attack target; others see the swing animation start and stop.</summary>
@@ -126,6 +181,7 @@ public sealed partial class GameServer
         Send(victim, Opcode.CombatDamageMessage,
             new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Player, victim.CharacterId, victim.Health)]).Write);
         var percent = HealthPercent(victim);
+        victim.SharedHealthPercent = percent;
         var shared = new CombatDamage([entry with { TargetHealth = percent }], [new HealthUpdate(HealthUpdate.Player, victim.CharacterId, percent)]);
         SendToOthers(zone, victim, Opcode.CombatDamageMessage, shared.Write);
     }
