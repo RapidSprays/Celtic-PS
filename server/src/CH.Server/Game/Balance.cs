@@ -58,7 +58,15 @@ public sealed record ItemInfo(
     IReadOnlyList<string> Classes,
     bool Usable,
     bool Stackable,
-    string SkillLink);
+    string SkillLink,
+    int SkillLinkId = -1,
+    int SkillLinkLevel = 0,
+    string Description = "")
+{
+    /// <summary>Test and placeholder templates ("TEST …", "… DNU", "NOT USED") never appear as rewards.</summary>
+    public bool IsPlaceholder => Name.Contains("TEST", StringComparison.Ordinal) || Name.Contains("DNU", StringComparison.Ordinal)
+        || Name.Contains("NOT USED", StringComparison.OrdinalIgnoreCase) || Name.EndsWith(" OLD", StringComparison.Ordinal) || Name == "INVALID ITEM";
+}
 
 public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost, int TemplateLevel = 0, int MinLevel = 0);
 
@@ -150,7 +158,7 @@ public sealed class Balance
                 Int(e, "Armour"), Int(e, "Speed"), Int(e, "Weight"), Float(e, "Range"),
                 e.TryGetProperty("DamageTypes", out var dmg) && dmg.ValueKind == JsonValueKind.Array ? dmg.EnumerateArray().Sum(d => Int(d, "Amount")) : 0,
                 e.TryGetProperty("ClassTypes", out var cls) && cls.ValueKind == JsonValueKind.Array ? cls.EnumerateArray().Select(c => c.GetString() ?? "").ToList() : [],
-                Int(e, "Usable") == 1, Int(e, "Stackable") == 1, Str(e, "SkillLinkID"));
+                Int(e, "Usable") == 1, Int(e, "Stackable") == 1, Str(e, "SkillLinkID"), SkillLinkId(e), Int(e, "SkillLinkLevel"), Str(e, "Description"));
         }
 
         var skills = new Dictionary<int, SkillInfo>();
@@ -216,6 +224,9 @@ public sealed class Balance
         return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects);
     }
 
+    /// <summary>Whether an item is an openable container (see <see cref="ChestCatalog"/>).</summary>
+    public bool Chests(int itemId) => Items.TryGetValue(itemId, out var i) && i.Usable && ChestCatalog.ContainerLinks.Contains(i.SkillLinkId);
+
     /// <summary>Skill taught by a "Learn…" skill book, matched on the skill's name without spaces.</summary>
     public SkillInfo? SkillTaughtBy(ItemInfo book)
     {
@@ -249,6 +260,17 @@ public sealed class Balance
         if (!root.TryGetProperty(name, out var section) || section.ValueKind != JsonValueKind.Object) yield break;
         foreach (var p in section.EnumerateObject())
             if (p.Name != "$id" && int.TryParse(p.Name, out _)) yield return (p.Name, p.Value);
+    }
+
+    /// <summary>
+    /// ItemTemplate.SkillLinkID is the client's SkillType enum: a name when the enum has one, otherwise the number. Only
+    /// the container names matter here (MagicBox = 208, MagicBoxNew = 267).
+    /// </summary>
+    private static int SkillLinkId(JsonElement e)
+    {
+        if (!e.TryGetProperty("SkillLinkID", out var v)) return -1;
+        if (v.ValueKind == JsonValueKind.Number) return (int)v.GetDouble();
+        return v.GetString() switch { "MagicBox" => 208, "MagicBoxNew" => 267, _ => -1 };
     }
 
     private static string Str(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";

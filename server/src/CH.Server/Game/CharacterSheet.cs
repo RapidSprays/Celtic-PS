@@ -161,6 +161,7 @@ public sealed class CharacterSheet
 
     public StartGameReply StartGame(int worldId) => new()
     {
+        Platinum = Progress.Platinum,
         Character = Summary(worldId),
         Experience = XpPercent,
         Abilities = Abilities(),

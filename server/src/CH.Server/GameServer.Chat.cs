@@ -27,6 +27,7 @@ public sealed partial class GameServer
         ".xp <amount> - gain experience (levels up as it goes)",
         ".give <item id or name> [qty] - put items in your backpack (.item is the same)",
         ".finditem <name> - search item templates",
+        ".chest [name] [qty] - a random legacy chest, or chests by name (e.g. .chest mystery chest 5)",
         ".heal | .learn <skill id>",
         ".respawn - respawn every mob in the zone");
 
@@ -209,6 +210,28 @@ public sealed partial class GameServer
                     .Select(i => $"{i.Id}: {i.Name}{(i.Slot >= 0 ? $" ({i.Slot})" : "")}")
                     .ToList();
                 Tell(s, found.Count == 0 ? "No items match." : string.Join("\n", found));
+                break;
+            }
+
+            case "chest":
+            {
+                var qtyGiven = args.Length > 0 && int.TryParse(args[^1], out _);
+                var qty = qtyGiven ? Math.Clamp(int.Parse(args[^1], CultureInfo.InvariantCulture), 1, 100) : 1;
+                var query = string.Join(' ', qtyGiven ? args[..^1] : args);
+                var chests = ChestCatalog.Chests.Values.Where(c => !_balance.Items[c.ItemId].IsPlaceholder).ToList();
+                var chest = query.Length == 0
+                    ? chests[Random.Shared.Next(chests.Count)]
+                    : chests.FirstOrDefault(c => c.Name.Equals(query, StringComparison.OrdinalIgnoreCase))
+                      ?? chests.Where(c => c.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).OrderBy(c => c.Name.Length).FirstOrDefault();
+                if (chest is null)
+                {
+                    Tell(s, $"No chest matches \"{query}\". {chests.Count} legacy chests exist; try .chest mystery, .chest pirate, .chest bounty.");
+                    break;
+                }
+                GrantItem(s.Character!.Id, chest.ItemId, qty);
+                var sheet = RefreshSheet(s);
+                Send(s, Opcode.InventoryUpdate, sheet.InventoryWithMoney().Write);
+                Tell(s, $"Added {qty} x {chest.Name}. Use it from your backpack to open it.");
                 break;
             }
 

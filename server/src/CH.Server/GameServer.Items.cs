@@ -115,6 +115,8 @@ public sealed partial class GameServer
             return;
         }
 
+        if (TryOpenChest(s, item)) return;
+
         if (_balance.SkillTaughtBy(info) is { } skill)
         {
             if (info.Classes.Count > 0 && !info.Classes.Contains(((CharacterClass)s.Character!.Class).ToString()))

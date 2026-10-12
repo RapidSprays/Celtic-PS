@@ -76,7 +76,15 @@ New characters get their class's starter gear, skills, potions and skill books. 
 monster camps around its leystones (auto-placed; see `server/src/CH.Server/Game/ZonePopulation.cs`). Combat,
 XP, coins, potion drops, level-ups, death and respawn at the nearest leystone all work. Buffs and debuffs
 (status effects) show with icons and timers and do what they say: armour/defence/attack/speed/regen changes,
-Hide and Camouflage against aggro, energy and damage shields, damage over time on mobs.
+Hide and Camouflage against aggro, energy and damage shields, damage over time on mobs. Levelling grants
+attribute and skill points to spend on the stats and skills pages.
+
+**Chests:** all 315 openable containers in the client data work (`server/src/CH.Server/Game/Chests.cs`):
+70 Mystery Chests open on the client's own chest-opening screen ("Next Chest" opens the next); pirate,
+smuggler and fashion boxes give one random matching piece; crates, sets, token bags and starter kits give what
+their descriptions say; seasonal gifts, bounty bags, clams, fishing/cooking caches and tarot bags draw from
+themed pools. Platinum is tracked. Kills have a small chance to drop a chest. The real loot tables were never
+shipped, so contents are reconstructed from each chest's own description.
 
 GM commands are typed in normal chat with a `.` prefix (`/` commands are client-encrypted and not used):
 
@@ -93,5 +101,6 @@ GM commands are typed in normal chat with a `.` prefix (`/` commands are client-
 | `.xp <amount>` | gain experience (levels up as it goes) |
 | `.give <item id or name> [qty]` (or `.item`) | put items in your backpack, e.g. `.give minor health potion 5` |
 | `.finditem <name>` | search item templates (several can share a name; pick by id) |
+| `.chest [name] [qty]` | a random legacy chest, or chests by name (`.chest mystery chest 5`, `.chest pirate`, `.chest bounty`) |
 | `.heal`, `.learn <skill id>` | testing helpers |
 | `.respawn` | respawn every mob in the zone |

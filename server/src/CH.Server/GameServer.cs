@@ -205,6 +205,10 @@ public sealed partial class GameServer : IDisposable
                 if (InWorld(s)) OnBuySkill(s, msg.ReadVariableInt32(), msg.ReadVariableInt32());
                 break;
 
+            case Opcode.InGamePopup:
+                if (InWorld(s)) OnPopupOption(s, msg.ReadVariableInt32(), msg.ReadVariableInt32(), msg.ReadVariableInt32());
+                break;
+
             case Opcode.EquipItem:
                 if (InWorld(s)) OnEquipItem(s, EquipItemRequest.Read(msg));
                 break;
@@ -415,6 +419,7 @@ public sealed partial class GameServer : IDisposable
         public List<PendingCast> Casts { get; } = new();
         public List<ActiveEffect> Effects { get; } = new();
         public CharacterSheet? Sheet { get; set; }
+        public int? LastChestTemplate { get; set; }
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";

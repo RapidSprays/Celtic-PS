@@ -483,6 +483,11 @@ public sealed partial class GameServer
         var xp = MobStats.Xp(mob.Level, mob.Template.Power);
         var coins = MobStats.Coins(mob.Level, mob.Template.Power);
         var loot = new List<(int, int)>();
+        if (RollChestDrop() is { } chestDrop)
+        {
+            loot.Add((chestDrop, 1));
+            GrantItem(c.Id, chestDrop, 1);
+        }
         if (Random.Shared.NextDouble() < 0.2)
         {
             loot.Add((ClassKit.MinorHealthPotion, 1));
