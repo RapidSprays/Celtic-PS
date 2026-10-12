@@ -98,5 +98,6 @@ public sealed partial class GameServer
         });
         SendLiveStats(s);
         Send(s, Opcode.SkillListUpdate, new SkillListUpdate(sheet.SkillPoints, sheet.SkillEntries()).Write);
+        SendSkillToggles(s);
     }
 }

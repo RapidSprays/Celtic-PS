@@ -218,6 +218,11 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, ability_id)
         );
         """,
+        """
+        ALTER TABLE characters ADD COLUMN pet_fed_effect INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN pet_fed_level INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN pet_fed_seconds INTEGER NOT NULL DEFAULT 0;
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -471,6 +476,18 @@ public sealed class GameStore : IDisposable
             INSERT INTO quests(character_id, quest_id, completed, stages, tracked) VALUES ($c, $q, $done, $s, $t)
             ON CONFLICT(character_id, quest_id) DO UPDATE SET completed = $done, stages = $s, tracked = $t
             """, null, ("$c", characterId), ("$q", quest.QuestId), ("$done", quest.Completed ? 1 : 0), ("$s", stages), ("$t", quest.Tracked ? 1 : 0));
+    }
+
+    /// <summary>The pet's Well Fed effect and how much feeding time is left (it only runs while online).</summary>
+    public void SavePetFeed(long characterId, int effect, int level, int seconds) =>
+        Exec("UPDATE characters SET pet_fed_effect = $e, pet_fed_level = $l, pet_fed_seconds = $s WHERE id = $id", null,
+            ("$e", effect), ("$l", level), ("$s", seconds), ("$id", characterId));
+
+    public (int Effect, int Level, int Seconds) GetPetFeed(long characterId)
+    {
+        using var cmd = Command("SELECT pet_fed_effect, pet_fed_level, pet_fed_seconds FROM characters WHERE id = $id", null, ("$id", characterId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1), r.GetInt32(2)) : (0, 0, 0);
     }
 
     /// <summary>Abilities learnt from trainers (LEARN_ABILITY).</summary>

@@ -258,8 +258,111 @@ for cid, c in convs.items():
                     zone = votes.most_common(1)[0][0] if votes else None
                 shops[str(sid)] = {"category": category, "classes": classes, "zone": zone, "label": text[:60], "conversation": cid_for_shop}
 
+# ---- token vendors (pets and mounts) ----------------------------------------------------------------------------
+# Stock and costs are server-only; the client only has each vendor's title (token_vendor_descriptions). Pets are
+# "<Size> <Colour> <Species>" (Tiny..Giant), mounts "<Tier> <Colour> War <Species>" (Tame..Primal). Prices APPROXIMATED.
+items_by_id = {i["ID"]: i for i in chdata.entries(bal, "ItemTemplates")}
+items_by_name = {i["Name"].strip(): i["ID"] for i in items_by_id.values()}
+PET_SIZES = ["Tiny", "Small", "Medium", "Large", "Huge", "Giant"]
+MOUNT_TIERS = ["Tame", "Trained", "Hardened", "Relentless", "Ferocious", "Primal"]
+grid = {"pet": collections.defaultdict(lambda: collections.defaultdict(dict)), "mount": collections.defaultdict(lambda: collections.defaultdict(dict))}
+colour_order = {"pet": collections.defaultdict(list), "mount": collections.defaultdict(list)}
+for iid in sorted(items_by_id):
+    it = items_by_id[iid]
+    name = it["Name"].strip()
+    if it["EquipSlot"] == "Companion":
+        m = re.match(r"^(%s) (.+) (\w+)$" % "|".join(PET_SIZES), name)
+        kind, size = "pet", (PET_SIZES.index(m.group(1)) if m else None)
+    elif it["EquipSlot"] == "Mount":
+        m = re.match(r"^(%s) (.+) War (\w+)$" % "|".join(MOUNT_TIERS), name)
+        kind, size = "mount", (MOUNT_TIERS.index(m.group(1)) if m else None)
+    else:
+        continue
+    if not m: continue
+    colour, species = m.group(2), m.group(3).lower()
+    grid[kind][species][colour][size] = iid
+    if colour not in colour_order[kind][species]: colour_order[kind][species].append(colour)
+
+PET_TOKENS = [items_by_name.get("Pet Token"), items_by_name.get("Uncommon Pet Token"), items_by_name.get("Rare Pet Token")]
+MOUNT_TOKEN = items_by_name.get("Mount Token")
+ALIASES = {"hound": "mastiff", "hounds": "mastiff", "mastiffs": "mastiff", "hares": "hare", "hatchlings": "hatchling"}
+NUMBER_WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"]
+
+def bag(kind, n):
+    word = NUMBER_WORDS[n - 1]
+    noun = "Pet" if kind == "pet" else "Mount"
+    return items_by_name.get(f"Bag of {word} {noun} Token{'s' if n > 1 else ''}")
+
+def species_of(kind, word):
+    w = ALIASES.get(word.lower(), word.lower())
+    if w in grid[kind]: return w
+    return w.rstrip("s") if w.rstrip("s") in grid[kind] else None
+
+vendor_ids = set()
+for c in convs.values():
+    for a in c["actions"]:
+        vendor_ids |= {int(x) for x in re.findall(r"TOKENVENDOR\s+(\d+)", a)}
+titles = {}
+desc = chdata.text_assets(chdata.textfiles_bundle(build), rb"token_vendor_descriptions").get("token_vendor_descriptions", "")
+for line in desc.splitlines():
+    parts = line.split(",", 2)
+    if len(parts) >= 2 and parts[0].isdigit(): titles[int(parts[0])] = parts[1].strip()
+
+token_vendors = {}
+for vid in sorted(vendor_ids):
+    title = titles.get(vid, "")
+    entries = []  # (template, [(cost template, qty)])
+    norm = re.sub(r"\b(an?|your|Tiny|Tame)\s+", "", title).strip()
+    def kind_species(word):
+        mounty = "Mount" in title or "War " in title
+        for kind in (("mount", "pet") if mounty else ("pet", "mount")):
+            if (sp := species_of(kind, word)): return kind, sp
+        return None, None
+    def colour_of(kind, sp, words, index):
+        colours = colour_order[kind][sp]
+        if index: return colours[int(index) - 1] if int(index) <= len(colours) else None
+        return words if words in grid[kind][sp] else None
+    m_buy = re.match(r"^(?:Buy|Purchase) (?:War )?(\w+?)(?: Mount)?$", norm)
+    m_up = re.match(r"^Upgrade (?:(.+?) )?(?:War )?(\w+?)(?: Mount)?(?: Colour (\d+))?$", norm)
+    m_ex = re.match(r"^(?:Exchange|Sell) (?:(.+?) )?(?:War )?(\w+?)(?: Mount)?(?: Colour (\d+))?$", norm)
+    m_tier = re.match(r"^Tier Upgrade (\w+) (Mount|Pet)", title)
+    if m_tier:
+        kind = m_tier.group(2).lower()
+        if (sp := species_of(kind, m_tier.group(1))):
+            colours = colour_order[kind][sp]
+            for a_, b_ in zip(colours, colours[1:]):
+                if 5 in grid[kind][sp][a_] and 5 in grid[kind][sp][b_]:
+                    entries.append((grid[kind][sp][b_][5], [(grid[kind][sp][a_][5], 2)]))
+    elif m_buy:
+        kind, sp = kind_species(m_buy.group(1))
+        if sp:
+            for rank, colour in enumerate(colour_order[kind][sp]):
+                if 0 not in grid[kind][sp][colour]: continue
+                cost = [(PET_TOKENS[min(rank, 2)], 1 + rank // 3)] if kind == "pet" else [(MOUNT_TOKEN, 4 + 4 * rank)]
+                entries.append((grid[kind][sp][colour][0], cost))
+    elif m_up:
+        kind, sp = kind_species(m_up.group(2))
+        colour = sp and colour_of(kind, sp, m_up.group(1), m_up.group(3))
+        if colour:
+            sizes = grid[kind][sp][colour]
+            entries += [(sizes[k], [(sizes[k - 1], 2)]) for k in range(1, 6) if k in sizes and k - 1 in sizes]
+    elif m_ex:
+        kind, sp = kind_species(m_ex.group(2))
+        colour = sp and colour_of(kind, sp, m_ex.group(1), m_ex.group(3))
+        if colour:
+            for k, iid in sorted(grid[kind][sp][colour].items()):
+                if (b := bag(kind, (k + 1) if kind == "pet" else 2 * (k + 1))): entries.append((b, [(iid, 1)]))
+    elif "Saddle" in title and items_by_name.get("Mount Barding Box"):
+        entries.append((items_by_name["Mount Barding Box"], [(MOUNT_TOKEN, 1)]))
+    entries = [(t, [(c, q) for c, q in costs if c]) for t, costs in entries if t]
+    if entries:
+        token_vendors[str(vid)] = {"title": title, "stock": [{"template": t, "cost": [{"template": c, "qty": q} for c, q in costs]} for t, costs in entries]}
+print(f"token vendors: {len(token_vendors)} of {len(vendor_ids)} stocked "
+      f"({sum(len(v['stock']) for v in token_vendors.values())} entries)")
+
 out = f"{chdata.HOME}/extracted/{build}/world.json"
-json.dump({"build": build, "approximated": True, "quests": quests, "npcs": npcs, "shops": shops}, open(out, "w"), indent=0)
+json.dump({"build": build, "approximated": True, "quests": quests, "npcs": npcs, "shops": shops, "tokenVendors": token_vendors},
+          open(out, "w"), indent=0)
 print(f"shops: {len(shops)}; categories: {dict(collections.Counter(v['category'] for v in shops.values()))}")
 per_zone = collections.Counter(n["zone"] for n in npcs)
 print(f"quests: {len(quests)} ({sum(1 for q in quests.values() if q['giver'] is not None)} with a giver, "

@@ -398,4 +398,74 @@ public sealed class ZoneTests : IDisposable
         var again = client.Expect(Opcode.LearnAbilityReply);
         Assert.Equal((0, "You already know that."), (again.ReadByte(), again.ReadString()));
     }
+
+    [Fact]
+    public void Pet_families_and_food_times_come_from_the_item_data()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var b = Data.Value;
+        Assert.Equal((5588, 5589), Pets.FamilyOf(b.Items[58665]));   // Tiny Brown Mastiff → dog
+        Assert.Equal(600, Pets.FedSeconds(b.Items[58836]));          // "for 10 minutes"
+        Assert.Equal(Pets.NewFedEffect, Pets.FedEffectOf(b.Items[58836]));
+        Assert.Equal(Pets.WhistleSkill, b.Items[60359].SkillLinkId);
+    }
+
+    [Fact]
+    public async Task A_pet_arrives_fed_eats_and_the_pet_vendor_trades_tokens()
+    {
+        if (!File.Exists(BalancePath) || !File.Exists(WorldPath)) return;
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("petowner");
+        var id = client.CreateCharacter("Oscar").CharacterId;
+        client.StartGame(id, "Oscar");
+        client.FinishZoning();
+        void Say(string text) => client.Send(Opcode.GeneralChat, new ChatMessage(ChatChannel.Local, "", text).WriteFromClient);
+        List<int> Effects()
+        {
+            var m = client.Expect(Opcode.StatusEffectUpdate, TimeSpan.FromSeconds(5));
+            var ids = new List<int>();
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) { ids.Add(m.ReadVariableInt32()); m.ReadVariableInt32(); m.ReadVariableInt32(); m.ReadFloat(); m.ReadFloat(); }
+            return ids;
+        }
+
+        // Equipping a mastiff: it arrives fed (Well Fed dog), so the client draws it.
+        Say(".wear Tiny Brown Mastiff");
+        Assert.Contains(5589, Effects());
+
+        // New Pet Food is eaten (consumed, 3 s recharge) and the generic "New Fed" effect replaces the welcome meal.
+        Say(".give 58836 2");
+        var food = InventoryWithMoney.Read(client.Expect(Opcode.InventoryUpdate)).Items.First(i => i.TemplateId == 58836);
+        client.Send(Opcode.UseItem, new UseItemRequest(food.ServerInventoryId, TargetType.Self, 0).Write);
+        var fed = client.Expect(Opcode.UseItemReply);
+        Assert.Equal(1, fed.ReadByte());
+        Assert.Equal(3f, fed.ReadFloat());
+        Assert.Contains(Pets.NewFedEffect, Effects());
+
+        // A Mount Whistle does nothing while the mount is with you.
+        Say(".give 60359");
+        var whistle = InventoryWithMoney.Read(client.Expect(Opcode.InventoryUpdate)).Items.First(i => i.TemplateId == 60359);
+        client.Send(Opcode.UseItem, new UseItemRequest(whistle.ServerInventoryId, TargetType.Self, 0).Write);
+        Assert.Equal(0, client.Expect(Opcode.UseItemReply).ReadByte());
+
+        // Pet vendor 26 ("Buy a Hound"): a Tiny Brown Mastiff for a Pet Token.
+        Say(".give 56051");
+        client.Expect(Opcode.InventoryUpdate);
+        client.Send(Opcode.TokenVendorMessage, b => { b.WriteVariableInt32(1); b.WriteVariableInt32(26); });
+        var stock = client.Expect(Opcode.TokenVendorMessage);
+        Assert.Equal((2, (byte)1, 26), (stock.ReadVariableInt32(), stock.ReadByte(), stock.ReadVariableInt32()));
+        Assert.True(stock.ReadVariableInt32() >= 1);
+        var stockId = stock.ReadVariableInt32();
+        Assert.Equal(58665, stock.ReadVariableInt32());
+        client.Send(Opcode.TokenVendorMessage, b => { b.WriteVariableInt32(3); b.WriteVariableInt32(26); b.WriteVariableInt32(stockId); b.WriteVariableInt32(1); });
+        var bought = client.Expect(Opcode.TokenVendorMessage);
+        Assert.Equal((4, (byte)1), (bought.ReadVariableInt32(), bought.ReadByte()));
+        bought.ReadVariableInt32();
+        var inventory = InventoryWithMoney.Read(bought);
+        Assert.Contains(inventory.Items, i => i.TemplateId == 58665);
+        Assert.DoesNotContain(inventory.Items, i => i.TemplateId == 56051);
+    }
 }

@@ -42,7 +42,7 @@ public sealed partial class GameServer
             Defence = Math.Max(0, stats.Defence + m.Defence),
             Attack = Math.Max(0, stats.Attack + m.Attack),
             AttackSpeed = Math.Max(300, stats.AttackSpeed * 100 / (100 + Math.Max(-50, m.AttackSpeedPercent))),
-            MaxSpeed = stats.MaxSpeed * (100 + Math.Clamp(m.RunSpeedPercent, -80, 200)) / 100f,
+            MaxSpeed = (Dismounted(s) && sheet.Mount is not null ? 5f : stats.MaxSpeed) * (100 + Math.Clamp(m.RunSpeedPercent, -80, 200)) / 100f,
         };
     }
 
@@ -97,7 +97,12 @@ public sealed partial class GameServer
     /// <summary>Expires effects and runs damage/heal over time. Called from the player tick.</summary>
     private void TickEffects(Zone zone, Session s, double now)
     {
-        if (s.Effects.RemoveAll(e => now >= e.ExpiresAt || (EffectModifiers.IsShield(e.Type) && e.ShieldRemaining <= 0)) > 0) SendEffects(s);
+        if (s.Effects.RemoveAll(e => now >= e.ExpiresAt || (EffectModifiers.IsShield(e.Type) && e.ShieldRemaining <= 0)) > 0)
+        {
+            UpdatePetEffects(s, send: false); // a meal that ran out makes the pet hungry
+            SendEffects(s);
+            SendSkillToggles(s);
+        }
     }
 
     /// <summary>Energy shields soak damage first. Returns the damage left for health.</summary>

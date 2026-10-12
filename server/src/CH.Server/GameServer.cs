@@ -24,6 +24,7 @@ public sealed partial class GameServer : IDisposable
     private readonly LootTable _loot;
     private readonly QuestBook _quests;
     private readonly ShopCatalog _shops;
+    private readonly TokenVendorCatalog _tokenVendors;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -46,6 +47,7 @@ public sealed partial class GameServer : IDisposable
         _loot = new LootTable(balance);
         _quests = QuestBook.Load(options.WorldPath);
         _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath));
+        _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
@@ -244,6 +246,19 @@ public sealed partial class GameServer : IDisposable
                     var abilityId = msg.ReadVariableInt32();
                     OnLearnAbility(s, abilityId, msg.ReadVariableInt32());
                 }
+                break;
+
+            case Opcode.CastSkillOnPlayer:
+                if (InWorld(s))
+                {
+                    msg.ReadVariableInt32(); // the NPC's server id
+                    var castSkill = msg.ReadVariableInt32();
+                    OnCastSkillOnPlayer(s, castSkill, msg.ReadVariableInt32());
+                }
+                break;
+
+            case Opcode.TokenVendorMessage:
+                if (InWorld(s)) OnTokenVendorMessage(s, msg);
                 break;
 
             case Opcode.BankingMessage:
@@ -469,6 +484,7 @@ public sealed partial class GameServer : IDisposable
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), CompletedQuestIds(s), ActiveQuests(s)).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
         s.Effects.Clear();
+        RestorePetFeed(s);
         SendLiveStats(s);
         Send(s, Opcode.GameDataMessage, new GameData(MaxChatLength: 200, AttackDelaySeconds: 0.1f).Write);
         _log.LogInformation("{Name} entering zone {Zone} at ({X:F1}, {Y:F1}, {Z:F1})", character.Name, character.Zone, character.X, character.Y, character.Z);
@@ -478,6 +494,9 @@ public sealed partial class GameServer : IDisposable
     {
         if (s.Character is null) return;
         EnterZone(s);
+        // The client rebuilt the player on load: buffs, the pet's fed state and the skill toggles again.
+        if (s.Effects.Count > 0) SendEffects(s);
+        SendSkillToggles(s);
         DiscoverLeystones(s);
         QuestMove(s);
     }
@@ -570,6 +589,7 @@ public sealed partial class GameServer : IDisposable
         public Trade? Trade { get; set; }
         public HashSet<int> TradeRequests { get; } = new();
         public Dictionary<int, QuestState> Quests { get; } = new();
+        public int? PetTemplate { get; set; }
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";

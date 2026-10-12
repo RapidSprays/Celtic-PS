@@ -91,6 +91,7 @@ public sealed partial class GameServer
         SendLiveStats(s);
         Send(s, Opcode.SkillListUpdate, new SkillListUpdate(updated.SkillPoints, updated.SkillEntries()).Write);
         SendOwnAppearance(s);
+        UpdatePetEffects(s); // a pet equipped, swapped or put away (also re-sends the skill toggles)
     }
 
     /// <summary>
@@ -177,6 +178,7 @@ public sealed partial class GameServer
             return;
         }
 
+        if (TryFeedPet(s, item, info) || TryWhistle(s, item, info)) return;
         if (TryOpenChest(s, item)) return;
 
         if (_balance.SkillTaughtBy(info) is { } skill)

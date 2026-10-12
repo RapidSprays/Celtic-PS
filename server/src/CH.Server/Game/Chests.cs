@@ -69,7 +69,7 @@ public sealed class ChestCatalog
         var catalog = new ChestCatalog();
         if (!balance.IsLoaded) return catalog;
         var index = new ItemIndex(balance);
-        // Containers by skill link, plus the link-less "Bag of N Mount/Pet Tokens".
+        // Containers by skill link (token bags use 7874 / 8067), plus any other "Bag of N … Tokens" by name.
         foreach (var item in balance.Items.Values.Where(i => i.Usable && (ContainerLinks.Contains(i.SkillLinkId)
                      || (i.Name.StartsWith("Bag of ", StringComparison.Ordinal) && i.Name.Contains("Token", StringComparison.Ordinal)))))
         {

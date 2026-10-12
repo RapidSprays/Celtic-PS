@@ -114,7 +114,11 @@ public sealed partial class GameServer
         if (zone.Players.Remove(s)) AnnounceDeparture(zone, s);
         s.InZone = false;
         s.Casts.Clear();
-        if (!changingZone) s.Effects.Clear();
+        if (!changingZone)
+        {
+            SavePetFeed(s);
+            s.Effects.Clear();
+        }
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s))) StartReturn(zone, mob, NetTime.Now);
         if (s.Character is not null) _store.SaveVitals(s.Character.Id, s.Dead ? -1 : s.Health, s.Energy);
     }
@@ -370,7 +374,8 @@ public sealed partial class GameServer
     {
         var now = NetTime.Now;
         var known = s.Sheet!.UsableSkills.FirstOrDefault(k => k.SkillId == (int)req.SkillId);
-        if (known == default || !_balance.Skills.TryGetValue((int)req.SkillId, out var skill) || s.Dead)
+        var greyedOut = (EquippedPet(s)?.EquipSkillId == (int)req.SkillId && !PetFed(s)) || (s.Sheet.Mount?.EquipSkillId == (int)req.SkillId && Dismounted(s));
+        if (known == default || greyedOut || !_balance.Skills.TryGetValue((int)req.SkillId, out var skill) || s.Dead)
         {
             Send(s, Opcode.SkillUpdate, new SkillUpdate((int)req.SkillId, 0, 0).Write);
             return;
@@ -611,8 +616,11 @@ public sealed partial class GameServer
         s.Dead = true;
         s.AttackTarget = null;
         s.Casts.Clear();
-        s.Effects.Clear();
+        s.Effects.RemoveAll(e => !Pets.AllPetEffects.Contains(e.Info.Id)); // death ends buffs, not the pet's meal
+        DismountOnDeath(s);
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s)).ToList()) StartReturn(zone, mob, now);
+        SendEffects(s);
+        SendSkillToggles(s);
         _log.LogInformation("{Name} died", s.Name);
     }
 
