@@ -1,0 +1,16 @@
+{
+  "steam_appid": "2829820",
+  "steam_buildid": "24928510",
+  "steam_name": "Celtic Heroes",
+  "steam_last_updated_unix": "1791779695",
+  "bundle_id": "com.onethumbmobile.celticheroes",
+  "app_version": "6.15.0",
+  "bundle_version": "213",
+  "unity_version": "6000.3.10f1",
+  "unity_build_guid": "ed67f90d5b184dfcaa1bfc0bcd40ca81",
+  "scripting_backend": "mono",
+  "file_count": 21670,
+  "total_bytes": 3223943166,
+  "source_path": "/Users/absolute_home/Library/Application Support/Steam/steamapps/common/Celtic Heroes/CelticHeroes.app",
+  "generated_utc": "2026-10-12T05:07:36Z"
+}

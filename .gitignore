@@ -1,0 +1,34 @@
+# Proprietary client material never enters git
+*.dll
+*.dylib
+*.bundle
+*.assets
+*.resS
+*.app/
+*.so
+*.exe
+decompiled/
+snapshots/
+client/
+level[0-9]*
+globalgamemanagers*
+
+# Captures, databases, secrets
+*.pcap
+*.pcapng
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+google-services*.json
+
+# Build output
+bin/
+obj/
+*.user
+.vs/
+.idea/
+TestResults/
+logs/
+.DS_Store
