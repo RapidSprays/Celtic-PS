@@ -39,7 +39,7 @@ It then starts by itself whenever you log in. While it runs, it:
 - uses Tailscale mode as soon as Tailscale is up;
 - backs up the database daily to `~/CelticHeroesAnalysis/server-data/backups`, keeping the last 14.
 
-`scripts/run-private.sh` then only launches your game against it.
+`scripts/run-private.sh` then only launches your game against it. For one-click play, `scripts/make-desktop-shortcut.sh` puts a **Celtic Heroes Private** app on your Desktop. It starts Steam if needed, then the game (`scripts/play.sh`), and shows a dialog if something goes wrong. The log is at `~/CelticHeroesAnalysis/logs/launcher.log`.
 
 | Command | What it does |
 |---|---|
