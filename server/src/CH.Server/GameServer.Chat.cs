@@ -80,7 +80,7 @@ public sealed partial class GameServer
                 PartyChat(s, text);
                 return;
             case ChatChannel.Clan:
-                Tell(s, "Clans aren't available on this server.");
+                ClanChat(s, text);
                 return;
             case ChatChannel.Global or ChatChannel.Trade:
                 WorldChat(s, channel, text);
@@ -88,7 +88,8 @@ public sealed partial class GameServer
         }
         if (channel is not (ChatChannel.Local or ChatChannel.Zone)) channel = ChatChannel.Local;
         if (!_zones.TryGetValue(s.Position.Zone, out var zone)) return;
-        Broadcast(zone, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
+        foreach (var p in zone.Players.Where(p => !IsBlockedBy(s, p)).ToList())
+            Send(p, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
     }
 
     /// <summary>A private system line for one player (SimpleMessageForThePlayer, 13026).</summary>

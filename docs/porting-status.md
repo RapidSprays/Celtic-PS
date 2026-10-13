@@ -23,9 +23,10 @@ What's still to port of the client's feature set, from the client message list (
 - [ ] Cooking and crafting (185 client recipes)
 
 ## 4. Social
-- [ ] Friends list and block list
-- [ ] Mail
-- [ ] Clans, clan bank, Clan Battleground
+- [x] Friends list and block list: mutual friends with the client's request popup; blocks enforced by the server (whispers, chat, invitations, trade, duels, mail)
+- [x] Mail: Postage Stamps, gold and up to 2 items, returns, take-all, 30-day expiry, system mail for server rewards
+- [x] Clans and clan bank: banner to found, invite, promote, demote, kick, leave, hand over, message, permissions, chat, nameplates, bank with log and slot purchases; rank rules invented
+- [ ] Clan Battleground (zone 14): with the PvP zones in §6
 
 ## 5. Economy
 - [x] Auction house: listings, search, bids, buyouts, cancels, expiry; deposits and the 5% fee

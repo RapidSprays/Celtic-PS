@@ -206,7 +206,7 @@ public sealed partial class GameServer
         }
         var targetName = text[..comma].Trim();
         var message = text[(comma + 1)..].Trim();
-        if (OnlineByName(targetName) is not { } target)
+        if (OnlineByName(targetName) is not { } target || IsBlockedBy(s, target))
         {
             Tell(s, $"{targetName} is not online.");
             return;
@@ -227,7 +227,7 @@ public sealed partial class GameServer
 
     private void WorldChat(Session s, ChatChannel channel, string text)
     {
-        foreach (var p in Online.ToList()) Send(p, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
+        foreach (var p in Online.Where(p => !IsBlockedBy(s, p)).ToList()) Send(p, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
     }
 
     // ---- parties ---------------------------------------------------------------------------------
@@ -253,7 +253,7 @@ public sealed partial class GameServer
     {
         var invitee = OnlineByCharacter(inviteeId);
         // The invitee's client shows the prompt only for a player it can see, so both must be in the same zone.
-        string? problem = invitee is null ? "That player is not online."
+        string? problem = invitee is null || IsBlockedBy(s, invitee) ? "That player is not online."
             : ReferenceEquals(invitee, s) ? "You can't invite yourself."
             : !invitee.InZone || invitee.Position.Zone != s.Position.Zone ? $"{invitee.Name} must be in the same zone to be invited."
             : invitee.Party is not null && ReferenceEquals(invitee.Party, s.Party) ? $"{invitee.Name} is already in your party."

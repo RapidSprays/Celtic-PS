@@ -50,6 +50,18 @@ public sealed record BountyRecord(int Day, int Slot, int QuestId, int Cost, int 
 public sealed record AuctionRecord(long Id, long SellerId, string SellerName, int TemplateId, int Quantity, int Charges, int StartBid, int Buyout,
     int Bid, long? BidderId, string? BidderName, int Deposit, long ExpiresAt);
 
+/// <summary>A mail. SenderId &lt; 0 is a system mail (no reply). ItemCount is filled by ListMail.</summary>
+public sealed record MailRecord(long Id, long RecipientId, long SenderId, string SenderName, string Subject, string Body, int Gold, bool Read, long ExpiresAt)
+{
+    public int ItemCount { get; init; }
+}
+
+/// <summary>An item held by a mail or the clan bank (Id is the holder's row id).</summary>
+public sealed record MailItem(long Id, int TemplateId, int Quantity, bool Bound, int Charges);
+
+/// <summary>A clan. Permissions: 35 '0'/'1' characters, 5 ranks × 7 (CClan permission order).</summary>
+public sealed record ClanRecord(long Id, string Name, string Message, string Permissions, int BankSlots);
+
 public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Quantity, int Slot, bool Bound, int Charges, bool Favourite)
 {
     public const int Backpack = -1;
@@ -292,6 +304,65 @@ public sealed class GameStore : IDisposable
             bidder_id   INTEGER,
             deposit     INTEGER NOT NULL,
             expires_at  INTEGER NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE friends (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            friend_id    INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            PRIMARY KEY (character_id, friend_id)
+        );
+        CREATE TABLE blocks (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            blocked_id   INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            PRIMARY KEY (character_id, blocked_id)
+        );
+        CREATE TABLE mail (
+            id           INTEGER PRIMARY KEY,
+            recipient_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            sender_id    INTEGER NOT NULL,
+            sender_name  TEXT NOT NULL,
+            subject      TEXT NOT NULL,
+            body         TEXT NOT NULL,
+            gold         INTEGER NOT NULL,
+            read         INTEGER NOT NULL DEFAULT 0,
+            expires_at   INTEGER NOT NULL
+        );
+        CREATE TABLE mail_items (
+            id          INTEGER PRIMARY KEY,
+            mail_id     INTEGER NOT NULL REFERENCES mail(id) ON DELETE CASCADE,
+            template_id INTEGER NOT NULL,
+            quantity    INTEGER NOT NULL,
+            bound       INTEGER NOT NULL,
+            charges     INTEGER NOT NULL
+        );
+        CREATE TABLE clans (
+            id          INTEGER PRIMARY KEY,
+            name        TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            message     TEXT NOT NULL DEFAULT '',
+            permissions TEXT NOT NULL,
+            bank_slots  INTEGER NOT NULL
+        );
+        CREATE TABLE clan_members (
+            character_id INTEGER PRIMARY KEY REFERENCES characters(id) ON DELETE CASCADE,
+            clan_id      INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+            rank         INTEGER NOT NULL
+        );
+        CREATE TABLE clan_bank (
+            id          INTEGER PRIMARY KEY,
+            clan_id     INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+            template_id INTEGER NOT NULL,
+            quantity    INTEGER NOT NULL,
+            charges     INTEGER NOT NULL
+        );
+        CREATE TABLE clan_bank_log (
+            id             INTEGER PRIMARY KEY,
+            clan_id        INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+            character_name TEXT NOT NULL,
+            donated        INTEGER NOT NULL,
+            template_id    INTEGER NOT NULL,
+            quantity       INTEGER NOT NULL,
+            at             TEXT NOT NULL
         );
         """,
     ];
@@ -822,6 +893,228 @@ public sealed class GameStore : IDisposable
         Exec("UPDATE auctions SET bidder_id = $b, bid = $v WHERE id = $id", null, ("$id", auctionId), ("$b", bidderId), ("$v", bid));
 
     public void DeleteAuction(long auctionId) => Exec("DELETE FROM auctions WHERE id = $id", null, ("$id", auctionId));
+
+    // ---- friends, blocks, mail and clans (GameServer.Social/Mail/Clans) ------------------------------------------
+
+    public CharacterRecord? FindCharacter(string name) =>
+        QueryCharacters("WHERE name = $n COLLATE NOCASE", ("$n", name.Trim())).FirstOrDefault();
+
+    private IReadOnlyList<long> Ids(string sql, params (string, object)[] args)
+    {
+        using var cmd = Command(sql, null, args);
+        using var r = cmd.ExecuteReader();
+        var list = new List<long>();
+        while (r.Read()) list.Add(r.GetInt64(0));
+        return list;
+    }
+
+    public IReadOnlyList<long> ListFriends(long characterId) => Ids("SELECT friend_id FROM friends WHERE character_id = $c ORDER BY friend_id", ("$c", characterId));
+
+    /// <summary>Friendship is mutual: both directions are stored.</summary>
+    public void AddFriends(long a, long b)
+    {
+        using var tx = _db.BeginTransaction();
+        Exec("INSERT OR IGNORE INTO friends(character_id, friend_id) VALUES ($a, $b), ($b, $a)", tx, ("$a", a), ("$b", b));
+        tx.Commit();
+    }
+
+    public void RemoveFriends(long a, long b) =>
+        Exec("DELETE FROM friends WHERE (character_id = $a AND friend_id = $b) OR (character_id = $b AND friend_id = $a)", null, ("$a", a), ("$b", b));
+
+    public IReadOnlyList<long> ListBlocked(long characterId) => Ids("SELECT blocked_id FROM blocks WHERE character_id = $c ORDER BY blocked_id", ("$c", characterId));
+
+    public bool Blocks(long characterId, long otherId) =>
+        Scalar("SELECT 1 FROM blocks WHERE character_id = $c AND blocked_id = $o", ("$c", characterId), ("$o", otherId)) is not null;
+
+    public void Block(long characterId, long otherId) =>
+        Exec("INSERT OR IGNORE INTO blocks(character_id, blocked_id) VALUES ($c, $o)", null, ("$c", characterId), ("$o", otherId));
+
+    public void Unblock(long characterId, long otherId) =>
+        Exec("DELETE FROM blocks WHERE character_id = $c AND blocked_id = $o", null, ("$c", characterId), ("$o", otherId));
+
+    public long SendMail(MailRecord mail, IEnumerable<MailItem> items, SqliteTransaction? outer = null)
+    {
+        var tx = outer ?? _db.BeginTransaction();
+        using var cmd = Command("""
+            INSERT INTO mail(recipient_id, sender_id, sender_name, subject, body, gold, expires_at)
+            VALUES ($r, $s, $sn, $su, $b, $g, $e) RETURNING id
+            """, tx, ("$r", mail.RecipientId), ("$s", mail.SenderId), ("$sn", mail.SenderName), ("$su", mail.Subject), ("$b", mail.Body),
+            ("$g", mail.Gold), ("$e", mail.ExpiresAt));
+        var id = Convert.ToInt64(cmd.ExecuteScalar());
+        foreach (var i in items)
+            Exec("INSERT INTO mail_items(mail_id, template_id, quantity, bound, charges) VALUES ($m, $t, $q, $b, $c)", tx,
+                ("$m", id), ("$t", i.TemplateId), ("$q", i.Quantity), ("$b", i.Bound ? 1 : 0), ("$c", i.Charges));
+        if (outer is null)
+        {
+            tx.Commit();
+            tx.Dispose();
+        }
+        return id;
+    }
+
+    /// <summary>Sends mail and takes what it carries from the sender, in one transaction.</summary>
+    public long SendMailFrom(long senderId, MailRecord mail, IReadOnlyList<(long InventoryId, int Quantity)> taken, IEnumerable<MailItem> items, int stamps, int stampTemplate)
+    {
+        using var tx = _db.BeginTransaction();
+        foreach (var (inventoryId, quantity) in taken)
+            Exec("UPDATE items SET quantity = quantity - $q WHERE id = $id AND character_id = $c", tx, ("$q", quantity), ("$id", inventoryId), ("$c", senderId));
+        var left = stamps;
+        foreach (var (id, qty) in ItemStacks(senderId, stampTemplate, tx))
+        {
+            if (left <= 0) break;
+            var take = Math.Min(left, qty);
+            Exec("UPDATE items SET quantity = quantity - $q WHERE id = $id", tx, ("$q", take), ("$id", id));
+            left -= take;
+        }
+        Exec("DELETE FROM items WHERE character_id = $c AND quantity <= 0", tx, ("$c", senderId));
+        Exec("UPDATE characters SET coins = coins - $g WHERE id = $c", tx, ("$g", mail.Gold), ("$c", senderId));
+        var mailId = SendMail(mail, items, tx);
+        tx.Commit();
+        return mailId;
+    }
+
+    private List<(long Id, int Quantity)> ItemStacks(long characterId, int template, SqliteTransaction tx)
+    {
+        using var cmd = Command("SELECT id, quantity FROM items WHERE character_id = $c AND template_id = $t AND slot = -1 ORDER BY id", tx,
+            ("$c", characterId), ("$t", template));
+        using var r = cmd.ExecuteReader();
+        var list = new List<(long, int)>();
+        while (r.Read()) list.Add((r.GetInt64(0), r.GetInt32(1)));
+        return list;
+    }
+
+    public IReadOnlyList<MailRecord> ListMail(long recipientId)
+    {
+        using var cmd = Command("""
+            SELECT m.id, m.recipient_id, m.sender_id, m.sender_name, m.subject, m.body, m.gold, m.read, m.expires_at,
+                   (SELECT COUNT(*) FROM mail_items i WHERE i.mail_id = m.id)
+            FROM mail m WHERE m.recipient_id = $r ORDER BY m.id DESC
+            """, null, ("$r", recipientId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<MailRecord>();
+        while (r.Read())
+            list.Add(new MailRecord(r.GetInt64(0), r.GetInt64(1), r.GetInt64(2), r.GetString(3), r.GetString(4), r.GetString(5), r.GetInt32(6),
+                r.GetInt32(7) != 0, r.GetInt64(8)) { ItemCount = r.GetInt32(9) });
+        return list;
+    }
+
+    public IReadOnlyList<MailItem> ListMailItems(long mailId)
+    {
+        using var cmd = Command("SELECT id, template_id, quantity, bound, charges FROM mail_items WHERE mail_id = $m ORDER BY id", null, ("$m", mailId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<MailItem>();
+        while (r.Read()) list.Add(new MailItem(r.GetInt64(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3) != 0, r.GetInt32(4)));
+        return list;
+    }
+
+    public void MarkMailRead(long mailId) => Exec("UPDATE mail SET read = 1 WHERE id = $m", null, ("$m", mailId));
+
+    /// <summary>Empties a mail's gold and items (they've been taken).</summary>
+    public void EmptyMail(long mailId)
+    {
+        using var tx = _db.BeginTransaction();
+        Exec("UPDATE mail SET gold = 0 WHERE id = $m", tx, ("$m", mailId));
+        Exec("DELETE FROM mail_items WHERE mail_id = $m", tx, ("$m", mailId));
+        tx.Commit();
+    }
+
+    public void DeleteMail(long mailId) => Exec("DELETE FROM mail WHERE id = $m", null, ("$m", mailId));
+
+    /// <summary>Adds an item with its own charges and binding (mail, auctions): no stacking.</summary>
+    public long RestoreItem(long characterId, int templateId, int quantity, bool bound, int charges)
+    {
+        using var cmd = Command("INSERT INTO items(character_id, template_id, quantity, bound, charges) VALUES ($c, $t, $q, $b, $ch) RETURNING id", null,
+            ("$c", characterId), ("$t", templateId), ("$q", quantity), ("$b", bound ? 1 : 0), ("$ch", charges));
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    public ClanRecord? GetClan(long clanId)
+    {
+        using var cmd = Command("SELECT id, name, message, permissions, bank_slots FROM clans WHERE id = $id", null, ("$id", clanId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? new ClanRecord(r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetInt32(4)) : null;
+    }
+
+    public bool ClanNameTaken(string name) => Scalar("SELECT 1 FROM clans WHERE name = $n", ("$n", name.Trim())) is not null;
+
+    public (long ClanId, int Rank)? GetMembership(long characterId)
+    {
+        using var cmd = Command("SELECT clan_id, rank FROM clan_members WHERE character_id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt64(0), r.GetInt32(1)) : null;
+    }
+
+    public IReadOnlyList<(long CharacterId, int Rank)> ListClanMembers(long clanId)
+    {
+        using var cmd = Command("SELECT character_id, rank FROM clan_members WHERE clan_id = $c ORDER BY rank DESC, character_id", null, ("$c", clanId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<(long, int)>();
+        while (r.Read()) list.Add((r.GetInt64(0), r.GetInt32(1)));
+        return list;
+    }
+
+    public long CreateClan(string name, string permissions, int bankSlots, long leaderId, int leaderRank)
+    {
+        using var tx = _db.BeginTransaction();
+        using var cmd = Command("INSERT INTO clans(name, permissions, bank_slots) VALUES ($n, $p, $s) RETURNING id", tx,
+            ("$n", name.Trim()), ("$p", permissions), ("$s", bankSlots));
+        var id = Convert.ToInt64(cmd.ExecuteScalar());
+        Exec("INSERT INTO clan_members(character_id, clan_id, rank) VALUES ($c, $id, $r)", tx, ("$c", leaderId), ("$id", id), ("$r", leaderRank));
+        tx.Commit();
+        return id;
+    }
+
+    public void SetClanMember(long characterId, long clanId, int rank) =>
+        Exec("INSERT INTO clan_members(character_id, clan_id, rank) VALUES ($c, $id, $r) ON CONFLICT(character_id) DO UPDATE SET clan_id = $id, rank = $r", null,
+            ("$c", characterId), ("$id", clanId), ("$r", rank));
+
+    public void RemoveClanMember(long characterId) => Exec("DELETE FROM clan_members WHERE character_id = $c", null, ("$c", characterId));
+
+    public void DeleteClan(long clanId) => Exec("DELETE FROM clans WHERE id = $id", null, ("$id", clanId));
+
+    public void SetClanMessage(long clanId, string message) => Exec("UPDATE clans SET message = $m WHERE id = $id", null, ("$m", message), ("$id", clanId));
+
+    public void SetClanPermissions(long clanId, string permissions) =>
+        Exec("UPDATE clans SET permissions = $p WHERE id = $id", null, ("$p", permissions), ("$id", clanId));
+
+    public void AddClanBankSlots(long clanId, int slots) => Exec("UPDATE clans SET bank_slots = bank_slots + $n WHERE id = $id", null, ("$n", slots), ("$id", clanId));
+
+    public IReadOnlyList<MailItem> ListClanBank(long clanId)
+    {
+        using var cmd = Command("SELECT id, template_id, quantity, 0, charges FROM clan_bank WHERE clan_id = $c ORDER BY id", null, ("$c", clanId));
+        using var r = cmd.ExecuteReader();
+        var list = new List<MailItem>();
+        while (r.Read()) list.Add(new MailItem(r.GetInt64(0), r.GetInt32(1), r.GetInt32(2), false, r.GetInt32(4)));
+        return list;
+    }
+
+    public long AddClanBankItem(long clanId, int templateId, int quantity, int charges)
+    {
+        using var cmd = Command("INSERT INTO clan_bank(clan_id, template_id, quantity, charges) VALUES ($c, $t, $q, $ch) RETURNING id", null,
+            ("$c", clanId), ("$t", templateId), ("$q", quantity), ("$ch", charges));
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    public void SetClanBankQuantity(long id, int quantity)
+    {
+        if (quantity <= 0) Exec("DELETE FROM clan_bank WHERE id = $id", null, ("$id", id));
+        else Exec("UPDATE clan_bank SET quantity = $q WHERE id = $id", null, ("$q", quantity), ("$id", id));
+    }
+
+    public void LogClanBank(long clanId, string characterName, bool donated, int templateId, int quantity) =>
+        Exec("INSERT INTO clan_bank_log(clan_id, character_name, donated, template_id, quantity, at) VALUES ($c, $n, $d, $t, $q, $at)", null,
+            ("$c", clanId), ("$n", characterName), ("$d", donated ? 1 : 0), ("$t", templateId), ("$q", quantity),
+            ("$at", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)));
+
+    public IReadOnlyList<(string Name, bool Donated, int TemplateId, int Quantity, string At)> ListClanBankLog(long clanId, int limit = 100)
+    {
+        using var cmd = Command("SELECT character_name, donated, template_id, quantity, at FROM clan_bank_log WHERE clan_id = $c ORDER BY id DESC LIMIT $l", null,
+            ("$c", clanId), ("$l", limit));
+        using var r = cmd.ExecuteReader();
+        var list = new List<(string, bool, int, int, string)>();
+        while (r.Read()) list.Add((r.GetString(0), r.GetInt32(1) != 0, r.GetInt32(2), r.GetInt32(3), r.GetString(4)));
+        return list;
+    }
 
     public void Dispose() => _db.Dispose();
 }

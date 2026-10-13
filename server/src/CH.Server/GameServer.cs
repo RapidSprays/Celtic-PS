@@ -158,6 +158,7 @@ public sealed partial class GameServer : IDisposable
                         LeaveParty(leaving);
                     }
                     _sessions.Remove(msg.SenderConnection);
+                    if (leaving is not null) SharePresence(leaving); // now shown offline
                     _log.LogInformation("Disconnected {Endpoint}: {Reason}", msg.SenderEndPoint, msg.ReadString());
                 }
                 break;
@@ -216,6 +217,23 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.BarbershopMessage:
                 if (InWorld(s)) OnBarbershop(s, msg);
+                break;
+
+            case Opcode.ClientFriendRequest or Opcode.ClientFriendReply or Opcode.RemoveFriend or Opcode.RequestSocialLists
+                or Opcode.BlockCharacter or Opcode.UnblockCharacter:
+                if (InWorld(s)) OnSocialMessage(s, header.Opcode, msg);
+                break;
+
+            case Opcode.ClanMessage:
+                if (InWorld(s)) OnClanMessage(s, msg);
+                break;
+
+            case Opcode.ClanBankingMessage or Opcode.ClanBankingLogMessage or Opcode.ClanBankingBuySlotMessage:
+                if (InWorld(s)) OnClanBank(s, header.Opcode, msg);
+                break;
+
+            case Opcode.MailMessage:
+                if (InWorld(s)) OnMail(s, msg);
                 break;
 
             case Opcode.ReqServerDynamicData:
@@ -527,6 +545,8 @@ public sealed partial class GameServer : IDisposable
         s.Teleports.Clear();
         s.Teleports.UnionWith(_store.ListTeleports(character.Id));
         (s.SigilsOfHealth, s.SigilsOfEnergy) = _store.GetSigils(character.Id);
+        s.Blocked.Clear();
+        s.Blocked.UnionWith(_store.ListBlocked(character.Id));
         LoadQuests(s);
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), CompletedQuestIds(s), ActiveQuests(s)).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
@@ -546,9 +566,14 @@ public sealed partial class GameServer : IDisposable
         SendSkillToggles(s);
         DiscoverLeystones(s);
         QuestMove(s);
-        // Sent once the client is ready (CGame.Ready drops them before): reputation, the item shop's no-cash offers.
+        // Sent once the client is ready (CGame.Ready drops them before): reputation, the item shop's no-cash offers,
+        // social lists and the clan; friends and clanmates see the new zone.
         SendFactions(s);
         SendNoCashOffers(s);
+        SendBlockedList(s);
+        SendClanList(s);
+        SharePresence(s);
+        if (_store.ListMail(s.Character.Id).Any(m => !m.Read)) SendMailNotice(s);
     }
 
     private void OnPlayerMove(Session s, PlayerMove move)
@@ -624,6 +649,7 @@ public sealed partial class GameServer : IDisposable
         public CharacterSheet? Sheet { get; set; }
         public int? LastChestTemplate { get; set; }
         public Dictionary<int, int> PledgesSpent { get; } = new();
+        public HashSet<long> Blocked { get; } = new();
         public HashSet<int> Teleports { get; } = new();
         public bool IsGm { get; set; }
         public int FailedLogins { get; set; }

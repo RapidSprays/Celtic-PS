@@ -16,6 +16,7 @@ public sealed partial class GameServer
         {
             LearnedAbilities = _store.ListAbilities(c.Id), AbilityLevels = _store.ListAbilityLevels(c.Id),
             BankExpansions = _store.GetExpansions(c.Id).Bank, BackpackExpansions = _store.GetExpansions(c.Id).Backpack,
+            ClanName = _store.GetMembership(c.Id) is { } m ? _store.GetClan(m.ClanId)?.Name ?? "" : "",
         };
 
     private CharacterSheet Sheet(Session s) => LoadSheet(s.Character!);

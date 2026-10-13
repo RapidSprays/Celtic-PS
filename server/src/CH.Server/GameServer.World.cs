@@ -96,7 +96,10 @@ public sealed partial class GameServer
         var others = Others(zone, s).Select(Basic).ToList();
         var (available, notYet) = QuestLists(s);
         // Quest lists before monsters: the client works out NPC quest icons as each one is added.
-        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z) { Players = others, AvailableQuests = available, NotYetAvailableQuests = notYet }.Write);
+        Send(s, Opcode.EnteringNewZoneUpdate, new EnteringNewZoneUpdate(x, y, z)
+        {
+            Players = others, AvailableQuests = available, NotYetAvailableQuests = notYet, Friends = FriendEntries(s),
+        }.Write);
         var alive = zone.Mobs.Values.Where(m => m.State != MobState.Dead).ToList();
         if (alive.Count > 0) Send(s, Opcode.BatchZoneMonsterUpdate, b => MobSpawn.WriteBatch(b, alive.Select(m => ToWire(m, now)).ToList()));
         var moving = alive.Where(m => m.IsMoving(now)).Select(m => Leg(m, returning: m.State == MobState.Returning)).ToList();
@@ -142,6 +145,8 @@ public sealed partial class GameServer
         _nextTick = now + TickSeconds;
         foreach (var zone in _zones.Values.Where(z => z.Players.Count > 0).ToList()) Tick(zone, now);
         ExpireAuctions(now);
+        ExpireFriendRequests(now);
+        ExpireClanInvites(now);
         TickDuels(now);
     }
 

@@ -68,7 +68,7 @@ public sealed partial class GameServer
     private void ChallengeToDuel(Session s, int opponentId)
     {
         var opponent = OnlineByCharacter(opponentId);
-        string? problem = opponent is null ? "That player is not online."
+        string? problem = opponent is null || IsBlockedBy(s, opponent) ? "That player is not online."
             : ReferenceEquals(opponent, s) ? "You can't duel yourself."
             : s.Duel is not null || opponent.Duel is not null ? "One of you is already in a duel."
             : !opponent.InZone || opponent.Position.Zone != s.Position.Zone

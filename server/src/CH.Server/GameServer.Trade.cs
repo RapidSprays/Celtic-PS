@@ -78,7 +78,7 @@ public sealed partial class GameServer
     private void RequestTrade(Session s, int otherId)
     {
         var other = OnlineByCharacter(otherId);
-        string? problem = other is null ? "That player is not online."
+        string? problem = other is null || IsBlockedBy(s, other) ? "That player is not online."
             : ReferenceEquals(other, s) ? "You can't trade with yourself."
             : s.Trade is not null || other.Trade is not null ? "One of you is already trading."
             : !other.InZone || other.Position.Zone != s.Position.Zone
