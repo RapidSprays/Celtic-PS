@@ -17,6 +17,24 @@ Still Mac-only: `inventory.sh`, `snapshot.sh` and `pin-client.sh` (they work on 
 again when the game updates: see "When the game updates"), and the **Mac friend app**, which must be code-signed with
 macOS's `codesign` to run on Apple Silicon. Build it on a Mac with `scripts/make-friend-kit.sh` if a friend plays on a Mac.
 
+## Setting up from Steam (no Mac)
+
+Everything in `~/CelticHeroesAnalysis` can be rebuilt on the PC from Steam. The one thing that can't is the Mac's player
+database (`server-data/private-server.db`): without it, accounts and characters start fresh. Copy it over later
+(server stopped) to bring them back.
+
+1. Download the Mac version of the game with Windows Steam. Open Steam's console (`steam://open/console` in a browser or
+   Win+R), run this, and wait for "Depot download complete" (about 3 GB):
+   ```
+   download_depot 2829820 2829822
+   ```
+2. Build the folder (verifies every file against `inventories/sha256.txt`, then pins, snapshots, builds the name map and
+   the server data). `-Decompile` also writes the readable decompiled code for research:
+   ```powershell
+   scripts\windows\setup-from-steam.ps1 -Decompile
+   ```
+3. Then steps 3 to 9 below (execution policy, firewall, service, Tailscale share, friend kit, playing, git hook).
+
 ## Moving from the Mac
 
 1. **On the Mac**, stop the server so the database stops changing, then pack `~/CelticHeroesAnalysis` without the
@@ -70,7 +88,8 @@ macOS's `codesign` to run on Apple Silicon. Build it on a Mac with `scripts/make
 - Sleep: the service keeps the PC from idle-sleeping while it runs; a manual sleep or shutdown still takes it offline.
 
 ## When the game updates
-The Mac client is the readable reference the Windows name map is built from (docs/windows-names.md). Without a Mac,
-download it with Steam's console (`steam://open/console`): `download_depot 2829820 <Mac depot id>` (SteamDB lists the app's depots; Windows is 2829821), then re-pin and
-snapshot it into `~/CelticHeroesAnalysis` by hand (the `.sh` scripts show the layout), run
-`scripts\windows\map-windows.ps1`, add the new hashes to `KnownBuilds.cs` and run the tests.
+The Mac client is the readable reference the Windows name map is built from (docs/windows-names.md). The inventory
+(`inventories/sha256.txt`) and `KnownBuilds.cs` describe one build, so a new build needs them updated first; on a
+Mac, `scripts/inventory.sh` regenerates the inventory. Then download the new Mac depot as above, move the old
+`client/<build>` and `snapshots/<build>` aside, run `scripts\windows\setup-from-steam.ps1` again, add the new hashes
+to `KnownBuilds.cs` and run the tests.
