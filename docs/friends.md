@@ -33,6 +33,9 @@ and patches *their own* install. The kit contains only our setup tool, your addr
    - `.gm <account>` / `.gm <account> off` grants or removes GM rights.
    - `.resetpassword <account>` helps a friend who forgot their password: their next login sets a new one.
 
+## Releases
+The repo is private on GitHub (`AbsoluteSG/celtic-heroes-private-server`). The friend files are published as releases, so you can download them on any of your machines. `scripts/release-kit.sh "what changed"` rebuilds the kit and publishes a new release, after you've committed. Releases of a private repo are only visible to you and people you add to the repo.
+
 ## Always on: the background service
 So friends can play without you starting anything, run the server as a background service on this Mac:
 ```bash
