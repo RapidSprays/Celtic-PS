@@ -44,7 +44,7 @@ public sealed partial class GameServer
         "Commands:",
         ".who - who is online",
         ".battleground - enter or leave the Clan Battleground (clan members; everyone outside your clan is an enemy)",
-        ".tutorial on|off - the new-player tutorial hints",
+        ".tutorial on|off - the new-player tutorial hints (off by default)",
         ".where - your zone and position",
         ".zones - list the zones",
         TreeHelp,

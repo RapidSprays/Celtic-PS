@@ -7,9 +7,10 @@ namespace CH.Server;
 
 /// <summary>
 /// The living calendar (LivingCalendarInfo 21016 / LivingCalendarAction 21017; docs/content-systems-notes.md): one
-/// daily login track from server/content/calendar.json. Each UTC day one reward can be claimed, in order, 28 to a cycle.
-/// Full calendar data opens the calendar screen by itself, so it's sent at login only when today's reward is waiting
-/// (and whenever the client asks). The track and rewards are <b>our own</b>; nothing is lost by missing a day.
+/// daily login track from server/content/calendar.json: one reward per UTC day, in order, 28 to a cycle. The client's
+/// Claim button throws before it sends anything (LivingCalendarManager.SendAction) and then leaves its screen stuck open,
+/// so the calendar screen is never opened for players: the day's reward is given at the first login of the day, with a
+/// chat line. The screen still works if the client asks for it. The track and rewards are <b>our own</b>.
 /// </summary>
 public sealed partial class GameServer
 {
@@ -41,7 +42,11 @@ public sealed partial class GameServer
     {
         if (_calendar is null || s.CalendarOffered) return;
         s.CalendarOffered = true;
-        if (!CalendarState(s.Character!.Id, _calendar).Claimed) SendCalendar(s);
+        if (CalendarState(s.Character!.Id, _calendar).Claimed) return;
+        var (day, _) = CalendarState(s.Character.Id, _calendar);
+        var (template, quantity) = _calendar.Rewards[day];
+        if (ClaimCalendarReward(s, notify: false))
+            Tell(s, $"Daily reward (day {day + 1} of {_calendar.Rewards.Count}): {(quantity > 1 ? $"{quantity} × " : "")}{_balance.Items.GetValueOrDefault(template)?.Name ?? "a gift"}. Come back tomorrow for the next one!");
     }
 
     private void SendCalendar(Session s)
@@ -90,22 +95,22 @@ public sealed partial class GameServer
         }
     }
 
-    private void ClaimCalendarReward(Session s)
+    private bool ClaimCalendarReward(Session s, bool notify = true)
     {
-        if (_calendar is not { } track) return;
+        if (_calendar is not { } track) return false;
         var c = s.Character!;
         var (day, claimed) = CalendarState(c.Id, track);
         if (claimed)
         {
-            Send(s, Opcode.LivingCalendarInfo, b => { b.Write((byte)2); b.Write("Today's reward is already claimed. Come back tomorrow!"); });
-            return;
+            if (notify) Send(s, Opcode.LivingCalendarInfo, b => { b.Write((byte)2); b.Write("Today's reward is already claimed. Come back tomorrow!"); });
+            return false;
         }
         var (total, _) = _store.GetCalendar(c.Id, track.Id);
         var (template, quantity) = track.Rewards[day];
         GrantItem(c.Id, template, quantity);
         _store.SaveCalendar(c.Id, track.Id, total + 1, CalendarToday);
         Send(s, Opcode.InventoryUpdate, RefreshSheet(s).InventoryWithMoney().Write);
-        Send(s, Opcode.LivingCalendarInfo, b =>
+        if (notify) Send(s, Opcode.LivingCalendarInfo, b =>
         {
             b.Write((byte)3); // RewardGranted
             b.WriteVariableUInt32((uint)track.Id);
@@ -116,5 +121,6 @@ public sealed partial class GameServer
             b.Write(0);
         });
         _log.LogInformation("{Name} claimed calendar day {Day}: {Quantity} × {Item}", s.Name, day + 1, quantity, _balance.Items.GetValueOrDefault(template)?.Name);
+        return true;
     }
 }

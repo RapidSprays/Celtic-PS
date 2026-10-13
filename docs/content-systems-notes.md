@@ -54,7 +54,8 @@ This covers achievements, leaderboards, tarot, the living calendar, PvP zones an
 - **S→C** (`u8 type`): 0 full, 1 track updates, 2 error `str`, 3 reward granted.
   - **Full** (type 0, which **opens the screen by itself**): `vu n × {vu id, u8 type, str name, str desc, vi day+1, vi _, vi v3, vi missed, vl _, vl nextReward (ToBinary), vi maxTokens, vi usedTokens, vi n × {vi _, u8 0 item, vi template, vi qty, bit premium}}`. The client treats the day as claimed when `missed + v3 < day`.
   - **Update blocks** use fixed width: `vu track, i32 day, bit claimed, i32 missed, i64 nextTicks, i32 usedTokens`.
-- **Ours:** one "Daily Rewards" track (`server/content/calendar.json`) with 28 rewards, one claim per UTC day and no missed-day penalty. It is offered at login when today's reward is waiting.
+- **Ours:** one "Daily Rewards" track (`server/content/calendar.json`) with 28 rewards, one per UTC day and no missed-day penalty.
+- **The Claim button is broken in this client:** LivingCalendarManager.SendAction throws a NullReferenceException (seen from a Windows friend, 2026-10-13), and the screen then stays stuck open. So we never open the screen; the day's reward is given at the first login of the day, with a chat line.
 
 ## PvP zones and progress
 - **Duels and hostility:** PVPMessage 13027 is duels only. Hostility to players is entirely the PlayerHateList (17011: `vi n × vu id`).
@@ -78,4 +79,4 @@ This covers achievements, leaderboards, tarot, the living calendar, PvP zones an
 - **FirstTime 13038:**
   - S→C `vi id` makes a hint available. 100 starts the chain; 101 destroys it.
   - C→S `vi id` marks a hint done.
-- **Ours:** below level 20 we send the unfinished tutorials and hints plus 100, once per session. Completions are kept. `.tutorial off` stops it.
+- **Off by default:** on our server the tutorial overlay gets stuck (GUIQuestLog.FirstQuestIconRect throws every frame with an empty quest log; seen from a Windows friend, 2026-10-13). `.tutorial on` opts in: below level 20 we then send the unfinished tutorials and hints plus 100, once per session, and keep completions.

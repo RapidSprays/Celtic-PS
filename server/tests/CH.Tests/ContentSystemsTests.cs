@@ -91,29 +91,17 @@ public sealed class ContentSystemsTests : IDisposable
     }
 
     [Fact]
-    public async Task The_calendar_offers_one_reward_a_day()
+    public async Task The_daily_reward_is_given_at_the_first_login_of_the_day()
     {
         if (!File.Exists(BalancePath)) return;
         await using var host = await Start();
         var (c, _) = Join(host, "daily", "Cliodhna");
         using var _c = c;
-        var full = c.Expect(Opcode.LivingCalendarInfo);
-        Assert.Equal(0, full.ReadByte());
-        Assert.Equal(1u, full.ReadVariableUInt32());
-        Assert.Equal(1u, full.ReadVariableUInt32());
+        Assert.NotNull(Await(c, Opcode.SimpleMessageForThePlayer, m => m.ReadString().StartsWith("Daily reward (day 1 of 28): 5 × ") ? "" : null));
 
-        Say(c, ".gold 0");
-        var before = InventoryWithMoney.Read(c.Expect(Opcode.InventoryUpdate)).Coins;
+        // Asking again (the calendar screen's Claim) is refused: today's is taken.
         c.Send(Opcode.LivingCalendarAction, m => { m.Write((byte)1); m.WriteVariableUInt32(1); });
-        Assert.Equal(before + 500, InventoryWithMoney.Read(c.Expect(Opcode.InventoryUpdate)).Coins); // day 1: 5 Bags of Gold
-        var granted = c.Expect(Opcode.LivingCalendarInfo);
-        Assert.Equal(3, granted.ReadByte());
-        Assert.Equal(1u, granted.ReadVariableUInt32());
-        Assert.Equal(0, granted.ReadInt32());
-        Assert.True(granted.ReadBoolean());
-
-        c.Send(Opcode.LivingCalendarAction, m => { m.Write((byte)1); m.WriteVariableUInt32(1); });
-        Assert.Equal(2, c.Expect(Opcode.LivingCalendarInfo).ReadByte()); // already claimed today
+        Assert.Equal(2, c.Expect(Opcode.LivingCalendarInfo).ReadByte());
     }
 
     [Fact]
@@ -172,14 +160,22 @@ public sealed class ContentSystemsTests : IDisposable
     }
 
     [Fact]
-    public async Task New_characters_get_the_tutorial_and_can_turn_it_off()
+    public async Task The_tutorial_is_opt_in()
     {
         if (!File.Exists(BalancePath)) return;
         await using var host = await Start();
-        var (c, _) = Join(host, "newbie", "Eimear");
-        using var _c = c;
-        Assert.NotNull(Await(c, Opcode.FirstTime, m => m.ReadVariableInt32() == 100 ? "" : null));
-        Say(c, ".tutorial off");
-        Assert.NotNull(Await(c, Opcode.SimpleMessageForThePlayer, m => m.ReadString().Contains("off") ? "" : null));
+        var (c, id) = Join(host, "newbie", "Eimear");
+        Assert.Null(Await(c, Opcode.FirstTime, m => "", seconds: 1));
+        Say(c, ".tutorial on");
+        Assert.NotNull(Await(c, Opcode.SimpleMessageForThePlayer, m => m.ReadString().Contains("on from your next login") ? "" : null));
+        c.Dispose();
+
+        using var again = new Client();
+        again.Connect("127.0.0.1", host.Game.Port);
+        again.VersionCheck();
+        again.Login("newbie");
+        again.StartGame(id, "Eimear");
+        again.FinishZoning();
+        Assert.NotNull(Await(again, Opcode.FirstTime, m => m.ReadVariableInt32() == 100 ? "" : null));
     }
 }
