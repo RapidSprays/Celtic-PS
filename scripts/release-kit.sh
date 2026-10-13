@@ -3,6 +3,7 @@
 # on any of your machines (signed in to GitHub) instead of being sent around.
 #
 #   scripts/release-kit.sh [note]     e.g. scripts/release-kit.sh "Fix the passive tree button on Windows"
+#   RELEASE_TAG=v0.1.1 scripts/release-kit.sh [note]    use a version tag instead of the dated one
 #
 # Tags are kit-<date>-<commit>. Releases of a private repo are only visible to you and people you add to the repo.
 set -euo pipefail
@@ -13,7 +14,7 @@ NOTE="${1:-}"
 git -C "$REPO" push -q
 "$REPO/scripts/make-friend-kit.sh"
 COMMIT="$(git -C "$REPO" rev-parse --short HEAD)"
-TAG="kit-$(date +%Y%m%d-%H%M)-$COMMIT"
+TAG="${RELEASE_TAG:-kit-$(date +%Y%m%d-%H%M)-$COMMIT}"
 assets=("$KIT/CelticHeroesPrivate-Mac.zip" "$KIT/HOW-TO-JOIN.txt")
 [[ -f "$KIT/CelticHeroesPrivate.exe" ]] && assets=("$KIT/CelticHeroesPrivate.exe" "${assets[@]}")
 gh release create "$TAG" --repo "$(git -C "$REPO" remote get-url origin)" --target "$(git -C "$REPO" rev-parse HEAD)" \
