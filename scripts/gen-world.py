@@ -322,6 +322,22 @@ for template, spawn, conv, zone, near in [(393, 2653, 440, 93, (robert["x"], rob
     npcs.append({"spawnId": spawn, "template": template, "name": mobs[template]["Name"], "conversation": conv, "zone": zone,
                  "x": round(x, 2), "y": near[1], "z": round(zz, 2), "direction": round(facing_to(x, zz, near[0], near[2]), 1), "roles": ["BountyBoard"]})
 
+# Ovens (template 923, conversation cv_cooking_station_npc: COOKING 221) carry spawn icons for vendor 221 but no
+# position. One beside Gideon Ramsford the chef, one in Farcrag Castle by the banker, one in the Tavern.
+chef = next((n for n in npcs if n["conversation"] == by_file.get("cv_tv_chef_questline")), None)
+tavern = next((p for p in zones[9]["PlayerSpawnPoints"] if p["Id"] == HUB[9]), None)
+oven_spots = [(6468, chef["zone"], (chef["x"], chef["y"], chef["z"])) if chef else None,
+              (6527, 93, PROPS["Banker"]),
+              (7115, 9, tuple(tavern["Position"])) if tavern else None]
+for spawn, zone, near in filter(None, oven_spots):
+    if 923 not in mobs or "cv_cooking_station_npc" not in by_file: break
+    world = worlds.get(zone)
+    spot = world.nearest_walkable(near[0], near[2], max_radius=12, min_radius=3, avoid=taken[zone], spacing=3) if world and world.has_mask else None
+    x, zz = spot if spot else (near[0] + 3, near[2] - 2)
+    taken[zone].append((x, zz))
+    npcs.append({"spawnId": spawn, "template": 923, "name": mobs[923]["Name"], "conversation": by_file["cv_cooking_station_npc"], "zone": zone,
+                 "x": round(x, 2), "y": near[1], "z": round(zz, 2), "direction": round(facing_to(x, zz, near[0], near[2]), 1), "roles": ["Oven"]})
+
 # ---- shops ------------------------------------------------------------------------------------------------------
 # The client knows which shop id a conversation opens, never what it stocks (server-only). Each shop gets a category
 # from its menu label, file and NPC name; the server stocks it from the item templates for the NPC's zone level.

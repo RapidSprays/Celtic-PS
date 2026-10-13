@@ -17,6 +17,8 @@ public sealed partial class GameServer
             LearnedAbilities = _store.ListAbilities(c.Id), AbilityLevels = _store.ListAbilityLevels(c.Id),
             BankExpansions = _store.GetExpansions(c.Id).Bank, BackpackExpansions = _store.GetExpansions(c.Id).Backpack,
             ClanName = _store.GetMembership(c.Id) is { } m ? _store.GetClan(m.ClanId)?.Name ?? "" : "",
+            FishingLevel = _store.GetCrafts(c.Id).FishingLevel, FishingXpPercent = Crafting.Percent(_store.GetCrafts(c.Id).FishingLevel, _store.GetCrafts(c.Id).FishingXp),
+            CookingLevel = _store.GetCrafts(c.Id).CookingLevel, CookingXpPercent = Crafting.Percent(_store.GetCrafts(c.Id).CookingLevel, _store.GetCrafts(c.Id).CookingXp),
         };
 
     private CharacterSheet Sheet(Session s) => LoadSheet(s.Character!);

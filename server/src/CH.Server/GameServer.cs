@@ -56,6 +56,9 @@ public sealed partial class GameServer : IDisposable
         _itemShop = LoadItemShop(options.ItemShopPath);
         _factionRules = FactionRules.Load(options.FactionsPath);
         _bounties = BuildBounties();
+        _fishing = FishingZone.Load(options.FishingPath);
+        _itemPoints = LoadItemPoints(options.ItemSpawnsPath);
+        _ingredients = LoadIngredients(options.CookingPath);
         if (_tree.IsLoaded) log.LogInformation("Passive tree: {Nodes} nodes", _tree.Nodes.Count);
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_bounties.Count > 0)
@@ -230,6 +233,14 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.ClanBankingMessage or Opcode.ClanBankingLogMessage or Opcode.ClanBankingBuySlotMessage:
                 if (InWorld(s)) OnClanBank(s, header.Opcode, msg);
+                break;
+
+            case Opcode.CraftingMessage:
+                if (InWorld(s)) OnCrafting(s, msg);
+                break;
+
+            case Opcode.PickupItem:
+                if (InWorld(s)) OnPickupItem(s, msg.ReadVariableInt32());
                 break;
 
             case Opcode.MailMessage:
@@ -650,6 +661,8 @@ public sealed partial class GameServer : IDisposable
         public int? LastChestTemplate { get; set; }
         public Dictionary<int, int> PledgesSpent { get; } = new();
         public HashSet<long> Blocked { get; } = new();
+        public int Concentration { get; set; } = BaseConcentration;
+        public double LastFishingAt { get; set; } = double.MinValue;
         public HashSet<int> Teleports { get; } = new();
         public bool IsGm { get; set; }
         public int FailedLogins { get; set; }

@@ -63,6 +63,18 @@ public sealed class ServerOptions
     /// <summary>Quests and NPC placements (scripts/gen-world.py), read from beside the balance JSON.</summary>
     public string? WorldPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "world.json");
 
+    /// <summary>Multiplies every recipe's cooking time (tests use 0).</summary>
+    public double CookingTimeScale { get; set; } = 1;
+
+    /// <summary>Ground item points (scripts/gen-item-spawns.py), beside the balance JSON.</summary>
+    public string? ItemSpawnsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "item-spawns.json");
+
+    /// <summary>Cooking recipes' ingredients (scripts/gen-cooking.py), beside the balance JSON.</summary>
+    public string? CookingPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "cooking.json");
+
+    /// <summary>Fishing spots and catches (scripts/gen-fishing.py), beside the balance JSON.</summary>
+    public string? FishingPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "fishing.json");
+
     /// <summary>Zone exits (scripts/extract-zone-points.py), read from beside the balance JSON.</summary>
     public string? ZonePointsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-points.json");
 

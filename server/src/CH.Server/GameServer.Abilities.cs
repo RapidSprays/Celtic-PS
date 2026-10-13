@@ -16,7 +16,7 @@ public sealed partial class GameServer
 
     /// <summary>Client ability ids (Abilities in the balance data).</summary>
     public const int MeleeCombat = 7, RangedCombat = 8, Fortitude = 19, Reflex = 21, CriticalStrike = 29, CriticalSkills = 30, HandToHand = 18,
-        Novelty = 17, FishingAbility = 26, CookingProficiency = 38;
+        Novelty = 17, FishingAbility = 26, CookingProficiency = 38, CookingMastery = 39;
 
     /// <summary>A weapon's own ability, by item subtype.</summary>
     public static int WeaponAbility(ItemInfo? weapon) => weapon?.Subtype switch

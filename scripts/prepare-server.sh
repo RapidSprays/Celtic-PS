@@ -37,6 +37,15 @@ if world_inputs_newer zone-population.json || [[ "$EXTRACTED/world.json" -nt "$E
   python3 "$REPO/scripts/gen-zone-population.py" "$BUILD" >/dev/null
 fi
 regen zone-population.json gen-zone-population.py
+# Gathering and cooking (docs/gathering-notes.md): fishing spots and ground items follow the world and its NPCs.
+regen cooking.json gen-cooking.py
+for pair in "fishing.json gen-fishing.py" "item-spawns.json gen-item-spawns.py"; do
+  set -- $pair
+  if world_inputs_newer "$1" || [[ "$EXTRACTED/world.json" -nt "$EXTRACTED/$1" || "$EXTRACTED/cooking.json" -nt "$EXTRACTED/$1" ]]; then
+    python3 "$REPO/scripts/$2" "$BUILD" >/dev/null
+  fi
+  regen "$1" "$2"
+done
 
 if [[ -n "$PUBLISH" ]]; then
   "$DOTNET" publish -c Release "$REPO/server/src/CH.Server" -o "$PUBLISH" >/dev/null

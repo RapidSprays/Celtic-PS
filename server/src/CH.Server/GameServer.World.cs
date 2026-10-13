@@ -27,6 +27,7 @@ public sealed partial class GameServer
         public Dictionary<uint, Mob> Mobs { get; } = new();
         public List<Session> Players { get; } = new();
         public double NextBatchAt { get; set; }
+        public Dictionary<int, GroundItem> GroundItems { get; set; } = new();
     }
 
     private readonly Dictionary<int, Zone> _zones = new();
@@ -42,6 +43,8 @@ public sealed partial class GameServer
         var now = NetTime.Now;
         foreach (var mob in ZonePopulation.Build(zoneId, _balance, now, _generatedCamps)) zone.Mobs[mob.ServerId] = mob;
         foreach (var npc in NpcsFor(zoneId, now)) zone.Mobs.TryAdd(npc.ServerId, npc);
+        foreach (var spot in FishingSpotsFor(zoneId, now)) zone.Mobs.TryAdd(spot.ServerId, spot);
+        zone.GroundItems = GroundItemsFor(zoneId);
         foreach (var spawn in _store.ListSpawns(zoneId))
             if (MobFromSpawn(zone, spawn, now) is { } mob) zone.Mobs[mob.ServerId] = mob;
         _zones[zoneId] = zone;
@@ -104,6 +107,7 @@ public sealed partial class GameServer
         if (alive.Count > 0) Send(s, Opcode.BatchZoneMonsterUpdate, b => MobSpawn.WriteBatch(b, alive.Select(m => ToWire(m, now)).ToList()));
         var moving = alive.Where(m => m.IsMoving(now)).Select(m => Leg(m, returning: m.State == MobState.Returning)).ToList();
         if (moving.Count > 0) Send(s, Opcode.mobPatrolUpdate, new MobPatrol(moving).Write);
+        SendGroundItems(zone, s);
         Send(s, Opcode.AllZoningMessagesSent, _ => { });
         AnnounceArrival(zone, s, wasPresent);
     }
@@ -146,6 +150,7 @@ public sealed partial class GameServer
         foreach (var zone in _zones.Values.Where(z => z.Players.Count > 0).ToList()) Tick(zone, now);
         ExpireAuctions(now);
         ExpireFriendRequests(now);
+        TickCrafts(now);
         ExpireClanInvites(now);
         TickDuels(now);
     }
@@ -154,6 +159,7 @@ public sealed partial class GameServer
     {
         foreach (var mob in zone.Mobs.Values.ToList()) TickMob(zone, mob, now);
         foreach (var s in zone.Players.ToList()) TickPlayer(zone, s, now);
+        TickGroundItems(zone, now);
         TickPositions(zone, now);
     }
 
@@ -174,6 +180,11 @@ public sealed partial class GameServer
             return;
         }
         if (mob.IsNpc) return;
+        if (mob.IsFishingSpot)
+        {
+            TickFishingSpot(zone, mob, now);
+            return;
+        }
         TickMobEffects(zone, mob, now);
         if (mob.State == MobState.Dead) return;
 
@@ -336,6 +347,7 @@ public sealed partial class GameServer
         if (now >= s.NextRegenAt)
         {
             s.NextRegenAt = now + RegenIntervalSeconds;
+            RegenConcentration(s, now);
             var outOfCombat = now - s.LastCombatAt > OutOfCombatSeconds;
             var m = Modifiers(s);
             var tree = s.Sheet!.Tree;
@@ -377,6 +389,7 @@ public sealed partial class GameServer
         }
         if (req.TargetType != TargetType.Mob || !_zones.TryGetValue(s.Position.Zone, out var zone)) return;
         if (!zone.Mobs.TryGetValue(req.TargetId, out var mob) || mob.IsNpc || mob.State == MobState.Dead) return;
+        if (mob.IsFishingSpot ? !StartFishing(zone, s, mob, NetTime.Now) : Rod(s) is not null) return; // rods only fish
         SetPvpTarget(s, null);
         SetAttackTarget(s, mob);
         s.NextSwingAt = Math.Max(s.NextSwingAt, NetTime.Now + 0.3);
@@ -404,10 +417,11 @@ public sealed partial class GameServer
                 && Dist2D(s.Position.X, s.Position.Z, e.Position.X, e.Position.Z) - 2 * PlayerRadius <= Math.Max(skill.CastRange, s.Sheet.AttackRange) + MeleeTolerance + 1f)
                 enemy = e;
         }
-        else if (skill.CastTarget == "Enemy")
+        else if (skill.CastTarget is "Enemy" or "Fish")
         {
             if (_zones.TryGetValue(s.Position.Zone, out var zone) && zone.Mobs.TryGetValue(req.TargetId, out var mob)
-                && !mob.IsNpc && mob.State != MobState.Dead && InReach(s, mob, Math.Max(skill.CastRange, s.Sheet.AttackRange) + MeleeTolerance + 1f, now))
+                && !mob.IsNpc && mob.State != MobState.Dead && mob.IsFishingSpot == (skill.CastTarget == "Fish")
+                && InReach(s, mob, Math.Max(skill.CastRange, s.Sheet.AttackRange) + MeleeTolerance + 1f, now))
                 target = mob;
         }
         // Heals and buffs on another player: anyone in the zone within cast range (the client sends their character id).
@@ -520,6 +534,11 @@ public sealed partial class GameServer
 
     private void PlayerHits(Zone zone, Session s, Mob mob, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
     {
+        if (mob.IsFishingSpot)
+        {
+            if (kind is AttackKind.Attack or AttackKind.Skill) FishHit(zone, s, mob, kind, skillId, now);
+            return;
+        }
         s.LastCombatAt = now;
         BreakStealth(s);
         var roll = Random.Shared.NextDouble();
@@ -640,6 +659,11 @@ public sealed partial class GameServer
 
     private void Reward(Session s, Mob mob)
     {
+        if (mob.IsFishingSpot)
+        {
+            FishingReward(s, mob);
+            return;
+        }
         var c = s.Character!;
         var progress = _store.GetProgress(c.Id);
         var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects

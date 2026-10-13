@@ -214,14 +214,17 @@ public sealed partial class GameServer
         switch (msg.ReadVariableInt32())
         {
             case 1:
-                SendTokenVendor(s, msg.ReadVariableInt32());
+                var id = msg.ReadVariableInt32();
+                if (id == CookingVendor) SendCookingVendor(s);
+                else SendTokenVendor(s, id);
                 break;
             case 3:
             {
                 var vendorId = msg.ReadVariableInt32();
                 var stockId = msg.ReadVariableInt32();
                 var quantity = Math.Clamp(msg.ReadVariableInt32(), 1, 10);
-                BuyFromTokenVendor(s, vendorId, stockId, quantity);
+                if (vendorId == CookingVendor) ConfirmCookedDish(s, stockId);
+                else BuyFromTokenVendor(s, vendorId, stockId, quantity);
                 break;
             }
         }

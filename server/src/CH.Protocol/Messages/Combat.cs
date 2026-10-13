@@ -277,12 +277,15 @@ public sealed record WonCombat(
     IReadOnlyList<(int TemplateId, int Quantity)> Items,
     InventoryWithMoney Inventory)
 {
+    /// <summary>0 combat, 1 fishing (the XP percent is then fishing XP).</summary>
+    public int LevelType { get; init; }
+
     public void Write(NetBuffer b)
     {
         b.WriteVariableInt32(MobTemplateId);
         b.WriteVariableInt32(MobServerId);
         b.WriteVariableInt32(KillerServerId);
-        b.WriteVariableInt32(0); // level type: combat
+        b.WriteVariableInt32(LevelType);
         b.WriteVariableInt32(XpGained);
         b.WriteVariableInt32(0); // not lucky
         b.Write(NewXpPercent);
@@ -304,9 +307,12 @@ public sealed record LevelUp(int NewLevel)
     public IReadOnlyList<int> AvailableQuests { get; init; } = [];
     public IReadOnlyList<int> NotYetAvailableQuests { get; init; } = [];
 
+    /// <summary>0 combat, 1 fishing, 2 cooking.</summary>
+    public int LevelType { get; init; }
+
     public void Write(NetBuffer b)
     {
-        b.WriteVariableInt32(0); // combat level
+        b.WriteVariableInt32(LevelType);
         b.WriteVariableInt32(NewLevel);
         QuestMessages.WriteAvailable(b, AvailableQuests, NotYetAvailableQuests);
     }

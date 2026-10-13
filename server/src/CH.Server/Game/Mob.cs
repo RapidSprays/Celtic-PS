@@ -34,7 +34,12 @@ public sealed class Mob
     public long? SpawnRecordId { get; init; }
 
     public bool IsNpc => Opinion >= 50;
-    public int MaxHealth => MobStats.MaxHealth(Level, Template.Power);
+
+    /// <summary>Fishing spots are gathering mobs (MobTemplate Type 1, opinion −15): fished with a rod, never killed in combat.</summary>
+    public bool IsFishingSpot => Template.Type == 1;
+    public bool RareSpot { get; init; }
+    public int? FixedMaxHealth { get; init; }
+    public int MaxHealth => FixedMaxHealth ?? MobStats.MaxHealth(Level, Template.Power);
     public int Health { get; set; }
 
     public MobState State { get; set; } = MobState.Idle;

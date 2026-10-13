@@ -124,7 +124,7 @@ public sealed class ShopCatalog
                           .OrderBy(i => i.LevelRequirement).ThenBy(i => i.Id).Take(MaxStock).ToList(),
             "fashion" => items.Where(i => FashionSlots.Contains(i.Slot) && i.LevelRequirement <= hi).OrderBy(_ => rng.Next()).Take(MaxStock).ToList(),
             "mount" => items.Where(i => i.Slot == EquipSlot.Mount).OrderBy(_ => rng.Next()).Take(20).ToList(),
-            "food" => items.Where(i => i.Subtype is "Cooking" or "FishingItem" && i.LevelRequirement <= hi).OrderBy(_ => rng.Next()).Take(30).ToList(),
+            "food" => Food(items, hi).ToList(),
             "stamps" => [],
             _ => Potions(items, hi).Concat(Spread(items.Where(i => (ArmourSlots.Contains(i.Slot) || i.Slot == EquipSlot.Weapon)
                                                                     && i.StarLevel < 0 && InBand(i) && ForClass(i)), 24)).ToList(),
@@ -141,6 +141,23 @@ public sealed class ShopCatalog
             if (sorted.Count <= max) return sorted;
             return Enumerable.Range(0, max).Select(k => sorted[(int)((long)k * (sorted.Count - 1) / (max - 1))]).ToList();
         }
+    }
+
+    /// <summary>
+    /// Food merchants: cooking ingredients (not dishes), the standard fishing rods, concentration potions, and recipe
+    /// books for dishes up to 40 levels past the band (cooking and fishing; docs/gathering-notes.md).
+    /// </summary>
+    private IEnumerable<ItemInfo> Food(IEnumerable<ItemInfo> items, int maxLevel)
+    {
+        var dishes = _balance.RecipeTemplates.Values.SelectMany(r => new[] { r.Failure, r.Result, r.CriticalResult, r.MasterResult }).ToHashSet();
+        var books = _balance.RecipeTemplates.Values.Where(r => r.Level <= maxLevel + 40).Select(r => $"'{r.Name}' Recipe Book").ToHashSet();
+        var list = items.ToList();
+        return list.Where(i => i.Subtype == "Cooking" && i.Stackable && !dishes.Contains(i.Id) && !i.Name.Contains("Recipe", StringComparison.Ordinal)
+                               && !i.Name.Contains("Chef", StringComparison.Ordinal) && !i.Name.Contains("Paddle", StringComparison.Ordinal))
+            .Concat(list.Where(i => i.Subtype == "FishingRod" && i.Name.EndsWith("'s Fishing Rod", StringComparison.Ordinal)))
+            .Concat(list.Where(i => i.Subtype == "FishingItem" && i.Name.EndsWith("Potion of Concentration", StringComparison.Ordinal)))
+            .Concat(list.Where(i => books.Contains(i.Name)).OrderBy(i => i.Id).Take(24))
+            .DistinctBy(i => i.Id);
     }
 
     private static IEnumerable<ItemInfo> Potions(IEnumerable<ItemInfo> items, int maxLevel) =>

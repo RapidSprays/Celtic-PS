@@ -141,6 +141,18 @@ public sealed record StatusEffectInfo(int Id, string Name, int Type, IReadOnlyLi
     public StatusEffectLevel? Level(int index) => Levels.Count == 0 ? null : Levels[Math.Clamp(index, 0, Levels.Count - 1)];
 }
 
+/// <summary>A cooking recipe (CraftingTemplate): chances in percent, ability thresholds, results and timing.</summary>
+public sealed record RecipeInfo(int Id, string Name, int CostId, int Level, int Xp, int MinAbility, int Difficulty, (int Min, int Max) Success,
+    (int Min, int Max) Critical, (int Min, int Max) Master, int Failure, int Result, int CriticalResult, int MasterResult, float CraftingTime, int OptionalId)
+{
+    /// <summary>The client's own chance curve (GUICraftingPage): min + max(0, a − minAbility)/(that + difficulty) × (max − min).</summary>
+    public static double Chance(int ability, int minAbility, (int Min, int Max) range, int difficulty)
+    {
+        var over = Math.Max(0, ability - minAbility);
+        return (range.Min + (over + difficulty == 0 ? 0 : (double)over / (over + difficulty)) * Math.Max(0, range.Max - range.Min)) / 100.0;
+    }
+}
+
 public sealed record MobInfo(int Id, int TemplateId, string Name, string Race, int Type, float Radius, float AttackRange, int AttackSpeed, int Power);
 
 public sealed record ZoneInfo(int Id, string Name, string Scene, (float X, float Z) Min, (float X, float Z) Max, IReadOnlyList<SpawnPoint> PlayerSpawns)
@@ -182,6 +194,9 @@ public sealed class Balance
 
     /// <summary>Cooking recipes (CraftingTemplates): recipe id → name.</summary>
     public IReadOnlyDictionary<int, string> Recipes { get; private init; } = new Dictionary<int, string>();
+    /// <summary>Cooking recipes in full (CraftingTemplates), by recipe id.</summary>
+    public IReadOnlyDictionary<int, RecipeInfo> RecipeTemplates { get; private init; } = new Dictionary<int, RecipeInfo>();
+
     /// <summary>Reputation factions (FactionTemplates): level thresholds and titles.</summary>
     public IReadOnlyDictionary<int, FactionInfo> Factions { get; private init; } = new Dictionary<int, FactionInfo>();
     public IReadOnlyDictionary<int, MobInfo> Mobs { get; }
@@ -308,7 +323,16 @@ public sealed class Balance
         }
 
         var recipes = new Dictionary<int, string>();
-        foreach (var (key, e) in Entries(root, "CraftingTemplates")) recipes[int.Parse(key)] = Str(e, "RecipeName");
+        var recipeTemplates = new Dictionary<int, RecipeInfo>();
+        foreach (var (key, e) in Entries(root, "CraftingTemplates"))
+        {
+            recipes[int.Parse(key)] = Str(e, "RecipeName");
+            recipeTemplates[Int(e, "RecipeId")] = new RecipeInfo(Int(e, "RecipeId"), Str(e, "RecipeName"), Int(e, "CostId"), Int(e, "RecipeLevel"), Int(e, "RecipeXp"),
+                Int(e, "MinAbility"), Int(e, "Difficulty"), (Int(e, "SuccessMinChance"), Int(e, "SuccessMaxChance")),
+                (Int(e, "CriticalMinChance"), Int(e, "CriticalMaxChance")), (Int(e, "MasterMinChance"), Int(e, "MasterMaxChance")),
+                Int(e, "FailureItemReward"), Int(e, "SuccessItemReward"), Int(e, "CriticalItemReward"), Int(e, "MasterItemReward"),
+                Float(e, "CraftingTime"), Int(e, "OptionalID"));
+        }
 
         var factions = new Dictionary<int, FactionInfo>();
         foreach (var (key, e) in Entries(root, "FactionTemplates"))
@@ -318,7 +342,7 @@ public sealed class Balance
                 Int(e, "Min"), Int(e, "Max"));
 
         var version = root.TryGetProperty("Version", out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
-        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects) { Recipes = recipes, Factions = factions };
+        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects) { Recipes = recipes, RecipeTemplates = recipeTemplates, Factions = factions };
     }
 
     /// <summary>Whether an item is an openable container (see <see cref="ChestCatalog"/>).</summary>

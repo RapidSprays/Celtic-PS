@@ -365,6 +365,17 @@ public sealed class GameStore : IDisposable
             at             TEXT NOT NULL
         );
         """,
+        """
+        ALTER TABLE characters ADD COLUMN fishing_level INTEGER NOT NULL DEFAULT 1;
+        ALTER TABLE characters ADD COLUMN fishing_xp INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN cooking_level INTEGER NOT NULL DEFAULT 1;
+        ALTER TABLE characters ADD COLUMN cooking_xp INTEGER NOT NULL DEFAULT 0;
+        CREATE TABLE recipe_favourites (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            recipe_id    INTEGER NOT NULL,
+            PRIMARY KEY (character_id, recipe_id)
+        );
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -1115,6 +1126,34 @@ public sealed class GameStore : IDisposable
         while (r.Read()) list.Add((r.GetString(0), r.GetInt32(1) != 0, r.GetInt32(2), r.GetInt32(3), r.GetString(4)));
         return list;
     }
+
+    // ---- fishing and cooking ---------------------------------------------------------------------------------------
+
+    public (int FishingLevel, int FishingXp, int CookingLevel, int CookingXp) GetCrafts(long characterId)
+    {
+        using var cmd = Command("SELECT fishing_level, fishing_xp, cooking_level, cooking_xp FROM characters WHERE id = $id", null, ("$id", characterId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3)) : (1, 0, 1, 0);
+    }
+
+    public void SaveFishing(long characterId, int level, int xp) =>
+        Exec("UPDATE characters SET fishing_level = $l, fishing_xp = $x WHERE id = $id", null, ("$l", level), ("$x", xp), ("$id", characterId));
+
+    public void SaveCooking(long characterId, int level, int xp) =>
+        Exec("UPDATE characters SET cooking_level = $l, cooking_xp = $x WHERE id = $id", null, ("$l", level), ("$x", xp), ("$id", characterId));
+
+    public IReadOnlySet<int> ListRecipeFavourites(long characterId)
+    {
+        using var cmd = Command("SELECT recipe_id FROM recipe_favourites WHERE character_id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var set = new HashSet<int>();
+        while (r.Read()) set.Add(r.GetInt32(0));
+        return set;
+    }
+
+    public void SetRecipeFavourite(long characterId, int recipeId, bool favourite) =>
+        Exec(favourite ? "INSERT OR IGNORE INTO recipe_favourites(character_id, recipe_id) VALUES ($c, $r)"
+            : "DELETE FROM recipe_favourites WHERE character_id = $c AND recipe_id = $r", null, ("$c", characterId), ("$r", recipeId));
 
     public void Dispose() => _db.Dispose();
 }

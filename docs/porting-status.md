@@ -18,9 +18,9 @@ What's still to port of the client's feature set, from the client message list (
 - Moved to §4: the block list (it shares the friends list's social data)
 
 ## 3. Gathering and crafting
-- [ ] Fishing
-- [ ] Ground items and pickups, item and resource spawns
-- [ ] Cooking and crafting (185 client recipes)
+- [x] Fishing: spots on real shorelines, rods, concentration, catches from each zone's fish, fishing XP and levels; numbers invented
+- [x] Ground items and pickups: quest pickups near their givers, cooking crops in the fields, regrowth; positions invented
+- [x] Cooking: ovens, the client's crafting page, known recipes and recipe books, the client's success curve, cooking XP and levels; ingredient lists invented. Food merchants sell ingredients, rods and recipe books
 
 ## 4. Social
 - [x] Friends list and block list: mutual friends with the client's request popup; blocks enforced by the server (whispers, chat, invitations, trade, duels, mail)
