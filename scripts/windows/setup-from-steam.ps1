@@ -104,7 +104,7 @@ if ($Decompile) {
     if (Test-Path $out) {
         Write-Host "Decompiled code already at $out"
     } else {
-        if (-not (Get-Command ilspycmd -ErrorAction SilentlyContinue)) { Invoke-Checked 'dotnet' @('tool', 'install', '-g', 'ilspycmd') }
+        if (-not (Get-Command ilspycmd -ErrorAction SilentlyContinue)) { Invoke-Checked 'dotnet' @('tool', 'install', '-g', 'ilspycmd', '--version', '9.1.0.7988') # newer releases need a newer .NET SDK }
         $managed = Join-Path $snapshot 'Contents\Resources\Data\Managed'
         Invoke-Checked 'ilspycmd' @('-p', '-r', $managed, '-o', $out, (Join-Path $managed 'Assembly-CSharp.dll'))
     }
