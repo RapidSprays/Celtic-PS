@@ -39,13 +39,13 @@ public static class FriendSetup
         {
             var platform = forced ?? CurrentPlatform();
             dest = Path.GetFullPath(dest ?? DefaultDestination(platform));
-            var launcher = Install(host, httpPort, platform, steamDir, dest, Console.WriteLine);
+            Install(host, httpPort, platform, steamDir, dest, Console.WriteLine);
             Console.WriteLine();
             Console.WriteLine($"Done. Your private copy talks only to {host}.");
             Console.WriteLine(Reachable(host!, httpPort)
                 ? "The server is reachable right now."
                 : $"Can't reach the server at {host}:{httpPort} right now: check Tailscale is connected and the host has the server running.");
-            Console.WriteLine($"To play: keep Steam running, then open \"{launcher}\".");
+            Console.WriteLine($"To play, run this program with: play --dest \"{dest}\" (it relays the game to the server while you play).");
             return 0;
         }
         catch (Exception ex) when (IsSetupError(ex))
@@ -68,10 +68,11 @@ public static class FriendSetup
     public static string KitVersion => typeof(FriendSetup).Assembly.ManifestModule.ModuleVersionId.ToString("N");
 
     /// <summary>
-    /// Makes (or remakes) the patched private copy in <paramref name="dest"/> and returns the file that starts it. Throws
-    /// <see cref="IsSetupError"/> exceptions with a message meant for the player.
+    /// Makes (or remakes) the patched private copy in <paramref name="dest"/>. The copy talks to <see cref="LocalRelay"/> on
+    /// 127.0.0.1, which <see cref="FriendApp"/> runs while the game is open and forwards to <paramref name="host"/>:<paramref name="httpPort"/>.
+    /// Throws <see cref="IsSetupError"/> exceptions with a message meant for the player.
     /// </summary>
-    public static string Install(string? host, int httpPort, ClientPlatform platform, string? steamDir, string dest, Action<string> log)
+    public static void Install(string? host, int httpPort, ClientPlatform platform, string? steamDir, string dest, Action<string> log)
     {
         {
             if (string.IsNullOrWhiteSpace(host) || !Regex.IsMatch(host, @"^[A-Za-z0-9.:\-\[\]]+$"))
@@ -113,14 +114,14 @@ public static class FriendSetup
             var results = new List<PatchResult>();
             using (var module = ModuleDefinition.ReadModule(new MemoryStream(File.ReadAllBytes(dll)), new ReaderParameters { AssemblyResolver = resolver }))
             {
-                var patcher = new AssemblyPatcher(module, httpPort, host, names);
+                var patcher = new AssemblyPatcher(module, LocalRelay.Port, LocalRelay.Address, names);
                 patcher.ApplyAll();
                 Require(patcher.RemainingLiveUrls().Count == 0, "live URLs remain after patching");
                 results.AddRange(patcher.Results);
                 module.Write(dll);
             }
             ClientMods.Install(dll, names); // the client mod (P10-P15), plus its name map on Windows
-            var (ggmPatched, ggmChanges) = AssetUrlPatcher.Patch(File.ReadAllBytes(ggm), httpPort);
+            var (ggmPatched, ggmChanges) = AssetUrlPatcher.Patch(File.ReadAllBytes(ggm), LocalRelay.Port);
             Require(ggmChanges.Count == 7 && AssetUrlPatcher.RemainingUnityUrls(ggmPatched).Count == 0, "Unity telemetry URLs not patched as expected");
             results.Add(new PatchResult("P8", "globalgamemanagers: Unity engine telemetry URLs → same-length localhost URLs", ggmChanges.Count));
             if (platform == ClientPlatform.Windows)
@@ -138,23 +139,24 @@ public static class FriendSetup
                 Exec("codesign", "--force", "--deep", "--sign", "-", copy);
             }
 
-            // 4. Steam app id (so Steam doesn't relaunch the live game) and a launcher.
+            // 4. Steam app id (so Steam doesn't relaunch the live game). Older kits also wrote a script that started the game
+            // directly; without the relay that hangs on the loading screen, so remove it.
             File.WriteAllText(Path.Combine(dest, "steam_appid.txt"), KnownBuild.SteamAppId.ToString());
             if (platform == ClientPlatform.Windows) File.WriteAllText(Path.Combine(copy, "steam_appid.txt"), KnownBuild.SteamAppId.ToString());
-            var launcher = WriteLauncher(platform, dest);
+            foreach (var old in new[] { "Play Celtic Heroes Private.bat", "Play Celtic Heroes Private.command" })
+                File.Delete(Path.Combine(dest, old));
             File.WriteAllText(Path.Combine(dest, "patch-state.json"), JsonSerializer.Serialize(new
             {
                 known.Build,
                 platform = platform.ToString(),
                 host,
                 httpPort,
+                relayPort = LocalRelay.Port,
                 kitVersion = KitVersion,
                 patchedUtc = DateTime.UtcNow,
                 patches = results,
                 patchedSha256 = Sha256(dll),
             }, new JsonSerializerOptions { WriteIndented = true }));
-
-            return launcher;
         }
     }
 
@@ -201,36 +203,6 @@ public static class FriendSetup
         var data = Directory.EnumerateDirectories(gameRoot, "*_Data").FirstOrDefault()
             ?? throw new InvalidOperationException($"no *_Data folder in {gameRoot}");
         return Path.Combine(data, "Managed", "Assembly-CSharp.dll");
-    }
-
-    private static string WriteLauncher(ClientPlatform platform, string dest)
-    {
-        if (platform == ClientPlatform.Mac)
-        {
-            var path = Path.Combine(dest, "Play Celtic Heroes Private.command");
-            File.WriteAllText(path, """
-                #!/bin/bash
-                # Starts the private copy from this folder: steam_appid.txt here tells Steam which game is running.
-                cd "$(dirname "$0")" || exit 1
-                pgrep -x steam_osx >/dev/null || { echo "Start Steam first, then run this again."; read -r; exit 1; }
-                exec "CelticHeroes.app/Contents/MacOS/Celtic Heroes"
-
-                """);
-            File.SetUnixFileMode(path, (UnixFileMode)0b111_101_101);
-            return path;
-        }
-        var exe = Directory.EnumerateFiles(Path.Combine(dest, "game"), "*.exe")
-            .FirstOrDefault(f => !Path.GetFileName(f).StartsWith("UnityCrashHandler", StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidOperationException("game executable not found in the copy");
-        var bat = Path.Combine(dest, "Play Celtic Heroes Private.bat");
-        File.WriteAllText(bat, $"""
-            @echo off
-            rem Starts the private copy with this folder as the working directory (steam_appid.txt tells Steam which game is running).
-            cd /d "%~dp0"
-            start "" "game\{Path.GetFileName(exe)}"
-
-            """);
-        return bat;
     }
 
     /// <summary>Steam's own folder: on Windows from the registry (HKCU\Software\Valve\Steam\SteamPath), else the default.</summary>
