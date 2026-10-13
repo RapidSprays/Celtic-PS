@@ -23,9 +23,20 @@ EXTRACTED="$HOME/CelticHeroesAnalysis/extracted/$BUILD"
 [[ -f "$EXTRACTED/balance-client.json" ]] || python3 "$REPO/scripts/extract-balance.py" "$BUILD"
 regen() { local out="$EXTRACTED/$1" script="$REPO/scripts/$2"
   if [[ ! -f "$out" || "$script" -nt "$out" || "$REPO/scripts/chdata.py" -nt "$out" ]]; then python3 "$script" "$BUILD" >/dev/null; fi; }
+# The real ground per zone (needs UnityPy in ~/CelticHeroesAnalysis/venv; skipped without it). NPCs are placed before
+# monster camps, which keep clear of them (docs/world-placement.md).
+VENV_PY="$HOME/CelticHeroesAnalysis/venv/bin/python"
+if [[ -x "$VENV_PY" ]] && [[ ! -f "$EXTRACTED/zone-worlds.json" || "$REPO/scripts/extract-zone-worlds.py" -nt "$EXTRACTED/zone-worlds.json" ]]; then
+  "$VENV_PY" "$REPO/scripts/extract-zone-worlds.py" "$BUILD" >/dev/null
+fi
 regen zone-points.json extract-zone-points.py
-regen zone-population.json gen-zone-population.py
+world_inputs_newer() { [[ "$EXTRACTED/zone-worlds.json" -nt "$EXTRACTED/$1" || "$REPO/scripts/worldplace.py" -nt "$EXTRACTED/$1" ]]; }
+if world_inputs_newer world.json; then python3 "$REPO/scripts/gen-world.py" "$BUILD" >/dev/null; fi
 regen world.json gen-world.py
+if world_inputs_newer zone-population.json || [[ "$EXTRACTED/world.json" -nt "$EXTRACTED/zone-population.json" ]]; then
+  python3 "$REPO/scripts/gen-zone-population.py" "$BUILD" >/dev/null
+fi
+regen zone-population.json gen-zone-population.py
 
 if [[ -n "$PUBLISH" ]]; then
   "$DOTNET" publish -c Release "$REPO/server/src/CH.Server" -o "$PUBLISH" >/dev/null

@@ -4,12 +4,16 @@ namespace CH.Server.Game;
 public sealed record Camp(int Anchor, float OffsetX, float OffsetZ, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float RoamRadius = 6f);
 
 /// <summary>A camp from scripts/gen-zone-population.py: absolute centre (y is a nearby walkable point's height).</summary>
-public sealed record GeneratedCamp(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float RoamRadius);
+public sealed record GeneratedCamp(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float RoamRadius)
+{
+    /// <summary>Each monster's home on walkable ground (docs/world-placement.md); empty → random points in the radius.</summary>
+    public IReadOnlyList<(float X, float Z)> Points { get; init; } = [];
+}
 
 /// <summary>
 /// Auto-population of monsters. The client ships no spawn positions or mob levels, so these camps are <b>approximated</b>:
 /// which mobs live in a zone comes from the zone's quest chain (kill objectives in text.db) and MobSets; levels follow
-/// quest order and star power; positions are offsets from the zone's real leystones. Placement is deterministic per zone
+/// quest order and star power; positions are on the zone's real walkable ground (docs/world-placement.md), or offsets from its leystones without that data. Placement is deterministic per zone
 /// so mobs stand in the same places after a restart. Named NPCs are placed by hand with GM commands instead.
 /// </summary>
 public static class ZonePopulation
@@ -56,32 +60,37 @@ public static class ZonePopulation
                 c.GetProperty("x").GetSingle(), c.GetProperty("y").GetSingle(), c.GetProperty("z").GetSingle(),
                 c.GetProperty("radius").GetSingle(), c.GetProperty("count").GetInt32(),
                 c.GetProperty("templates").EnumerateArray().Select(t => t.GetInt32()).ToArray(),
-                c.GetProperty("minLevel").GetInt32(), c.GetProperty("maxLevel").GetInt32(), c.GetProperty("roam").GetSingle())).ToArray();
+                c.GetProperty("minLevel").GetInt32(), c.GetProperty("maxLevel").GetInt32(), c.GetProperty("roam").GetSingle())
+            {
+                Points = c.TryGetProperty("points", out var pts)
+                    ? pts.EnumerateArray().Select(p => (p[0].GetSingle(), p[1].GetSingle())).ToList()
+                    : [],
+            }).ToArray();
         }
         return result;
     }
 
     /// <summary>
-    /// Builds the monsters for a zone: the hand-made camps when the zone has them, otherwise the generated ones.
-    /// Skips templates the client data doesn't have.
+    /// Builds the monsters for a zone: the generated camps when the zone has them (placed on the zone's real walkable
+    /// ground), otherwise the hand-made ones. Skips templates the client data doesn't have.
     /// </summary>
     public static List<Mob> Build(int zoneId, Balance balance, double now, IReadOnlyDictionary<int, GeneratedCamp[]>? generated = null)
     {
         var mobs = new List<Mob>();
         if (!balance.Zones.TryGetValue(zoneId, out var zone)) return mobs;
-        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam)>();
-        if (Camps.TryGetValue(zoneId, out var camps))
+        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam, IReadOnlyList<(float X, float Z)> Points)>();
+        if (generated is not null && generated.TryGetValue(zoneId, out var gen) && gen.Length > 0)
+        {
+            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius, c.Points)));
+        }
+        else if (Camps.TryGetValue(zoneId, out var camps))
         {
             foreach (var camp in camps)
             {
                 var anchor = zone.PlayerSpawns.FirstOrDefault(p => p.Id == camp.Anchor);
                 if (anchor is null) continue;
-                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius));
+                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius, []));
             }
-        }
-        else if (generated is not null && generated.TryGetValue(zoneId, out var gen))
-        {
-            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius)));
         }
         var rng = new Random(zoneId * 7919);
         var serverId = FirstAutoServerId + (uint)zoneId * 1000;
@@ -95,6 +104,7 @@ public static class ZonePopulation
                 var dist = Math.Sqrt(rng.NextDouble()) * camp.Radius;
                 var x = camp.X + (float)(Math.Cos(angle) * dist);
                 var z = camp.Z + (float)(Math.Sin(angle) * dist);
+                if (i < camp.Points.Count) (x, z) = camp.Points[i];
                 if (zone.Max.X - zone.Min.X > 20 && zone.Max.Z - zone.Min.Z > 20)
                 {
                     x = Math.Clamp(x, zone.Min.X + 5, zone.Max.X - 5);

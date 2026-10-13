@@ -15,6 +15,7 @@ import collections, json, math, os, re, sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 import chdata
+import worldplace
 
 build = sys.argv[1] if len(sys.argv) > 1 else "24928510"
 bal = chdata.balance(build)
@@ -182,6 +183,14 @@ def best_conv(spawn_icons, template):
 
 npcs, unplaced = [], 0
 ring = collections.Counter()
+# Real ground and world objects per zone (scripts/extract-zone-worlds.py; docs/world-placement.md).
+worlds = worldplace.load(build)
+taken = collections.defaultdict(list)  # zone → (x, z) of NPCs placed so far, to keep them apart
+by_object = collections.Counter()
+village_use = collections.Counter()
+
+def facing_to(x, z, tx, tz):
+    return (math.degrees(math.atan2(tx - x, tz - z)) + 360) % 360
 for key, coll in bal["SpawnIconInfoCollections"].items():
     if key == "$id": continue
     spawn_id = int(key)
@@ -214,13 +223,54 @@ for key, coll in bal["SpawnIconInfoCollections"].items():
             facing = 0.0
         else:
             ax, ay, az = anchor["Position"]
-            i = ring[anchor["Id"]]; ring[anchor["Id"]] += 1
-            radius = 7 + 2.5 * (i // 10)
-            angle = i * 36 + (i // 10) * 18
-            x = ax + radius * math.sin(math.radians(angle))
-            zz = az + radius * math.cos(math.radians(angle))
-            y = ay
-            facing = (angle + 180) % 360  # face the leystone
+            world, spot, y = worlds.get(zid), None, ay
+            # Beside the world object that fits the NPC (the miller by the mill, the captain by the boathouses), on
+            # walkable ground outside its footprint, facing it.
+            target = worldplace.npc_target(name)
+            # A leystone's own NPC ("Northern Peninsula Leystone") stands at that leystone.
+            if name.lower().endswith("leystone") and world and world.has_mask:
+                words = set(re.findall(r"[a-z]+", name.lower())) - {"leystone"}
+                own = max(z["PlayerSpawnPoints"], key=lambda p: len(words & set(re.findall(r"[a-z]+", chdata.leystone_name(p).lower()))), default=None)
+                if own and words & set(re.findall(r"[a-z]+", chdata.leystone_name(own).lower())):
+                    ox, oy, oz = own["Position"]
+                    spot = world.nearest_walkable(ox, oz, max_radius=12, min_radius=2, avoid=taken[zid], spacing=3)
+                    if spot:
+                        x, zz = spot
+                        facing = facing_to(x, zz, ox, oz)
+                        by_object[zid] += 1
+            if spot is None and world and world.has_mask and target:
+                for _, ox, oy, oz in world.find(target, near=(ax, az), within=220)[:6]:
+                    spot = world.nearest_walkable(ox, oz, max_radius=18, min_radius=1.5, avoid=taken[zid], spacing=3, toward=(ax, az))
+                    if spot:
+                        x, zz = spot
+                        facing = facing_to(x, zz, ox, oz)
+                        by_object[zid] += 1
+                        break
+            # Otherwise around the village: one NPC per building or village object near the leystone, the least used
+            # and nearest first.
+            if spot is None and world and world.has_mask:
+                village = world.find(worldplace.VILLAGE_OBJECTS, near=(ax, az), within=130)
+                village.sort(key=lambda o: (village_use[(zid, o[0], o[1], o[3])], math.hypot(o[1] - ax, o[3] - az)))
+                for oname, ox, oy, oz in village[:12]:
+                    spot = world.nearest_walkable(ox, oz, max_radius=14, min_radius=1.5, avoid=taken[zid], spacing=5, toward=(ax, az))
+                    if spot:
+                        village_use[(zid, oname, ox, oz)] += 1
+                        x, zz = spot
+                        facing = facing_to(x, zz, ax, az)
+                        break
+            if spot is None:
+                i = ring[anchor["Id"]]; ring[anchor["Id"]] += 1
+                radius = 7 + 2.5 * (i // 10)
+                angle = i * 36 + (i // 10) * 18
+                x = ax + radius * math.sin(math.radians(angle))
+                zz = az + radius * math.cos(math.radians(angle))
+                facing = (angle + 180) % 360  # face the leystone
+                if world and world.has_mask:  # onto walkable ground near that ring spot
+                    snapped = world.nearest_walkable(x, zz, max_radius=25, avoid=taken[zid], spacing=3)
+                    if snapped:
+                        x, zz = snapped
+                        facing = facing_to(x, zz, ax, az)
+            taken[zid].append((x, zz))
         npcs.append({"spawnId": spawn_id, "template": template, "name": name, "conversation": conv, "zone": zid,
                      "x": round(x, 2), "y": round(y, 2), "z": round(zz, 2), "direction": round(facing, 1),
                      "roles": sorted({i.get("Type") for i in icons})})
@@ -398,4 +448,5 @@ per_zone = collections.Counter(n["zone"] for n in npcs)
 print(f"quests: {len(quests)} ({sum(1 for q in quests.values() if q['giver'] is not None)} with a giver, "
       f"{sum(1 for q in quests.values() if q['zone'] is not None)} with a zone)")
 print(f"npcs: {len(npcs)} placed, {unplaced} without a zone; per zone: {dict(sorted(per_zone.items()))}")
+print(f"npcs beside a matching world object: {sum(by_object.values())}; per zone: {dict(sorted(by_object.items()))}")
 print(f"wrote {out}")
