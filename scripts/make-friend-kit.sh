@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
-# Build the kit friends use to join your server over Tailscale (docs/friends.md).
+# Build what friends need to join your server over Tailscale (docs/friends.md): one file per platform, with your server
+# address built in. Double-clicking it sets everything up the first time and launches the game every time after.
 #
 #   scripts/make-friend-kit.sh [--host <your Tailscale IP>]
 #
-# The kit holds only our setup tool (self-contained, no .NET needed), your server address and instructions. It holds
-# nothing of the game: each friend's tool copies and patches their own Steam install.
-# Output: ~/CelticHeroesAnalysis/friend-kit/CelticHeroesPrivateKit.zip (outside git).
+# Output in ~/CelticHeroesAnalysis/friend-kit/ (outside git):
+#   CelticHeroesPrivate-Mac.zip   "Celtic Heroes Private.app" (Apple Silicon and Intel)
+#   CelticHeroesPrivate.exe       Windows, once the Windows build is verified (KnownBuilds.cs)
+#   HOW-TO-JOIN.txt               the instructions to send with it
+# Nothing of the game is inside: each friend's copy is made from their own Steam install.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$HOME/CelticHeroesAnalysis/friend-kit"
-KIT="$OUT/CelticHeroesPrivateKit"
+WORK="$OUT/.build"
 export DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 
 HOST=""
@@ -26,83 +29,78 @@ if [[ -z "$HOST" ]]; then
 fi
 [[ -n "$HOST" ]] || { echo "No Tailscale address found. Start Tailscale, or pass --host <address>." >&2; exit 1; }
 
-rm -rf "$KIT"
-mkdir -p "$KIT"
-# The Max-button mod (patch P10) is embedded in the setup tool; build it first (needs the pinned client's Unity DLLs).
+rm -rf "$OUT" && mkdir -p "$WORK"
+# The client mod is embedded in the program; build it first (needs the pinned client's Unity DLLs).
 dotnet build -c Release "$REPO/server/tools/CH.ClientMods" >/dev/null
-for rid in osx-arm64 osx-x64; do
-  dir="$KIT/mac-${rid#osx-}"
-  dotnet publish "$REPO/server/tools/CH.Patcher" -c Release -r "$rid" --self-contained \
-    -p:PublishSingleFile=true -p:AssemblyName=CelticHeroesPrivateSetup -p:DebugType=none -o "$dir" >/dev/null
-  echo "$HOST" > "$dir/host.txt"
+publish() { # rid outdir
+  dotnet publish "$REPO/server/tools/CH.Patcher" -c Release -r "$1" --self-contained -p:PublishSingleFile=true \
+    -p:AssemblyName=CelticHeroesPrivate -p:DebugType=none -p:FriendHost="$HOST" -o "$2" >/dev/null
+}
+
+# ---- Mac: one app with both architectures; a tiny launcher picks the right one ----------------------------------
+APP="$WORK/Celtic Heroes Private.app"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+for arch in arm64 x64; do
+  publish "osx-$arch" "$WORK/osx-$arch"
+  mkdir -p "$APP/Contents/Resources/$arch"
+  cp "$WORK/osx-$arch/CelticHeroesPrivate" "$APP/Contents/Resources/$arch/"
 done
-# Windows joins the kit once the Windows build is verified (KnownBuilds.cs, docs/friends.md).
-if grep -q "ClientPlatform.Windows," "$REPO/server/tools/CH.Patcher/KnownBuilds.cs"; then
-  dotnet publish "$REPO/server/tools/CH.Patcher" -c Release -r win-x64 --self-contained \
-    -p:PublishSingleFile=true -p:AssemblyName=CelticHeroesPrivateSetup -p:DebugType=none -o "$KIT/windows" >/dev/null
-  echo "$HOST" > "$KIT/windows/host.txt"
-  cat > "$KIT/windows/Setup.bat" <<'BAT'
-@echo off
-cd /d "%~dp0"
-CelticHeroesPrivateSetup.exe setup
-pause
-BAT
-fi
-
-cat > "$KIT/Setup (Mac).command" <<'SH'
+cp "$REPO/server/tools/CH.Patcher/THIRD-PARTY-NOTICES.txt" "$APP/Contents/Resources/"
+cat > "$APP/Contents/MacOS/launcher" <<'SH'
 #!/bin/bash
-# Makes your private copy of Celtic Heroes from your own Steam install. Run it again any time to redo the copy.
-cd "$(dirname "$0")" || exit 1
-xattr -dr com.apple.quarantine . 2>/dev/null
-case "$(uname -m)" in arm64) dir=mac-arm64 ;; *) dir=mac-x64 ;; esac
-"./$dir/CelticHeroesPrivateSetup" setup
-echo
-read -r -p "Press Enter to close."
+# Celtic Heroes Private: runs the right build for this Mac. Output goes to ~/Library/Logs/CelticHeroesPrivate.log.
+here="$(cd "$(dirname "$0")/.." && pwd)"
+xattr -dr com.apple.quarantine "$here/.." 2>/dev/null
+case "$(uname -m)" in arm64) arch=arm64 ;; *) arch=x64 ;; esac
+exec "$here/Resources/$arch/CelticHeroesPrivate" play >> "$HOME/Library/Logs/CelticHeroesPrivate.log" 2>&1
 SH
-chmod +x "$KIT/Setup (Mac).command"
+chmod +x "$APP/Contents/MacOS/launcher"
+cat > "$APP/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>Celtic Heroes Private</string>
+  <key>CFBundleDisplayName</key><string>Celtic Heroes Private</string>
+  <key>CFBundleIdentifier</key><string>local.celticheroes.private.launcher</string>
+  <key>CFBundleExecutable</key><string>launcher</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleVersion</key><string>$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo 1)</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>LSMinimumSystemVersion</key><string>12.0</string>
+  <key>LSUIElement</key><true/>
+</dict>
+</plist>
+PLIST
+codesign --force --deep --sign - "$APP" 2>/dev/null
+(cd "$WORK" && ditto -c -k --keepParent "Celtic Heroes Private.app" "$OUT/CelticHeroesPrivate-Mac.zip")
 
-cat > "$KIT/README.txt" <<TXT
-Celtic Heroes private server: joining $HOST
+# ---- Windows: one exe (once the Windows build is verified) --------------------------------------------------------
+WINDOWS=0
+if grep -q "ClientPlatform.Windows," "$REPO/server/tools/CH.Patcher/KnownBuilds.cs"; then
+  publish win-x64 "$WORK/win-x64"
+  cp "$WORK/win-x64/CelticHeroesPrivate.exe" "$OUT/"
+  WINDOWS=1
+fi
+rm -rf "$WORK"
 
-You need:
-  1. Steam, with Celtic Heroes installed (it's free). Start it once, then quit it.
-  2. Tailscale (tailscale.com/download), logged in and connected to the host's network
-     (accept the share invite the host sent you).
+cat > "$OUT/HOW-TO-JOIN.txt" <<TXT
+Celtic Heroes, on my private server
 
-Mac:
-  Right-click "Setup (Mac).command" and choose Open (macOS asks because the kit isn't from the App Store).
-  It copies your Steam install of Celtic Heroes to ~/CelticHeroesPrivate and patches the copy to talk only to
-  the host's server. Your Steam install is not changed.
-  To play: start Steam, then open ~/CelticHeroesPrivate/"Play Celtic Heroes Private.command".
+1. Install Steam and Celtic Heroes (it's free). Start the game once, then quit it.
+2. Install Tailscale (tailscale.com/download), make an account and accept the invite I sent you.
+3. Run the file I sent:
+$( [[ $WINDOWS == 1 ]] && echo '   Windows: CelticHeroesPrivate.exe. If Windows warns, click "More info", then "Run anyway".' || echo '   Windows: not ready yet, coming soon.')
+   Mac: unzip CelticHeroesPrivate-Mac.zip and open "Celtic Heroes Private". If macOS says it can't check it,
+        open System Settings > Privacy & Security, click "Open Anyway", then open it again.
 
-Windows:
-  $( [[ -d "$KIT/windows" ]] && echo 'Open the windows folder and run Setup.bat ("More info" → "Run anyway" if Windows warns).
-  To play: start Steam, then run %LOCALAPPDATA%\CelticHeroesPrivate\"Play Celtic Heroes Private.bat".' || echo 'Not supported in this kit yet.')
+The first time it sets itself up (a minute or two), puts "Celtic Heroes Private" on your desktop and starts
+the game. After that, just use that shortcut. Keep Tailscale on while you play. Your normal Celtic Heroes
+in Steam isn't changed.
 
-First login: the username and password you type the first time become your account on this server.
-Commands in chat: .help, .who, .where, .zones   Whisper: w Name, message   Party chat: g message
-
-If Steam updates Celtic Heroes before you run the setup, the setup may say your version is different: ask the host
-for a new kit. Once your private copy exists, Steam updates don't affect it.
+The username and password you type the first time become your account on my server.
+Chat commands: .help  .who  .tree   Whisper: w Name, message   Party: g message
 TXT
 
-cat > "$KIT/THIRD-PARTY-NOTICES.txt" <<'TXT'
-CelticHeroesPrivateSetup includes:
-
-Mono.Cecil (https://github.com/jbevain/cecil), MIT License
-  Copyright (c) 2008 - 2015 Jb Evain
-  Copyright (c) 2008 - 2011 Novell, Inc.
-
-.NET runtime (https://github.com/dotnet/runtime), MIT License
-  Copyright (c) .NET Foundation and Contributors
-
-MIT License: Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction, including without
-limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
-Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
-TXT
-
-(cd "$OUT" && rm -f CelticHeroesPrivateKit.zip && zip -qry CelticHeroesPrivateKit.zip CelticHeroesPrivateKit)
-echo "Kit for $HOST: $OUT/CelticHeroesPrivateKit.zip ($(du -h "$OUT/CelticHeroesPrivateKit.zip" | cut -f1))"
+echo "Friend kit for $HOST in $OUT:"
+ls -lh "$OUT" | awk 'NR > 1 { print "  " $5 "  " $9, $10, $11 }'

@@ -34,19 +34,52 @@ public static class FriendSetup
                 default: Console.Error.WriteLine($"unknown option {args[i]}"); return 2;
             }
         }
-        host ??= ReadHostFile();
+        host ??= FriendHost();
         try
         {
+            var platform = forced ?? CurrentPlatform();
+            dest = Path.GetFullPath(dest ?? DefaultDestination(platform));
+            var launcher = Install(host, httpPort, platform, steamDir, dest, Console.WriteLine);
+            Console.WriteLine();
+            Console.WriteLine($"Done. Your private copy talks only to {host}.");
+            Console.WriteLine(Reachable(host!, httpPort)
+                ? "The server is reachable right now."
+                : $"Can't reach the server at {host}:{httpPort} right now: check Tailscale is connected and the host has the server running.");
+            Console.WriteLine($"To play: keep Steam running, then open \"{launcher}\".");
+            return 0;
+        }
+        catch (Exception ex) when (IsSetupError(ex))
+        {
+            Console.Error.WriteLine($"SETUP FAILED: {ex.Message}");
+            return 1;
+        }
+    }
+
+    public static bool IsSetupError(Exception ex) => ex is InvalidOperationException or IOException or PatchException or UnauthorizedAccessException;
+
+    public static ClientPlatform CurrentPlatform() => OperatingSystem.IsMacOS() ? ClientPlatform.Mac
+        : OperatingSystem.IsWindows() ? ClientPlatform.Windows
+        : throw new InvalidOperationException("Celtic Heroes runs on macOS and Windows only.");
+
+    /// <summary>
+    /// Identifies this kit: the program's own build (it carries the mods, the item list and the patch set). A private copy
+    /// made by another kit is redone, so friends get updates just by running the new program.
+    /// </summary>
+    public static string KitVersion => typeof(FriendSetup).Assembly.ManifestModule.ModuleVersionId.ToString("N");
+
+    /// <summary>
+    /// Makes (or remakes) the patched private copy in <paramref name="dest"/> and returns the file that starts it. Throws
+    /// <see cref="IsSetupError"/> exceptions with a message meant for the player.
+    /// </summary>
+    public static string Install(string? host, int httpPort, ClientPlatform platform, string? steamDir, string dest, Action<string> log)
+    {
+        {
             if (string.IsNullOrWhiteSpace(host) || !Regex.IsMatch(host, @"^[A-Za-z0-9.:\-\[\]]+$"))
-                throw new InvalidOperationException("No server address. Run with --host <the host's Tailscale IP>, or keep host.txt next to this program.");
-            var platform = forced ?? (OperatingSystem.IsMacOS() ? ClientPlatform.Mac
-                : OperatingSystem.IsWindows() ? ClientPlatform.Windows
-                : throw new InvalidOperationException("Celtic Heroes runs on macOS and Windows only."));
+                throw new InvalidOperationException("No server address. Ask the host for a new copy of this program.");
             var game = steamDir is not null ? Path.GetFullPath(steamDir) : FindSteamGame(platform)
                 ?? throw new InvalidOperationException("Celtic Heroes isn't installed in Steam. Install it (it's free), start it once, quit it, then run this again.");
             var source = platform == ClientPlatform.Mac ? Path.Combine(game, "CelticHeroes.app") : game;
-            dest = Path.GetFullPath(dest ?? DefaultDestination(platform));
-            Console.WriteLine($"Celtic Heroes found at {source}");
+            log($"Celtic Heroes found at {source}");
 
             // 1. The install must be a build this kit was verified against.
             var dllInSource = FindDll(source, platform);
@@ -55,7 +88,7 @@ public static class FriendSetup
                 ?? throw new InvalidOperationException(platform == ClientPlatform.Windows && KnownBuild.All.All(b => b.Platform != ClientPlatform.Windows)
                     ? "This kit doesn't support Windows yet. Ask the host for a kit with Windows support."
                     : "Your Celtic Heroes version is different from the one this kit was made for. Ask the host for an updated kit.");
-            Console.WriteLine($"Version check passed (build {known.Build}).");
+            log($"Version check passed (build {known.Build}).");
 
             // 2. Fresh copy. Only a folder this tool made before (it holds patch-state.json) is ever replaced.
             var copy = platform == ClientPlatform.Mac ? Path.Combine(dest, "CelticHeroes.app") : Path.Combine(dest, "game");
@@ -65,7 +98,7 @@ public static class FriendSetup
                 throw new InvalidOperationException("Refusing to write inside the Steam install.");
             if (Directory.Exists(copy)) Directory.Delete(copy, recursive: true);
             Directory.CreateDirectory(dest);
-            Console.WriteLine($"Copying the game to {copy} (a few GB, this takes a minute)...");
+            log($"Copying the game to {copy} (a few GB, this takes a minute)...");
             if (platform == ClientPlatform.Mac) Exec("ditto", source, copy);
             else CopyDirectory(source, copy);
 
@@ -113,44 +146,39 @@ public static class FriendSetup
                 platform = platform.ToString(),
                 host,
                 httpPort,
+                kitVersion = KitVersion,
                 patchedUtc = DateTime.UtcNow,
                 patches = results,
                 patchedSha256 = Sha256(dll),
             }, new JsonSerializerOptions { WriteIndented = true }));
 
-            Console.WriteLine();
-            Console.WriteLine($"Done. Your private copy talks only to {host}.");
-            Console.WriteLine(Reachable(host, httpPort)
-                ? "The server is reachable right now."
-                : $"Can't reach the server at {host}:{httpPort} right now: check Tailscale is connected and the host has the server running.");
-            Console.WriteLine($"To play: keep Steam running, then open \"{launcher}\".");
-            return 0;
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or PatchException or UnauthorizedAccessException)
-        {
-            Console.Error.WriteLine($"SETUP FAILED: {ex.Message}");
-            return 1;
+            return launcher;
         }
     }
 
-    private static string? ReadHostFile()
+    /// <summary>The server address: host.txt next to the program if present, else the one built in (make-friend-kit.sh).</summary>
+    public static string? FriendHost()
     {
         var file = Path.Combine(AppContext.BaseDirectory, "host.txt");
-        return File.Exists(file) ? File.ReadAllText(file).Trim() : null;
+        if (File.Exists(file)) return File.ReadAllText(file).Trim();
+        var built = typeof(FriendSetup).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+            .Cast<System.Reflection.AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "FriendHost")?.Value;
+        return string.IsNullOrWhiteSpace(built) ? null : built;
     }
 
-    private static string DefaultDestination(ClientPlatform platform) => platform == ClientPlatform.Mac
+    public static string DefaultDestination(ClientPlatform platform) => platform == ClientPlatform.Mac
         ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "CelticHeroesPrivate")
         : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CelticHeroesPrivate");
 
     /// <summary>Steam's default folder plus every library listed in libraryfolders.vdf.</summary>
-    private static string? FindSteamGame(ClientPlatform platform)
+    public static string? FindSteamGame(ClientPlatform platform)
     {
         var roots = new List<string>();
         if (platform == ClientPlatform.Mac)
             roots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Steam"));
         else
         {
+            if (SteamRoot(platform) is { } registered) roots.Add(registered);
             roots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam"));
             roots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Steam"));
         }
@@ -203,7 +231,17 @@ public static class FriendSetup
         return bat;
     }
 
-    private static bool Reachable(string host, int port)
+    /// <summary>Steam's own folder: on Windows from the registry (HKCU\Software\Valve\Steam\SteamPath), else the default.</summary>
+    public static string? SteamRoot(ClientPlatform platform)
+    {
+        if (platform == ClientPlatform.Mac)
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", "Steam");
+        if (!OperatingSystem.IsWindows()) return null;
+        var path = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
+        return string.IsNullOrEmpty(path) ? null : Path.GetFullPath(path.Replace('/', '\\'));
+    }
+
+    public static bool Reachable(string host, int port)
     {
         try
         {

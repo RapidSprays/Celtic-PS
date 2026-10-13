@@ -12,11 +12,16 @@ and patches *their own* install. The kit contains only our setup tool, your addr
 1. Install Tailscale on this Mac and log in.
 2. Share this Mac with each friend: Tailscale admin console → Machines → this Mac → Share, and send them the link.
    Sharing gives them this one machine only, not your whole network.
-3. Build the kit once (and again if your Tailscale IP or the game build changes):
+3. Build the friend files once (again if your Tailscale IP changes, or to send friends an update):
    ```bash
    scripts/make-friend-kit.sh
    ```
-   It writes `~/CelticHeroesAnalysis/friend-kit/CelticHeroesPrivateKit.zip`. Send that zip to your friends.
+   It writes to `~/CelticHeroesAnalysis/friend-kit/`:
+   - `CelticHeroesPrivate-Mac.zip`
+   - `CelticHeroesPrivate.exe` (once Windows is verified)
+   - `HOW-TO-JOIN.txt` (the instructions to paste to friends)
+
+   Each is one self-contained file with your server address built in. Double-clicking it does everything: the first time it makes and patches the player's private copy from their own Steam install, installs itself and puts a **Celtic Heroes Private** shortcut on their desktop. Every time, it starts Steam if needed, waits for Steam to sign in, checks your server is reachable (with plain messages when Tailscale is off or the server is down) and launches the game. Running a newer file redoes the copy, so updates need no extra steps (`CH.Patcher/FriendApp.cs`).
 4. Run the server in Tailscale mode, with your own client as usual:
    ```bash
    scripts/run-private.sh --tailscale
@@ -51,16 +56,15 @@ It then starts by itself whenever you log in. While it runs, it:
 Friends can play whenever this Mac is on, awake, online and signed in to Tailscale.
 
 ## Your friends
+Send them `HOW-TO-JOIN.txt` and their file. In short:
+1. Install Steam and Celtic Heroes (free). Start it once, then quit.
+2. Install Tailscale, make an account and accept your share invite.
+3. Run the file:
+   - **Windows:** `CelticHeroesPrivate.exe`. It isn't code-signed, so SmartScreen asks: More info → Run anyway.
+   - **Mac:** unzip and open **Celtic Heroes Private**. On first open, macOS may need System Settings → Privacy & Security → Open Anyway.
+4. From then on, use the **Celtic Heroes Private** desktop shortcut.
 
-1. Install Steam, then Celtic Heroes (free). Start it once, then quit it.
-2. Install Tailscale, log in, and accept your share link.
-3. Unzip the kit.
-   - **Mac:** right-click `Setup (Mac).command` → Open.
-   - **Windows:** run `windows\Setup.bat`. This only works once Windows support is in the kit (see below).
-4. To play, start Steam, then open `Play Celtic Heroes Private` from:
-   - Mac: `~/CelticHeroesPrivate`
-   - Windows: `%LOCALAPPDATA%\CelticHeroesPrivate`
-5. The first username and password they type become their account on your server.
+Their private copy lives in `~/CelticHeroesPrivate` (Mac) or `%LOCALAPPDATA%\CelticHeroesPrivate` (Windows). The launcher logs to `~/Library/Logs/CelticHeroesPrivate.log` on a Mac. The first username and password they type become their account on your server.
 
 ## Game version
 

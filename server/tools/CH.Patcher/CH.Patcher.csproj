@@ -18,6 +18,11 @@
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../content/custom-items.json" LogicalName="custom-items.json" />
+    <EmbeddedResource Include="THIRD-PARTY-NOTICES.txt" LogicalName="THIRD-PARTY-NOTICES.txt" />
+  </ItemGroup>
+  <!-- make-friend-kit.sh builds the host's server address in (-p:FriendHost=…): the kit is then a single file. -->
+  <ItemGroup Condition="'$(FriendHost)' != ''">
+    <AssemblyMetadata Include="FriendHost" Value="$(FriendHost)" />
   </ItemGroup>
   <ItemGroup Condition="Exists('$(ClientModsDll)')">
     <EmbeddedResource Include="$(ClientModsDll)" LogicalName="CHPrivateMods.dll" />
