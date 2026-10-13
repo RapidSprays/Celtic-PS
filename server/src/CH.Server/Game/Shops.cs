@@ -29,14 +29,39 @@ public sealed class ShopCatalog
 
     private readonly Balance _balance;
     private readonly Dictionary<int, IReadOnlyList<int>> _stock = new();
+    private readonly IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>> _extras;
 
     public IReadOnlyDictionary<int, ShopInfo> Shops { get; }
 
-    public ShopCatalog(Balance balance, IReadOnlyDictionary<int, ShopInfo> shops)
+    public ShopCatalog(Balance balance, IReadOnlyDictionary<int, ShopInfo> shops, IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>>? extras = null)
     {
         _balance = balance;
         Shops = shops;
+        _extras = extras ?? new Dictionary<int, IReadOnlyDictionary<int, int>>();
     }
+
+    /// <summary>
+    /// Our own fixed-price additions (server/content/shop-extras.json): shop id → (item template → price). They are added
+    /// to the generated stock and sell at exactly that price.
+    /// </summary>
+    public static IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>> LoadExtras(string? path)
+    {
+        var extras = new Dictionary<int, Dictionary<int, int>>();
+        if (path is null || !File.Exists(path)) return new Dictionary<int, IReadOnlyDictionary<int, int>>();
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
+        foreach (var group in doc.RootElement.GetProperty("extras").EnumerateArray())
+            foreach (var shop in group.GetProperty("shops").EnumerateArray().Select(s => s.GetInt32()))
+                foreach (var item in group.GetProperty("items").EnumerateArray())
+                {
+                    if (!extras.TryGetValue(shop, out var prices)) extras[shop] = prices = new();
+                    prices[item.GetProperty("id").GetInt32()] = item.GetProperty("price").GetInt32();
+                }
+        return extras.ToDictionary(kv => kv.Key, kv => (IReadOnlyDictionary<int, int>)kv.Value);
+    }
+
+    /// <summary>The price in this shop: a fixed extra price if it has one, otherwise <see cref="BuyPrice(ItemInfo)"/>.</summary>
+    public int BuyPrice(int shopId, ItemInfo item) =>
+        _extras.TryGetValue(shopId, out var prices) && prices.TryGetValue(item.Id, out var price) ? price : BuyPrice(item);
 
     public static IReadOnlyDictionary<int, ShopInfo> Load(string? worldPath)
     {
@@ -105,7 +130,7 @@ public sealed class ShopCatalog
                                                                     && i.StarLevel < 0 && InBand(i) && ForClass(i)), 24)).ToList(),
         };
         if (shop.Category == "potion") pick = Potions(items, hi).ToList();
-        var result = pick.Select(i => i.Id).Distinct().ToList();
+        var result = pick.Select(i => i.Id).Concat(_extras.GetValueOrDefault(shopId)?.Keys.Where(_balance.Items.ContainsKey) ?? []).Distinct().ToList();
         _stock[shopId] = result;
         return result;
 

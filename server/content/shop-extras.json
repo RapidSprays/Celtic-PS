@@ -1,0 +1,13 @@
+{
+ "_comment": "Our own additions to merchant stock, at fixed prices (docs/economy-notes.md). shops: the shop ids one vendor opens (one per class).",
+ "extras": [
+  {
+   "vendor": "[Skill Merchant] Glamora the Warrior (Highshore Village, Lir's Reach)",
+   "shops": [5, 1031, 1036, 1041, 1046, 1051, 1056],
+   "items": [
+    {"id": 34781, "name": "Sigils of Health Crate", "price": 100000},
+    {"id": 34782, "name": "Sigils of Energy Crate", "price": 100000}
+   ]
+  }
+ ]
+}

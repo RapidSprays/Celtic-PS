@@ -330,6 +330,54 @@ public sealed class ZoneTests : IDisposable
     }
 
     [Fact]
+    public async Task Glamora_in_Highshore_sells_sigil_crates_for_100k()
+    {
+        if (!File.Exists(BalancePath) || !File.Exists(WorldPath)) return;
+        using var world = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(WorldPath));
+        var glamora = world.RootElement.GetProperty("npcs").EnumerateArray()
+            .First(n => n.GetProperty("conversation").GetInt32() == 528).GetProperty("template").GetInt32();
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        await using var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance);
+        using var client = new CH.FakeClient.FakeClient();
+        client.Connect("127.0.0.1", host.Game.Port);
+        client.VersionCheck();
+        client.Login("crates");
+        var id = client.CreateCharacter("Niamh", @class: 3).CharacterId; // a Mage: Glamora's Mage manuals shop
+        client.StartGame(id, "Niamh");
+        client.FinishZoning();
+        client.Send(Opcode.GeneralChat, new ChatMessage(ChatChannel.Local, "", ".gold 150000").WriteFromClient);
+        var coins = InventoryWithMoney.Read(client.Expect(Opcode.InventoryUpdate)).Coins;
+
+        foreach (var shopId in new[] { 5, 1031, 1036, 1041, 1046, 1051, 1056 })
+        {
+            client.Send(Opcode.RequestShop, b => { b.WriteVariableInt32(glamora); b.WriteVariableInt32(shopId); b.WriteVariableInt32(0); });
+            var m = client.Expect(Opcode.RequestShopReply);
+            m.ReadByte();
+            if (m.ReadByte() == 1) { m.ReadVariableInt32(); m.ReadVariableInt32(); }
+            InventoryWithMoney.Read(m);
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) { m.ReadVariableInt32(); m.ReadVariableInt32(); m.ReadVariableInt32(); }
+            var prices = new Dictionary<int, int>();
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++) { var t = m.ReadVariableInt32(); prices[t] = m.ReadVariableInt32(); m.ReadVariableInt32(); }
+            Assert.Equal(100_000, prices[34781]);
+            Assert.Equal(100_000, prices[34782]);
+        }
+
+        // Buying one costs exactly 100,000; a second can't be afforded.
+        void Buy(int template) => client.Send(Opcode.PurchaseItem, b =>
+        {
+            b.WriteVariableInt32(glamora); b.WriteVariableInt32(1041); b.WriteVariableInt32(template); b.WriteVariableInt32(1); b.WriteVariableInt32(0);
+        });
+        Buy(34782);
+        var bought = client.Expect(Opcode.RequestShopReply);
+        bought.ReadByte(); bought.ReadByte();
+        var after = InventoryWithMoney.Read(bought);
+        Assert.Equal(coins - 100_000, after.Coins);
+        Assert.Contains(after.Items, i => i.TemplateId == 34782);
+        Buy(34781);
+        Assert.Contains("enough gold", client.Expect(Opcode.SimpleMessageForThePlayer).ReadString());
+    }
+
+    [Fact]
     public async Task The_bank_stores_and_returns_items()
     {
         if (!File.Exists(BalancePath)) return;

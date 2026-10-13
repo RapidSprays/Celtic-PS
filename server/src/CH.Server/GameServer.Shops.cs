@@ -62,10 +62,10 @@ public sealed partial class GameServer
     {
         if (!_shops.Stock(shopId).Contains(template) || !_balance.Items.TryGetValue(template, out var item)) return "That isn't for sale here.";
         quantity = Math.Clamp(quantity, 1, item.Stackable ? 100 : 10);
-        var cost = _shops.BuyPrice(item) * quantity;
+        var cost = (long)_shops.BuyPrice(shopId, item) * quantity;
         var coins = _store.GetProgress(s.Character!.Id).Coins;
         if (cost > coins) return "You don't have enough gold.";
-        _store.AddCurrency(s.Character.Id, -cost, 0);
+        _store.AddCurrency(s.Character.Id, -(int)cost, 0); // cost <= coins, so it fits
         GrantItem(s.Character.Id, template, quantity);
         _log.LogInformation("{Name} bought {Qty} × {Item} for {Cost}", s.Name, quantity, item.Name, cost);
         return null;
@@ -115,7 +115,7 @@ public sealed partial class GameServer
             foreach (var item in priced)
             {
                 b.WriteVariableInt32(item!.Id);
-                b.WriteVariableInt32(stock.Contains(item.Id) ? _shops.BuyPrice(item) : 0);
+                b.WriteVariableInt32(stock.Contains(item.Id) ? _shops.BuyPrice(shopId, item) : 0);
                 b.WriteVariableInt32(_shops.SellPrice(item));
             }
         });

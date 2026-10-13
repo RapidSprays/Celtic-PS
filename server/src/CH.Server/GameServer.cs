@@ -47,7 +47,7 @@ public sealed partial class GameServer : IDisposable
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
         _loot = new LootTable(balance);
         _quests = QuestBook.Load(options.WorldPath);
-        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath));
+        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath));
         _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
         _tree = PassiveTree.Load(options.PassiveTreePath);
         if (_tree.IsLoaded) log.LogInformation("Passive tree: {Nodes} nodes", _tree.Nodes.Count);
