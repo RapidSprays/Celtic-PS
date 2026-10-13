@@ -13,8 +13,8 @@ public sealed class PersistenceTests : IDisposable
     [Fact]
     public void Migrations_apply_once_and_record_schema_version()
     {
-        using (var store = new GameStore(Db)) Assert.Equal(13, store.SchemaVersion);
-        using (var again = new GameStore(Db)) Assert.Equal(13, again.SchemaVersion);
+        using (var store = new GameStore(Db)) Assert.Equal(14, store.SchemaVersion);
+        using (var again = new GameStore(Db)) Assert.Equal(14, again.SchemaVersion);
     }
 
     [Fact]

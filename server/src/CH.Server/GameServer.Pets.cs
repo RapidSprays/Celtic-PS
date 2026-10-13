@@ -49,9 +49,10 @@ public sealed partial class GameServer
     {
         var now = NetTime.Now;
         var pet = EquippedPet(s);
-        var before = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id) || Pets.MountEffects.Contains(e.Info.Id))
+        var before = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id) || Pets.MountEffects.Contains(e.Info.Id) || e.DisplayOnly)
             .Select(e => (e.Info.Id, e.LevelIndex)).OrderBy(i => i).ToList();
         UpdateMountEffect(s);
+        UpdateGearRegenEffects(s);
         if (pet is null)
         {
             s.Effects.RemoveAll(e => Pets.AllPetEffects.Contains(e.Info.Id));
@@ -71,7 +72,7 @@ public sealed partial class GameServer
             if (s.Effects.Any(e => Pets.IsFedEffect(e.Info.Id))) s.Effects.RemoveAll(e => e.Info.Id == hungry);
             else if (s.Effects.All(e => e.Info.Id != hungry) && NewEffect(hungry, 0, now + HungryShownSeconds) is { } h) s.Effects.Add(h);
         }
-        var after = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id) || Pets.MountEffects.Contains(e.Info.Id))
+        var after = s.Effects.Where(e => Pets.AllPetEffects.Contains(e.Info.Id) || Pets.MountEffects.Contains(e.Info.Id) || e.DisplayOnly)
             .Select(e => (e.Info.Id, e.LevelIndex)).OrderBy(i => i).ToList();
         if (send && !before.SequenceEqual(after)) SendEffects(s);
         SendSkillToggles(s);

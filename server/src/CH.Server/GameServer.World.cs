@@ -332,10 +332,13 @@ public sealed partial class GameServer
             var outOfCombat = now - s.LastCombatAt > OutOfCombatSeconds;
             var m = Modifiers(s);
             var tree = s.Sheet!.Tree;
-            var restHealth = outOfCombat && !tree.Has(PassiveTree.LifeTap) ? Math.Max(1, s.MaxHealth / 20) : 0;
-            var health = Math.Min(s.MaxHealth, s.Health + restHealth + m.HealthRegen + (int)(s.MaxHealth * tree["healthRegenPct"] / 100));
-            var energy = Math.Min(s.MaxEnergy, s.Energy + (outOfCombat ? Math.Max(1, s.MaxEnergy / 10) : 1) + m.EnergyRegen
-                + (int)(s.MaxEnergy * tree["energyRegenPct"] / 100));
+            var gear = s.Sheet.GearRegenPerTick;
+            // Out of combat: the base rest regen, sigils, and out-of-combat gear (flutes, lutes…). Other gear regen always applies.
+            var restHealth = outOfCombat && !tree.Has(PassiveTree.LifeTap)
+                ? Math.Max(1, s.MaxHealth / 20) + s.SigilsOfHealth * Sigils.RegenPerSigil + gear.HealthOutOfCombat : 0;
+            var restEnergy = outOfCombat ? Math.Max(1, s.MaxEnergy / 10) + s.SigilsOfEnergy * Sigils.RegenPerSigil + gear.EnergyOutOfCombat : 1;
+            var health = Math.Min(s.MaxHealth, s.Health + restHealth + gear.Health + m.HealthRegen + (int)(s.MaxHealth * tree["healthRegenPct"] / 100));
+            var energy = Math.Min(s.MaxEnergy, s.Energy + restEnergy + gear.Energy + m.EnergyRegen + (int)(s.MaxEnergy * tree["energyRegenPct"] / 100));
             if (health != s.Health || energy != s.Energy)
             {
                 s.Health = health;

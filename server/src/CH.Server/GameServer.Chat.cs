@@ -428,6 +428,7 @@ public sealed partial class GameServer
                     Tell(s, "Usage: .give <item id or name> [qty]. Try .finditem first.");
                     break;
                 }
+                if (TryGrantSigils(s.Character!.Id, info.Id, qty)) break;
                 // Stackable items join an existing stack; everything else is one entry per item.
                 var stack = info.Stackable ? s.Sheet!.Backpack.FirstOrDefault(i => i.TemplateId == info.Id) : null;
                 if (stack is not null) _store.SetItemQuantity(stack.Id, stack.Quantity + qty);

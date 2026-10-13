@@ -91,6 +91,7 @@ public sealed partial class GameServer
     /// <summary>Adds items to the backpack: stackable ones join an existing stack, others get one entry each.</summary>
     private void GrantItem(long characterId, int templateId, int quantity)
     {
+        if (TryGrantSigils(characterId, templateId, quantity)) return; // applied, never in the backpack
         var info = _balance.Items.GetValueOrDefault(templateId);
         if (info is { Stackable: true })
         {

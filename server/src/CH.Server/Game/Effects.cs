@@ -24,6 +24,9 @@ public sealed class ActiveEffect
     public double NextTickAt { get; set; }
     public object? Caster { get; init; }
 
+    /// <summary>Shown to the client only (gear regen's permanent icons); the server applies the real amounts itself.</summary>
+    public bool DisplayOnly { get; init; }
+
     /// <summary>Remaining energy-shield absorption, for the shield types.</summary>
     public int ShieldRemaining { get; set; }
 

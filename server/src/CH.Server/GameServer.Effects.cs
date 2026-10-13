@@ -16,7 +16,7 @@ public sealed partial class GameServer
     private EffectModifiers Modifiers(Session s)
     {
         var sheet = s.Sheet!;
-        return EffectModifiers.From(s.Effects, sheet.MaxHealth, sheet.MaxEnergy, sheet.Armour, sheet.Defence, sheet.Attack);
+        return EffectModifiers.From(s.Effects.Where(e => !e.DisplayOnly), sheet.MaxHealth, sheet.MaxEnergy, sheet.Armour, sheet.Defence, sheet.Attack);
     }
 
     /// <summary>

@@ -72,6 +72,17 @@ public sealed class CharacterSheet
             * (1 + t["defencePct"] / 100));
     }
 
+    /// <summary>Regen per tick from everything equipped (mount and pet included): always, and out of combat only.</summary>
+    public (int Health, int Energy, int HealthOutOfCombat, int EnergyOutOfCombat) GearRegenPerTick
+    {
+        get
+        {
+            var all = Gear.Select(GearRegen.Of).Where(r => r.Any).ToList();
+            return (all.Where(r => !r.OutOfCombatOnly).Sum(r => r.Health), all.Where(r => !r.OutOfCombatOnly).Sum(r => r.Energy),
+                all.Where(r => r.OutOfCombatOnly).Sum(r => r.Health), all.Where(r => r.OutOfCombatOnly).Sum(r => r.Energy));
+        }
+    }
+
     /// <summary>The character's passive-tree bonuses (docs/passive-tree.md).</summary>
     public TreeBonuses Tree { get; }
 

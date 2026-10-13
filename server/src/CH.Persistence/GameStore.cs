@@ -237,6 +237,10 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, node_id)
         );
         """,
+        """
+        ALTER TABLE characters ADD COLUMN sigils_health INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN sigils_energy INTEGER NOT NULL DEFAULT 0;
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -521,6 +525,18 @@ public sealed class GameStore : IDisposable
     }
 
     /// <summary>Abilities learnt from trainers (LEARN_ABILITY).</summary>
+    /// <summary>Sigils of Health and Energy applied to the character (they never sit in the inventory).</summary>
+    public (int Health, int Energy) GetSigils(long characterId)
+    {
+        using var cmd = Command("SELECT sigils_health, sigils_energy FROM characters WHERE id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1)) : (0, 0);
+    }
+
+    public void AddSigils(long characterId, int health, int energy) =>
+        Exec("UPDATE characters SET sigils_health = sigils_health + $h, sigils_energy = sigils_energy + $e WHERE id = $c", null,
+            ("$c", characterId), ("$h", health), ("$e", energy));
+
     /// <summary>Passive-tree nodes the character has taken (docs/passive-tree.md).</summary>
     public IReadOnlyList<int> ListTreeNodes(long characterId)
     {

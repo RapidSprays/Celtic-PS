@@ -357,7 +357,7 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.SigilsCount:
                 // Reply: varint sigilsOfEnergy, varint sigilsOfHealth (NetworkManager.cs:1413-1426).
-                Send(s, Opcode.SigilsCount, b => { b.WriteVariableInt32(0); b.WriteVariableInt32(0); });
+                if (InWorld(s)) SendSigils(s);
                 break;
 
             case Opcode.RequestSpecialOffers:
@@ -484,6 +484,7 @@ public sealed partial class GameServer : IDisposable
         s.NextRegenAt = NetTime.Now + RegenIntervalSeconds;
         s.Teleports.Clear();
         s.Teleports.UnionWith(_store.ListTeleports(character.Id));
+        (s.SigilsOfHealth, s.SigilsOfEnergy) = _store.GetSigils(character.Id);
         LoadQuests(s);
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), CompletedQuestIds(s), ActiveQuests(s)).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
@@ -595,6 +596,8 @@ public sealed partial class GameServer : IDisposable
         public Dictionary<int, QuestState> Quests { get; } = new();
         public int? PetTemplate { get; set; }
         public string? TreeLayoutVersion { get; set; }
+        public int SigilsOfHealth { get; set; }
+        public int SigilsOfEnergy { get; set; }
 
         public int CharacterId => (int)(Character?.Id ?? 0);
         public string Name => Character?.Name ?? Account?.Username ?? "?";
