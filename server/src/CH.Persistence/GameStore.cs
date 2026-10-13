@@ -249,6 +249,10 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, ability_id)
         );
         """,
+        """
+        ALTER TABLE characters ADD COLUMN backpack_expansions INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN bank_expansions INTEGER NOT NULL DEFAULT 0;
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -536,6 +540,37 @@ public sealed class GameStore : IDisposable
     }
 
     /// <summary>Abilities learnt from trainers (LEARN_ABILITY).</summary>
+    /// <summary>Backpack and Bank Expansions applied to the character (they never sit in the inventory).</summary>
+    public (int Backpack, int Bank) GetExpansions(long characterId)
+    {
+        using var cmd = Command("SELECT backpack_expansions, bank_expansions FROM characters WHERE id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1)) : (0, 0);
+    }
+
+    public void AddExpansions(long characterId, int backpack, int bank) =>
+        Exec("UPDATE characters SET backpack_expansions = backpack_expansions + $p, bank_expansions = bank_expansions + $b WHERE id = $c", null,
+            ("$c", characterId), ("$p", backpack), ("$b", bank));
+
+    /// <summary>Barbershop: face, skin colour, hair, hair colour, face accessory and its colour, height.</summary>
+    public void UpdateAppearance(long characterId, int face, int skinColour, int hair, int hairColour, int faceAccessory, int faceAccessoryColour, float scale) =>
+        Exec("UPDATE characters SET face = $f, skin_colour = $sc, hair = $h, hair_colour = $hc, face_acc = $fa, face_acc_col = $fac, scale = $s WHERE id = $c", null,
+            ("$c", characterId), ("$f", face), ("$sc", skinColour), ("$h", hair), ("$hc", hairColour), ("$fa", faceAccessory), ("$fac", faceAccessoryColour), ("$s", scale));
+
+    /// <summary>Deletes a character and, through the foreign keys, everything that belongs to it.</summary>
+    public bool DeleteCharacter(long accountId, long characterId)
+    {
+        using var tx = _db.BeginTransaction();
+        using (var check = Command("SELECT COUNT(*) FROM characters WHERE id = $c AND account_id = $a", tx, ("$c", characterId), ("$a", accountId)))
+            if (Convert.ToInt32(check.ExecuteScalar()) != 1) return false;
+        // items and skills predate ON DELETE CASCADE; the other tables cascade.
+        Exec("DELETE FROM items WHERE character_id = $c", tx, ("$c", characterId));
+        Exec("DELETE FROM skills WHERE character_id = $c", tx, ("$c", characterId));
+        Exec("DELETE FROM characters WHERE id = $c", tx, ("$c", characterId));
+        tx.Commit();
+        return true;
+    }
+
     /// <summary>Sigils of Health and Energy applied to the character (they never sit in the inventory).</summary>
     public (int Health, int Energy) GetSigils(long characterId)
     {

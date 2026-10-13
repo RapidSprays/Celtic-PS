@@ -198,6 +198,21 @@ public sealed partial class GameServer : IDisposable
                 if (RequireAccount(s)) OnCreateCharacter(s, CreateCharacterRequest.Read(msg));
                 break;
 
+            case Opcode.DeleteCharacter:
+                if (RequireAccount(s))
+                {
+                    var deleteName = msg.ReadString();
+                    OnDeleteCharacter(s, deleteName, msg.ReadVariableUInt32());
+                }
+                break;
+
+            case Opcode.BarbershopMessage:
+                if (InWorld(s)) OnBarbershop(s, msg);
+                break;
+
+            case Opcode.SettingsChangedMessage:
+                break; // phone notification settings and push tokens: nothing to do on this server
+
             case Opcode.RequestTweak:
                 Send(s, Opcode.TweakReply, new TweakReply([]).Write);
                 break;

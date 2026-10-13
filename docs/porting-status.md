@@ -10,9 +10,12 @@ What's still to port of the client's feature set, from the client message list (
 - [x] Monster special attacks: elites and bosses, with a themed client skill when one matches (invented)
 
 ## 2. Character and quality of life
-- [ ] Delete character, logout back to character select
-- [ ] Barbershop and appearance change
-- [ ] Settings sync, permanent buffs (bag expansions), block list
+- [x] Delete character (logout was already handled)
+- [x] Barbershop: free; others see the new look
+- [x] Backpack and Bank Expansions, applied on receipt. Bank +10 slots each; backpack +5 carry before over-encumbrance, counted but no effect yet, since encumbrance isn't penalised
+- [x] Settings report: phone push settings only, acknowledged and ignored
+- Not needed: CustomiseCharacter (the client never sends it); permanent buff type 19 is extra action-bar slots, and no item grants it
+- Moved to §4: the block list (it shares the friends list's social data)
 
 ## 3. Gathering and crafting
 - [ ] Fishing
@@ -20,7 +23,7 @@ What's still to port of the client's feature set, from the client message list (
 - [ ] Cooking and crafting (185 client recipes)
 
 ## 4. Social
-- [ ] Friends list
+- [ ] Friends list and block list
 - [ ] Mail
 - [ ] Clans, clan bank, Clan Battleground
 

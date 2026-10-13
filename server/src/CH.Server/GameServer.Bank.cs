@@ -50,7 +50,7 @@ public sealed partial class GameServer
         if (item is null) return toBank ? "That item isn't in your backpack." : "That item isn't in your bank.";
         var stackable = _balance.Items.GetValueOrDefault(item.TemplateId)?.Stackable ?? false;
         var target = stackable ? items.FirstOrDefault(i => i.Slot == to && i.TemplateId == item.TemplateId) : null;
-        if (toBank && target is null && items.Count(i => i.Slot == ItemRecord.Bank) >= CharacterSheet.BankSlots) return "Your bank is full.";
+        if (toBank && target is null && items.Count(i => i.Slot == ItemRecord.Bank) >= s.Sheet!.BankLimit) return "Your bank is full.";
         quantity = Math.Clamp(quantity, 1, item.Quantity);
         _store.Atomically(() =>
         {

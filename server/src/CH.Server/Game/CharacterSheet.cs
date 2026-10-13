@@ -222,7 +222,7 @@ public sealed class CharacterSheet
             Attack = Attack, Defence = Defence, AttackSpeed = AttackSpeed, WeaponDamage = WeaponDamage, ArmourValue = Armour,
             Vitality = vit, Strength = str, Focus = foc, Dexterity = dex, Encumbrance = Encumbrance,
             SkillPoints = SkillPoints, AttributePoints = AttributePoints, Concentration = 50, MaxConcentration = 50,
-            AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, SoloBankItemLimit = BankSlots, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
+            AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, SoloBankItemLimit = BankLimit, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
             CompiledAbilities = Abilities(),
             CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, EffectiveRank(s.SkillId, s.Level))).ToList(),
             Avoidances = Gear.SelectMany(g => g.AvoidanceBonuses).GroupBy(a => a.Id).Select(g => new IdValue(g.Key, g.Sum(a => a.Amount))).ToList(),
@@ -300,6 +300,13 @@ public sealed class CharacterSheet
 
     /// <summary>Personal bank capacity (stats block soloBankItemLimit). <b>Approximated.</b></summary>
     public const int BankSlots = 100;
+
+    /// <summary>Bank Expansions and Backpack Expansions applied to this character (GameServer.Character).</summary>
+    public int BankExpansions { get; init; }
+    public int BackpackExpansions { get; init; }
+
+    /// <summary>Bank capacity: the base plus 10 per Bank Expansion.</summary>
+    public int BankLimit => BankSlots + BankExpansions * GameServer.BankSlotsPerExpansion;
 
     public StartGameReply StartGame(int worldId, IReadOnlyList<int>? teleports = null, IReadOnlyList<int>? completedQuests = null,
         IReadOnlyList<ActiveQuest>? activeQuests = null) => new()
