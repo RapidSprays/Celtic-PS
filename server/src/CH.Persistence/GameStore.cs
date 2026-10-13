@@ -241,6 +241,14 @@ public sealed class GameStore : IDisposable
         ALTER TABLE characters ADD COLUMN sigils_health INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE characters ADD COLUMN sigils_energy INTEGER NOT NULL DEFAULT 0;
         """,
+        """
+        CREATE TABLE ability_levels (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            ability_id   INTEGER NOT NULL,
+            level        INTEGER NOT NULL,
+            PRIMARY KEY (character_id, ability_id)
+        );
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -254,6 +262,9 @@ public sealed class GameStore : IDisposable
         Exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
         Migrate();
     }
+
+    /// <summary>The schema version a fully migrated database has.</summary>
+    public static int LatestSchemaVersion => Migrations.Length;
 
     public int SchemaVersion => Convert.ToInt32(Scalar("PRAGMA user_version"));
 
@@ -566,6 +577,20 @@ public sealed class GameStore : IDisposable
         while (r.Read()) list.Add(r.GetInt32(0));
         return list;
     }
+
+    /// <summary>Ability levels raised by use (abilities not listed are at level 1).</summary>
+    public IReadOnlyDictionary<int, int> ListAbilityLevels(long characterId)
+    {
+        using var cmd = Command("SELECT ability_id, level FROM ability_levels WHERE character_id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var levels = new Dictionary<int, int>();
+        while (r.Read()) levels[r.GetInt32(0)] = r.GetInt32(1);
+        return levels;
+    }
+
+    public void SetAbilityLevel(long characterId, int abilityId, int level) =>
+        Exec("INSERT INTO ability_levels(character_id, ability_id, level) VALUES ($c, $a, $l) ON CONFLICT(character_id, ability_id) DO UPDATE SET level = $l",
+            null, ("$c", characterId), ("$a", abilityId), ("$l", level));
 
     public void LearnAbility(long characterId, int abilityId) =>
         Exec("INSERT OR IGNORE INTO abilities(character_id, ability_id) VALUES ($c, $a)", null, ("$c", characterId), ("$a", abilityId));

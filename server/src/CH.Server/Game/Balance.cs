@@ -105,11 +105,18 @@ public sealed record ItemInfo(
         || Name.Contains("NOT USED", StringComparison.OrdinalIgnoreCase) || Name.EndsWith(" OLD", StringComparison.Ordinal) || Name == "INVALID ITEM";
 }
 
-public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost, int TemplateLevel = 0, int MinLevel = 0);
+public sealed record SkillLevelInfo(float InitialDamage, float BaseDamage, float CastingTime, float RechargeTime, int EnergyCost, int TemplateLevel = 0, int MinLevel = 0)
+{
+    /// <summary>Chance in percent that being hit doesn't interrupt the cast.</summary>
+    public int ChargingProtection { get; init; } = 100;
+}
 
 /// <summary>A skill template. Heals have negative damage values. <see cref="CastTarget"/> is Self, Enemy, Friendly, Group or Fish.</summary>
 public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRange, bool IncludesWeaponAttack, string CastTarget, int StatusEffectId, IReadOnlyList<SkillLevelInfo> Levels)
 {
+    /// <summary>Radius in metres (the client's tooltip &lt;AOE&gt;): enemy skills hit everything around the target; group skills reach party members around the caster.</summary>
+    public float AreaOfEffect { get; init; }
+
     public SkillLevelInfo Level(int level) => Levels.Count == 0 ? new SkillLevelInfo(0, 0, 0, 5, 0) : Levels[Math.Clamp(level, 0, Levels.Count - 1)];
 
     /// <summary>Highest rank a character of this level may train (CSkillTemplateManager.GetMaxLevel).</summary>
@@ -232,10 +239,14 @@ public sealed class Balance
         {
             var id = e.TryGetProperty("SkillId", out var sid) && sid.ValueKind == JsonValueKind.Number ? sid.GetInt32() : int.Parse(key);
             var levels = e.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array
-                ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"), Int(l, "TemplateLevel"), Int(l, "MinLevel"))).ToList()
+                ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"), Int(l, "TemplateLevel"), Int(l, "MinLevel"))
+                    { ChargingProtection = l.TryGetProperty("ChargingProtection", out var cp) && cp.ValueKind == JsonValueKind.Number ? cp.GetInt32() : 100 }).ToList()
                 : [];
             if (SkillLevels.IsPlayerSkill(Int(e, "AbilityId"), levels.Count)) levels = SkillLevels.Extend(levels);
-            skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels);
+            skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels)
+            {
+                AreaOfEffect = Float(e, "AreaOfEffect"),
+            };
         }
 
         CustomItems.Apply(items, CustomItems.Load(customItemsPath));
@@ -321,6 +332,33 @@ public sealed class Balance
         if (LearnTarget(book) is not { } wanted) return null;
         var key = NameKey(wanted);
         return Skills.Values.FirstOrDefault(s => !s.Name.StartsWith("Learn", StringComparison.OrdinalIgnoreCase) && NameKey(s.Name) == key);
+    }
+
+    private Dictionary<int, SkillInfo?>? _mobSkills;
+    private List<(SkillInfo Skill, HashSet<string> Words)>? _monsterSkillWords;
+    private static readonly HashSet<string> CommonWords = ["the", "of", "a", "boss", "mob", "lesser", "greater", "elder", "young", "old", "giant", "attack", "skill", "strike"];
+
+    private static HashSet<string> Words(string text) =>
+        System.Text.RegularExpressions.Regex.Matches(text.ToLowerInvariant(), "[a-z]{3,}").Select(m => m.Value).Where(w => !CommonWords.Contains(w)).ToHashSet();
+
+    /// <summary>
+    /// The special attack a monster shows: a damaging monster skill (no ability, cast on an enemy) whose name shares words
+    /// with the monster's name or race ("Emberdrake" → "Emberdrake Breath"). Which skills monsters really use is
+    /// server-only data, so this is <b>approximated</b>; null when nothing matches.
+    /// </summary>
+    public SkillInfo? MobSkill(MobInfo mob)
+    {
+        _mobSkills ??= new();
+        if (_mobSkills.TryGetValue(mob.Id, out var known)) return known;
+        _monsterSkillWords ??= Skills.Values
+            .Where(s => s.AbilityId < 0 && s.CastTarget == "Enemy" && s.Levels.Count > 0 && Math.Abs(s.Levels[0].InitialDamage) + Math.Abs(s.Levels[0].BaseDamage) > 0
+                        && !s.Name.Contains("Telegraph", StringComparison.OrdinalIgnoreCase) && !s.Name.StartsWith("Learn", StringComparison.Ordinal))
+            .Select(s => (s, Words(s.Name))).ToList();
+        var mobWords = Words(mob.Name + " " + mob.Race);
+        var best = _monsterSkillWords.Select(x => (x.Skill, Score: x.Words.Count(mobWords.Contains))).Where(x => x.Score > 0)
+            .OrderByDescending(x => x.Score).ThenBy(x => x.Skill.Id).Select(x => x.Skill).FirstOrDefault();
+        _mobSkills[mob.Id] = best;
+        return best;
     }
 
     private static readonly IReadOnlySet<string> NoTags = new HashSet<string>();

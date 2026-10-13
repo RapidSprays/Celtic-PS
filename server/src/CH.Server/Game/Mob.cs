@@ -41,11 +41,17 @@ public sealed class Mob
     public object? Target { get; set; }
     public bool AttackAnnounced { get; set; }
     public double NextAttackAt { get; set; }
+
+    /// <summary>When an elite or boss may next use its special attack (GameServer.Combat).</summary>
+    public double NextSpecialAt { get; set; }
     public double NextThinkAt { get; set; }
     public double RemoveAt { get; set; }
     public double RespawnAt { get; set; }
     public bool Removed { get; set; }
     public Dictionary<object, int> Damage { get; } = new();
+
+    /// <summary>Who tagged the mob (first to hit it): they and their party get the kill (GameServer.Combat locks).</summary>
+    public object? Owner { get; set; }
     public List<ActiveEffect> Effects { get; } = new();
 
     public float FromX { get; private set; }

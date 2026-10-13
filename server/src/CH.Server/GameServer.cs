@@ -603,5 +603,6 @@ public sealed partial class GameServer : IDisposable
         public string Name => Character?.Name ?? Account?.Username ?? "?";
     }
 
-    private sealed record PendingCast(SkillInfo Skill, int Level, Mob? Target, double ResolveAt, Session? PlayerTarget = null);
+    /// <summary>A skill being cast: an enemy mob or duel opponent, or a friendly player (heals and buffs on others).</summary>
+    private sealed record PendingCast(SkillInfo Skill, int Level, Mob? Target, double ResolveAt, Session? PlayerTarget = null, Session? Friend = null);
 }

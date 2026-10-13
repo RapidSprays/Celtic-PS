@@ -75,17 +75,17 @@ public sealed partial class GameServer
             b.WriteVariableInt32(e.Info.Id);
             b.WriteVariableInt32(e.LevelIndex);
             b.WriteVariableInt32((int)Math.Ceiling(Math.Max(0, e.ExpiresAt - now)));
-            b.Write(ActiveEffect.CasterAbilityLevel);
+            b.Write(e.AbilityLevel);
             b.Write(0f);
         }
     }
 
     /// <summary>Applies a skill's status effect to the caster (self and friendly buffs). Re-casting refreshes it.</summary>
-    private void ApplyEffect(Session s, SkillInfo skill, int skillLevel, double now)
+    private void ApplyEffect(Session s, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel)
     {
         if (!_balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var info) || info.Level(skillLevel) is not { } level) return;
         s.Effects.RemoveAll(e => e.Info.Id == info.Id);
-        var effect = new ActiveEffect { Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + DotTickSeconds };
+        var effect = new ActiveEffect { Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + DotTickSeconds, AbilityLevel = abilityLevel };
         if (EffectModifiers.IsShield(effect.Type)) effect.ShieldRemaining = Math.Max(1, effect.Amount);
         s.Effects.Add(effect);
         SendEffects(s);
@@ -125,12 +125,12 @@ public sealed partial class GameServer
 
     // ---- debuffs on mobs (damage over time) ---------------------------------------------------
 
-    private void ApplyMobEffect(Mob mob, Session caster, SkillInfo skill, int skillLevel, double now)
+    private void ApplyMobEffect(Mob mob, Session caster, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel)
     {
         if (!_balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var info) || info.Level(skillLevel) is not { } level) return;
         if ((EffectType)info.Type != EffectType.Dot) return;
         mob.Effects.RemoveAll(e => e.Info.Id == info.Id);
-        mob.Effects.Add(new ActiveEffect { Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + DotTickSeconds, Caster = caster });
+        mob.Effects.Add(new ActiveEffect { Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + DotTickSeconds, Caster = caster, AbilityLevel = abilityLevel });
     }
 
     private void TickMobEffects(Zone zone, Mob mob, double now)

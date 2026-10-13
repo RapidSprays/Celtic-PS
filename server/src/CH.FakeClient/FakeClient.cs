@@ -179,6 +179,23 @@ public sealed class FakeClient : IDisposable
         }
     }
 
+    /// <summary>Waits for the next Data message with any of the given opcodes (the others are skipped).</summary>
+    public (Opcode Opcode, NetIncomingMessage Message) ExpectAny(IReadOnlyCollection<Opcode> opcodes, TimeSpan? timeout = null)
+    {
+        var deadline = Stopwatch.StartNew();
+        var limit = timeout ?? DefaultTimeout;
+        while (true)
+        {
+            var remaining = limit - deadline.Elapsed;
+            if (remaining <= TimeSpan.Zero) throw new TimeoutException($"none of {string.Join(", ", opcodes)} within {limit.TotalSeconds:F1}s");
+            var msg = Next(m => m.MessageType == NetIncomingMessageType.Data, remaining);
+            var header = Envelope.ReadServerHeader(msg);
+            if (header.SessionId is { } sid && sid != _session)
+                throw new InvalidDataException($"{header.Opcode}: session {sid} does not match {_session} (the real client would drop it)");
+            if (opcodes.Contains(header.Opcode)) return (header.Opcode, msg);
+        }
+    }
+
     private NetIncomingMessage Next(Func<NetIncomingMessage, bool> match, TimeSpan? timeout)
     {
         var deadline = Stopwatch.StartNew();

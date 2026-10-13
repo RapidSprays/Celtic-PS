@@ -237,6 +237,7 @@ public sealed partial class GameServer
                 {
                     mob.State = MobState.Idle;
                     mob.Health = mob.MaxHealth;
+                    SetMobOwner(zone, mob, null); // back home: anyone may tag it again
                     mob.NextThinkAt = now + 3;
                     Broadcast(zone, Opcode.NewEntitiesOfInterest, b =>
                     {
@@ -403,13 +404,23 @@ public sealed partial class GameServer
                 && !mob.IsNpc && mob.State != MobState.Dead && InReach(s, mob, Math.Max(skill.CastRange, s.Sheet.AttackRange) + MeleeTolerance + 1f, now))
                 target = mob;
         }
+        // Heals and buffs on another player: anyone in the zone within cast range (the client sends their character id).
+        Session? friend = null;
+        var friendMissing = false;
+        if (skill.CastTarget == "Friendly" && req.TargetType == TargetType.OtherPlayer && req.TargetId != (uint)s.CharacterId)
+        {
+            friend = OnlineByCharacter((int)req.TargetId) is { InZone: true, Dead: false } f && f.Position.Zone == s.Position.Zone
+                     && Dist2D(s.Position.X, s.Position.Z, f.Position.X, f.Position.Z) - 2 * PlayerRadius <= Math.Max(skill.CastRange, 2f) + MeleeTolerance + 1f
+                ? f : null;
+            friendMissing = friend is null;
+        }
         var onCooldown = s.Cooldowns.TryGetValue(skill.Id, out var readyAt) && now < readyAt - 0.25;
-        if ((skill.CastTarget == "Enemy" && target is null && enemy is null) || onCooldown || s.Energy < cost)
+        if ((skill.CastTarget == "Enemy" && target is null && enemy is null) || friendMissing || onCooldown || s.Energy < cost)
         {
             Send(s, Opcode.SkillUpdate, new SkillUpdate(skill.Id, rank, 0).Write); // tells the client the skill failed
             return;
         }
-        s.Casts.Add(new PendingCast(skill, rank, target, now + level.CastingTime, enemy));
+        s.Casts.Add(new PendingCast(skill, rank, target, now + level.CastingTime, enemy, friend));
     }
 
     private void OnCancelSkill(Session s, uint skillId)
@@ -435,7 +446,9 @@ public sealed partial class GameServer
         Send(s, Opcode.StatsUpdate, new StatsDelta([(StatKey.Energy, s.Energy)]).Write);
 
         var amount = Math.Abs(level.InitialDamage) + Math.Abs(level.BaseDamage);
-        var factor = sheet.SkillDamageFactor(cast.Skill.Id);
+        TrainAbility(s, cast.Skill.AbilityId);
+        var factor = sheet.SkillDamageFactor(cast.Skill.Id) * AbilityDamageFactor(s, cast.Skill);
+        var abilityLevel = AbilityLevelFor(s, cast.Skill);
         if (cast.PlayerTarget is { } enemy)
         {
             var damage = (int)(((int)amount + (cast.Skill.IncludesWeaponAttack ? sheet.WeaponDamage : 0) + LiveStats(s).Attack / 4 + sheet.SkillDamageBonus) * factor);
@@ -446,21 +459,58 @@ public sealed partial class GameServer
         {
             var damage = (int)(((int)amount + (cast.Skill.IncludesWeaponAttack ? sheet.WeaponDamage : 0) + LiveStats(s).Attack / 4 + sheet.SkillDamageBonus) * factor);
             QuestCast(s, cast.Skill.Id, mob);
-            PlayerHits(zone, s, mob, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
-            if (cast.Skill.StatusEffectId > 0 && mob.State != MobState.Dead) ApplyMobEffect(mob, s, cast.Skill, cast.Level, now);
+            // Area skills hit every hostile monster around the target too (the template's AreaOfEffect radius).
+            var victims = new List<Mob> { mob };
+            if (cast.Skill.AreaOfEffect > 0)
+            {
+                var (cx, cz) = mob.PositionAt(now);
+                victims.AddRange(zone.Mobs.Values.Where(m => !ReferenceEquals(m, mob) && !m.IsNpc && m.State != MobState.Dead && m.Opinion < 50)
+                    .Select(m => (Mob: m, Pos: m.PositionAt(now))).Where(m => Dist2D(m.Pos.X, m.Pos.Z, cx, cz) <= cast.Skill.AreaOfEffect)
+                    .Select(m => m.Mob).Take(MaxAreaTargets - 1));
+            }
+            foreach (var victim in victims)
+            {
+                if (victim.State == MobState.Dead) continue;
+                PlayerHits(zone, s, victim, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
+                if (cast.Skill.StatusEffectId > 0 && victim.State != MobState.Dead) ApplyMobEffect(victim, s, cast.Skill, cast.Level, now, abilityLevel);
+            }
             return;
         }
         QuestCast(s, cast.Skill.Id, null);
-        if (cast.Skill.StatusEffectId > 0) ApplyEffect(s, cast.Skill, cast.Level, now);
-        if (level.InitialDamage < 0 || level.BaseDamage < 0)
+        // Who a friendly skill lands on: the chosen player, the caster, or (group skills) the caster and party members in reach.
+        var recipients = new List<Session>();
+        if (cast.Friend is { } friend)
         {
-            var heal = Math.Max(1, (int)(amount * sheet.HealFactor(cast.Skill.Id)));
-            s.Health = Math.Min(s.MaxHealth, s.Health + heal);
-            var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, s.CharacterId, AttackKind.Skill, cast.Skill.Id,
-                -heal, s.Health, Reaction.SkillHitPositive, ++_damageId, false);
-            SendPlayerDamage(zone, s, entry);
+            if (friend.InZone && !friend.Dead && friend.Position.Zone == s.Position.Zone) recipients.Add(friend);
+        }
+        else
+        {
+            recipients.Add(s);
+            if (cast.Skill.CastTarget == "Group" && s.Party is { } party)
+            {
+                var reach = Math.Max(cast.Skill.AreaOfEffect, GroupSkillMinReach);
+                recipients.AddRange(party.Members.Where(p => !ReferenceEquals(p, s) && p.InZone && !p.Dead && p.Position.Zone == s.Position.Zone
+                    && Dist2D(p.Position.X, p.Position.Z, s.Position.X, s.Position.Z) <= reach));
+            }
+        }
+        var heals = level.InitialDamage < 0 || level.BaseDamage < 0;
+        foreach (var r in recipients)
+        {
+            if (cast.Skill.StatusEffectId > 0) ApplyEffect(r, cast.Skill, cast.Level, now, abilityLevel);
+            if (!heals) continue;
+            var heal = Math.Max(1, (int)(amount * sheet.HealFactor(cast.Skill.Id) * AbilityDamageFactor(s, cast.Skill)));
+            r.Health = Math.Min(r.MaxHealth, r.Health + heal);
+            var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, r.CharacterId, AttackKind.Skill, cast.Skill.Id,
+                -heal, r.Health, Reaction.SkillHitPositive, ++_damageId, false);
+            SendPlayerDamage(zone, r, entry);
         }
     }
+
+    /// <summary>At most this many monsters take an area skill (the target included).</summary>
+    private const int MaxAreaTargets = 10;
+
+    /// <summary>Group skills without a radius still reach party members standing close by.</summary>
+    private const float GroupSkillMinReach = 8f;
 
     private void PlayerHits(Zone zone, Session s, Mob mob, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
     {
@@ -487,6 +537,13 @@ public sealed partial class GameServer
         }
         mob.Health -= damage;
         LifeTap(s, damage);
+        if (!OwnsOrShares(s, mob) && !OwnerStillHere(zone, mob)) SetMobOwner(zone, mob, s);
+        if (damage > 0 && kind == AttackKind.Attack)
+        {
+            TrainAbility(s, WeaponAbility(Weapon(s)));
+            TrainAbility(s, s.Sheet!.AttackRange > 3 ? RangedCombat : MeleeCombat);
+        }
+        if (critical) TrainAbility(s, kind == AttackKind.Attack ? CriticalStrike : CriticalSkills);
         mob.Damage[s] = mob.Damage.GetValueOrDefault(s) + damage;
         var procs = kind == AttackKind.Attack && damage > 0 && mob.Health > 0 ? RollProcs(s) : [];
         var entry = new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)mob.ServerId, kind, skillId, damage, mob.Health, reaction, ++_damageId, critical);
@@ -530,11 +587,22 @@ public sealed partial class GameServer
         var miss = !tree.Has(PassiveTree.IronHide) && Random.Shared.NextDouble() < Math.Min(0.5, 0.1 + m.Defence / 200.0 + target.Sheet.EvadeChance);
         var armour = target.Sheet!.Armour + m.Armour;
         var damage = miss ? 0 : Math.Max(1, (int)Math.Round(MobStats.HitDamage(mob.Level, mob.Template.Power) * (0.8 + Random.Shared.NextDouble() * 0.4)) - armour / 10);
+        // Elites and bosses now and then land a special attack (approximated; GameServer.Combat).
+        var special = !miss && mob.Template.Power >= SpecialAttackMinPower && now >= mob.NextSpecialAt && Random.Shared.NextDouble() < SpecialAttackChance;
+        var specialSkill = special ? _balance.MobSkill(mob.Template) : null;
+        if (special)
+        {
+            mob.NextSpecialAt = now + SpecialAttackCooldown;
+            damage = (int)(damage * SpecialAttackMultiplier);
+        }
         var absorbed = damage - AbsorbWithShields(target, damage);
         target.Health = Math.Max(0, target.Health - (damage - absorbed));
-        var entry = new DamageEntry(DamageDirection.MobToPlayer, (int)mob.ServerId, target.CharacterId, AttackKind.Attack, 0, damage, target.Health,
-            miss ? Reaction.Miss : Reaction.Hit, ++_damageId, false);
+        var entry = new DamageEntry(DamageDirection.MobToPlayer, (int)mob.ServerId, target.CharacterId,
+            specialSkill is not null ? AttackKind.Skill : AttackKind.Attack, specialSkill?.Id ?? 0, damage, target.Health,
+            miss ? Reaction.Miss : specialSkill is not null ? Reaction.SkillHitAggressive : Reaction.Hit, ++_damageId, special);
         SendPlayerDamage(zone, target, entry);
+        TrainAbility(target, miss ? Reflex : Fortitude);
+        if (!miss && damage > 0) MaybeInterrupt(target, now);
         if (target.Health <= 0)
         {
             PlayerDies(zone, target, now);
@@ -558,7 +626,10 @@ public sealed partial class GameServer
         mob.RemoveAt = now + MobCorpseSeconds;
         mob.RespawnAt = now + Math.Max(MobCorpseSeconds + 1, mob.RespawnSeconds);
         foreach (var p in zone.Players.Where(p => ReferenceEquals(p.AttackTarget, mob)).ToList()) SetAttackTarget(p, null);
-        Reward(killer, mob);
+        // The tagger gets the kill (their party shares it as usual); a mob nobody tagged goes to whoever finished it.
+        var rewarded = mob.Owner is Session owner && OwnerStillHere(zone, mob) ? owner : killer;
+        mob.Owner = null;
+        Reward(rewarded, mob);
     }
 
     private void Reward(Session s, Mob mob)

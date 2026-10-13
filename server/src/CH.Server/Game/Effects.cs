@@ -32,7 +32,10 @@ public sealed class ActiveEffect
 
     public EffectType Type => (EffectType)Info.Type;
     public StatusEffectLevel? Level => Info.Level(LevelIndex);
-    public int Amount => Level?.ModifiedAmount(CasterAbilityLevel) ?? 0;
+    /// <summary>The caster's level in the skill's ability (the client's effect formula scales with it).</summary>
+    public float AbilityLevel { get; init; } = CasterAbilityLevel;
+
+    public int Amount => Level?.ModifiedAmount(AbilityLevel) ?? 0;
 
     /// <summary>Hide uses the raw level amount as the highest mob level it hides from (CPlayableCharacter.IsHiddenFrom).</summary>
     public float RawAmount => Level?.Amount ?? 0;

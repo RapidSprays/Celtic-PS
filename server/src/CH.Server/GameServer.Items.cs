@@ -13,7 +13,7 @@ public sealed partial class GameServer
 
     private CharacterSheet LoadSheet(CharacterRecord c) =>
         new(c, _store.GetProgress(c.Id), _store.ListItems(c.Id), _store.ListSkills(c.Id), _balance, _tree.Totals(TreeNodes(c)))
-        { LearnedAbilities = _store.ListAbilities(c.Id) };
+        { LearnedAbilities = _store.ListAbilities(c.Id), AbilityLevels = _store.ListAbilityLevels(c.Id) };
 
     private CharacterSheet Sheet(Session s) => LoadSheet(s.Character!);
 

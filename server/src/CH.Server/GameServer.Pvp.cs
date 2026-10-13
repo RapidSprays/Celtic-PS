@@ -236,6 +236,7 @@ public sealed partial class GameServer
             damage = AbsorbWithShields(target, damage); // what's left after energy shields
         }
         LifeTap(s, damage);
+        if (damage > 0) MaybeInterrupt(target, now);
         // Duels stop at 1 HP: nobody dies.
         var lethal = target.Health - damage <= 0;
         target.Health = Math.Max(1, target.Health - damage);
