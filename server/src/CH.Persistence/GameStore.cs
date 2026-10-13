@@ -43,6 +43,13 @@ public sealed record CharacterRecord(
     float Direction);
 
 /// <summary>An item owned by a character. <see cref="Slot"/> is the equipment slot (0-24), or -1 for the backpack.</summary>
+/// <summary>One entry on a character's daily bounty board (BountyBoard.Bounty.tStatus values in Status).</summary>
+public sealed record BountyRecord(int Day, int Slot, int QuestId, int Cost, int Status);
+
+/// <summary>An auction house listing; the item is held here (taken from the seller) until it sells, expires or is cancelled.</summary>
+public sealed record AuctionRecord(long Id, long SellerId, string SellerName, int TemplateId, int Quantity, int Charges, int StartBid, int Buyout,
+    int Bid, long? BidderId, string? BidderName, int Deposit, long ExpiresAt);
+
 public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Quantity, int Slot, bool Bound, int Charges, bool Favourite)
 {
     public const int Backpack = -1;
@@ -252,6 +259,40 @@ public sealed class GameStore : IDisposable
         """
         ALTER TABLE characters ADD COLUMN backpack_expansions INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE characters ADD COLUMN bank_expansions INTEGER NOT NULL DEFAULT 0;
+        """,
+        """
+        ALTER TABLE characters ADD COLUMN auction_slots INTEGER NOT NULL DEFAULT 0;
+        """,
+        """
+        CREATE TABLE faction_points (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            faction_id   INTEGER NOT NULL,
+            points       INTEGER NOT NULL,
+            PRIMARY KEY (character_id, faction_id)
+        );
+        CREATE TABLE bounties (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            ancient      INTEGER NOT NULL,
+            day          INTEGER NOT NULL,
+            slot         INTEGER NOT NULL,
+            quest_id     INTEGER NOT NULL,
+            cost         INTEGER NOT NULL,
+            status       INTEGER NOT NULL,
+            PRIMARY KEY (character_id, ancient, slot)
+        );
+        CREATE TABLE auctions (
+            id          INTEGER PRIMARY KEY,
+            seller_id   INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            template_id INTEGER NOT NULL,
+            quantity    INTEGER NOT NULL,
+            charges     INTEGER NOT NULL,
+            start_bid   INTEGER NOT NULL,
+            buyout      INTEGER NOT NULL,
+            bid         INTEGER NOT NULL DEFAULT 0,
+            bidder_id   INTEGER,
+            deposit     INTEGER NOT NULL,
+            expires_at  INTEGER NOT NULL
+        );
         """,
     ];
 
@@ -548,6 +589,12 @@ public sealed class GameStore : IDisposable
         return r.Read() ? (r.GetInt32(0), r.GetInt32(1)) : (0, 0);
     }
 
+    public int GetAuctionSlots(long characterId) =>
+        Convert.ToInt32(Scalar("SELECT auction_slots FROM characters WHERE id = $c", ("$c", characterId)) ?? 0);
+
+    public void AddAuctionSlots(long characterId, int slots) =>
+        Exec("UPDATE characters SET auction_slots = auction_slots + $n WHERE id = $c", null, ("$c", characterId), ("$n", slots));
+
     public void AddExpansions(long characterId, int backpack, int bank) =>
         Exec("UPDATE characters SET backpack_expansions = backpack_expansions + $p, bank_expansions = bank_expansions + $b WHERE id = $c", null,
             ("$c", characterId), ("$p", backpack), ("$b", bank));
@@ -706,6 +753,75 @@ public sealed class GameStore : IDisposable
         using var cmd = Command(sql, null, args);
         return cmd.ExecuteScalar();
     }
+
+    // ---- factions, bounty boards, auction house (GameServer.Factions/Bounties/Auctions) ----------------------------
+
+    public IReadOnlyDictionary<int, int> GetFactions(long characterId)
+    {
+        using var cmd = Command("SELECT faction_id, points FROM faction_points WHERE character_id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var map = new Dictionary<int, int>();
+        while (r.Read()) map[r.GetInt32(0)] = r.GetInt32(1);
+        return map;
+    }
+
+    public void SetFaction(long characterId, int factionId, int points) =>
+        Exec("INSERT INTO faction_points(character_id, faction_id, points) VALUES ($c, $f, $p) ON CONFLICT(character_id, faction_id) DO UPDATE SET points = $p",
+            null, ("$c", characterId), ("$f", factionId), ("$p", points));
+
+    public IReadOnlyList<BountyRecord> ListBounties(long characterId, bool ancient)
+    {
+        using var cmd = Command("SELECT day, slot, quest_id, cost, status FROM bounties WHERE character_id = $c AND ancient = $a ORDER BY slot", null,
+            ("$c", characterId), ("$a", ancient ? 1 : 0));
+        using var r = cmd.ExecuteReader();
+        var list = new List<BountyRecord>();
+        while (r.Read()) list.Add(new BountyRecord(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4)));
+        return list;
+    }
+
+    /// <summary>Replaces the character's board (one kind) with a new day's bounties.</summary>
+    public void ReplaceBounties(long characterId, bool ancient, IEnumerable<BountyRecord> bounties)
+    {
+        using var tx = _db.BeginTransaction();
+        Exec("DELETE FROM bounties WHERE character_id = $c AND ancient = $a", tx, ("$c", characterId), ("$a", ancient ? 1 : 0));
+        foreach (var b in bounties)
+            Exec("INSERT INTO bounties(character_id, ancient, day, slot, quest_id, cost, status) VALUES ($c, $a, $d, $s, $q, $k, $st)", tx,
+                ("$c", characterId), ("$a", ancient ? 1 : 0), ("$d", b.Day), ("$s", b.Slot), ("$q", b.QuestId), ("$k", b.Cost), ("$st", b.Status));
+        tx.Commit();
+    }
+
+    public void SetBountyStatus(long characterId, bool ancient, int slot, int status) =>
+        Exec("UPDATE bounties SET status = $st WHERE character_id = $c AND ancient = $a AND slot = $s", null,
+            ("$c", characterId), ("$a", ancient ? 1 : 0), ("$s", slot), ("$st", status));
+
+    public long AddAuction(AuctionRecord a)
+    {
+        using var cmd = Command("""
+            INSERT INTO auctions(seller_id, template_id, quantity, charges, start_bid, buyout, deposit, expires_at)
+            VALUES ($s, $t, $q, $ch, $sb, $bo, $d, $e) RETURNING id
+            """, null, ("$s", a.SellerId), ("$t", a.TemplateId), ("$q", a.Quantity), ("$ch", a.Charges), ("$sb", a.StartBid), ("$bo", a.Buyout),
+            ("$d", a.Deposit), ("$e", a.ExpiresAt));
+        return Convert.ToInt64(cmd.ExecuteScalar());
+    }
+
+    public IReadOnlyList<AuctionRecord> ListAuctions()
+    {
+        using var cmd = Command("""
+            SELECT a.id, a.seller_id, s.name, a.template_id, a.quantity, a.charges, a.start_bid, a.buyout, a.bid, a.bidder_id, b.name, a.deposit, a.expires_at
+            FROM auctions a JOIN characters s ON s.id = a.seller_id LEFT JOIN characters b ON b.id = a.bidder_id ORDER BY a.id
+            """, null);
+        using var r = cmd.ExecuteReader();
+        var list = new List<AuctionRecord>();
+        while (r.Read())
+            list.Add(new AuctionRecord(r.GetInt64(0), r.GetInt64(1), r.GetString(2), r.GetInt32(3), r.GetInt32(4), r.GetInt32(5), r.GetInt32(6), r.GetInt32(7),
+                r.GetInt32(8), r.IsDBNull(9) ? null : r.GetInt64(9), r.IsDBNull(10) ? null : r.GetString(10), r.GetInt32(11), r.GetInt64(12)));
+        return list;
+    }
+
+    public void SetAuctionBid(long auctionId, long bidderId, int bid) =>
+        Exec("UPDATE auctions SET bidder_id = $b, bid = $v WHERE id = $id", null, ("$id", auctionId), ("$b", bidderId), ("$v", bid));
+
+    public void DeleteAuction(long auctionId) => Exec("DELETE FROM auctions WHERE id = $id", null, ("$id", auctionId));
 
     public void Dispose() => _db.Dispose();
 }

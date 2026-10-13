@@ -4,7 +4,7 @@
     scripts/gen-world.py [BUILD]
 
 Writes ~/CelticHeroesAnalysis/extracted/<build>/world.json (outside git: derived from client data):
-  quests: id → name, zone, level, prerequisites (QUEST_COMPLETE conditions on the way to the giver's QUEST_ADD, plus
+  quests: id → name, zone, level, archetype (RepeatArchetype: BountyBoard quests are offered by the boards), prerequisites (QUEST_COMPLETE conditions on the way to the giver's QUEST_ADD, plus
           CompletedQuest stages), min level (LEVEL_GREATER_THAN conditions, else the zone band), stages with their
           completion type, details and next stage.
   npcs:   official spawn id (so the client's quest/shop icons apply), mob template, conversation id, zone and a
@@ -93,9 +93,10 @@ stages = collections.defaultdict(list)
 for q, st, desc, ct, det, nxt in db.execute(
         "select quest_id, stage_id, stage_desc, completion_type, completion_details, next_stage from quest_stage_templates order by quest_id, stage_id"):
     stages[q].append({"type": ct, "details": det or "", "next": nxt, "text": desc or ""})
-totals = {}
+totals, archetypes = {}, {}
 for qt in chdata.entries(bal, "QuestTemplates"):
     totals[qt["Id"]] = [s.get("CompletionTotalSum", 0) for s in qt.get("Stages", [])]
+    archetypes[qt["Id"]] = qt.get("RepeatArchetype") or "NoRepeat"
 
 quest_zone = {}
 for q in names:
@@ -152,7 +153,7 @@ for q, (name, desc, rep, qtype) in names.items():
         "name": name, "zone": quest_zone[q], "level": level,
         "minLevel": max(min_levels.get(q, 0) + 1 if min_levels.get(q) else 0, max(1, level - 3)),
         "prereqs": sorted(p for p in pre if p != q and p in names), "repeatable": rep != 0, "type": qtype,
-        "seasonal": seasonal, "giver": giver.get(q),
+        "seasonal": seasonal, "giver": giver.get(q), "archetype": archetypes.get(q, "NoRepeat"),
         "stages": [{"type": s["type"], "details": s["details"], "next": s["next"],
                     "total": tot[i] if i < len(tot) else 0,
                     "sources": sources(s["text"]) if s["type"] == 1 else []} for i, s in enumerate(stages[q])],
@@ -304,6 +305,22 @@ for i, (template, conv_file, zone, x, y, z, facing) in enumerate(placements):
     used_spawns.add(spawn)
     npcs.append({"spawnId": spawn, "template": template, "name": mobs[template]["Name"], "conversation": by_file[conv_file], "zone": zone,
                  "x": round(x, 2), "y": y, "z": round(z, 2), "direction": round(facing, 1), "roles": ["Service"]})
+
+# Bounty boards run the client's dynamic "bb" conversation (440, Ancient 800; BountyBoardConversation), which no
+# spawn icon names: the board beside Robert the Bruised in Farcrag Castle, the Ancient board at the Valley of the
+# Ancients hub.
+npcs = [n for n in npcs if n["template"] not in (393, 200200)]
+robert = next((n for n in npcs if n["template"] == 138397 and n["zone"] == 93), None)
+vota = next((p for p in zones[27]["PlayerSpawnPoints"] if p["Id"] == HUB[27]), None)
+for template, spawn, conv, zone, near in [(393, 2653, 440, 93, (robert["x"], robert["y"], robert["z"]) if robert else None),
+                                          (200200, 13311, 800, 27, tuple(vota["Position"]) if vota else None)]:
+    if near is None or template not in mobs: continue
+    world = worlds.get(zone)
+    spot = world.nearest_walkable(near[0], near[2], max_radius=15, min_radius=3, avoid=taken[zone], spacing=3) if world and world.has_mask else None
+    x, zz = spot if spot else (near[0] + 4, near[2])
+    taken[zone].append((x, zz))
+    npcs.append({"spawnId": spawn, "template": template, "name": mobs[template]["Name"], "conversation": conv, "zone": zone,
+                 "x": round(x, 2), "y": near[1], "z": round(zz, 2), "direction": round(facing_to(x, zz, near[0], near[2]), 1), "roles": ["BountyBoard"]})
 
 # ---- shops ------------------------------------------------------------------------------------------------------
 # The client knows which shop id a conversation opens, never what it stocks (server-only). Each shop gets a category

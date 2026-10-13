@@ -1,0 +1,30 @@
+{
+ "_comment": "The platinum item shop (ItemShop 18001; docs/economy-notes.md). Prices are our own (approximated, for the rebalance). Categories: 0 Gold, 1 Items and Upgrades, 2 Potions and Scrolls, 3 Elixirs. Platinum comes from chests and GM .platinum; there is no real-money store.",
+ "stock": [
+  {"id": 1,  "template": 13,    "quantity": 1,  "price": 20, "category": 1},
+  {"id": 2,  "template": 92,    "quantity": 1,  "price": 20, "category": 1},
+  {"id": 3,  "template": 93,    "quantity": 1,  "price": 30, "category": 1},
+  {"id": 4,  "template": 217,   "quantity": 1,  "price": 10, "category": 1},
+  {"id": 5,  "template": 71040, "quantity": 1,  "price": 20, "category": 1},
+  {"id": 6,  "template": 36762, "quantity": 1,  "price": 25, "category": 1},
+  {"id": 7,  "template": 8,     "quantity": 1,  "price": 10, "category": 1},
+  {"id": 8,  "template": 9,     "quantity": 1,  "price": 10, "category": 1},
+  {"id": 20, "template": 162,   "quantity": 1,  "price": 5,  "category": 2},
+  {"id": 21, "template": 36759, "quantity": 1,  "price": 10, "category": 2},
+  {"id": 30, "template": 62,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 31, "template": 64,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 32, "template": 66,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 33, "template": 68,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 34, "template": 70,    "quantity": 1,  "price": 8,  "category": 3},
+  {"id": 35, "template": 72,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 36, "template": 74,    "quantity": 1,  "price": 12, "category": 3},
+  {"id": 37, "template": 79,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 38, "template": 81,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 39, "template": 83,    "quantity": 1,  "price": 6,  "category": 3},
+  {"id": 40, "template": 88,    "quantity": 1,  "price": 12, "category": 3},
+  {"id": 41, "template": 76,    "quantity": 1,  "price": 10, "category": 3},
+  {"id": 42, "template": 77,    "quantity": 1,  "price": 18, "category": 3},
+  {"id": 50, "template": 14,    "quantity": 10, "price": 1,  "category": 0},
+  {"id": 51, "template": 14,    "quantity": 100, "price": 8, "category": 0}
+ ]
+}

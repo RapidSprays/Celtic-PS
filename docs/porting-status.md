@@ -28,10 +28,10 @@ What's still to port of the client's feature set, from the client message list (
 - [ ] Clans, clan bank, Clan Battleground
 
 ## 5. Economy
-- [ ] Auction house
-- [ ] Bounty board
-- [ ] Factions and reputation
-- [ ] Platinum item shop (private-server platinum)
+- [x] Auction house: listings, search, bids, buyouts, cancels, expiry; deposits and the 5% fee
+- [x] Bounty board: a daily board per character (3 free, 2 for pledges); board selection invented
+- [x] Factions and reputation: Liches, Reavers and Hiddenfolks sent at login; point sources invented (`server/content/factions.json`)
+- [x] Platinum item shop: our catalogue (`server/content/item-shop.json`), no cash offers; Bags of Gold and Auction House Slots apply on receipt. Platinum comes from chests and GM `.platinum`
 
 ## 6. Content systems
 - [ ] Achievements, leaderboards

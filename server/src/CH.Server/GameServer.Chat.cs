@@ -31,7 +31,7 @@ public sealed partial class GameServer
         ".gearset [level] - equip the best gear your class can wear at that level (old gear goes to your backpack)",
         ".wear <item name or id> - give and equip an item",
         ".mount [name] | .mount off - ride a mount (random if no name), or get off",
-        ".heal | .learn <skill id> | .gold <amount> - add (or with -, remove) gold",
+        ".heal | .learn <skill id> | .gold <amount> - add (or with -, remove) gold | .platinum <amount> - the same for platinum",
         ".respawn - respawn every mob in the zone",
         ".zones - list zones | .goto <zone id or name> [leystone] - travel there",
         ".leystones - discover every leystone (for map fast travel)",
@@ -278,6 +278,16 @@ public sealed partial class GameServer
                 var sheet = RefreshSheet(s);
                 Send(s, Opcode.InventoryUpdate, sheet.InventoryWithMoney().Write);
                 Tell(s, $"Gold: {sheet.Progress.Coins:N0}.");
+                break;
+            }
+
+            case "platinum":
+            {
+                var amount = args.Length > 0 ? long.Parse(args[0].Replace(",", ""), System.Globalization.CultureInfo.InvariantCulture) : 0;
+                var platinum = _store.GetProgress(s.Character!.Id).Platinum;
+                _store.AddCurrency(s.Character.Id, 0, (int)Math.Clamp(amount, -platinum, int.MaxValue - (long)platinum));
+                SendPlatinum(s);
+                Tell(s, $"Platinum: {_store.GetProgress(s.Character.Id).Platinum:N0}.");
                 break;
             }
 

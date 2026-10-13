@@ -13,7 +13,7 @@ public sealed partial class GameServer
     /// </summary>
     private bool TryGrantSigils(long characterId, int templateId, int quantity)
     {
-        if (TryGrantExpansion(characterId, templateId, quantity)) return true;
+        if (TryGrantExpansion(characterId, templateId, quantity) || TryGrantCurrencyItem(characterId, templateId, quantity)) return true;
         if (templateId is not (Sigils.Health or Sigils.Energy) || quantity <= 0) return false;
         var (health, energy) = templateId == Sigils.Health ? (quantity, 0) : (0, quantity);
         _store.AddSigils(characterId, health, energy);

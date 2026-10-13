@@ -26,6 +26,9 @@ public sealed partial class GameServer : IDisposable
     private readonly ShopCatalog _shops;
     private readonly TokenVendorCatalog _tokenVendors;
     private readonly PassiveTree _tree;
+    private readonly IReadOnlyList<ShopStock> _itemShop;
+    private readonly FactionRules _factionRules;
+    private readonly Dictionary<int, QuestInfo> _bounties;
     private readonly ILogger _log;
     private readonly NetServer _server;
     private readonly Dictionary<NetConnection, Session> _sessions = new();
@@ -50,8 +53,13 @@ public sealed partial class GameServer : IDisposable
         _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath));
         _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
         _tree = PassiveTree.Load(options.PassiveTreePath);
+        _itemShop = LoadItemShop(options.ItemShopPath);
+        _factionRules = FactionRules.Load(options.FactionsPath);
+        _bounties = BuildBounties();
         if (_tree.IsLoaded) log.LogInformation("Passive tree: {Nodes} nodes", _tree.Nodes.Count);
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
+        if (_bounties.Count > 0)
+            log.LogInformation("Bounties: {Normal} on the boards, {Ancient} Ancient", _bounties.Values.Count(q => q.Archetype == "BountyBoard"), _bounties.Values.Count(q => q.Archetype == "AncientBountyBoard"));
         if (_travel.ExitCount > 0) log.LogInformation("Zone exits: {Count}", _travel.ExitCount);
         if (_generatedCamps.Count > 0)
             log.LogInformation("Generated monster camps for {Zones} zones ({Mobs} monsters)", _generatedCamps.Count, _generatedCamps.Values.Sum(z => z.Sum(c => c.Count)));
@@ -209,6 +217,25 @@ public sealed partial class GameServer : IDisposable
             case Opcode.BarbershopMessage:
                 if (InWorld(s)) OnBarbershop(s, msg);
                 break;
+
+            case Opcode.ReqServerDynamicData:
+                if (InWorld(s)) OnServerDynamicData(s, msg.ReadString());
+                break;
+
+            case Opcode.AuctionHouse:
+                if (InWorld(s)) OnAuctionHouse(s, msg);
+                break;
+
+            case Opcode.BountyBoard:
+                if (InWorld(s)) OnBountyBoard(s, msg);
+                break;
+
+            case Opcode.ItemShop:
+                if (InWorld(s)) OnItemShop(s, msg);
+                break;
+
+            case Opcode.OpenOffersPage:
+                break; // free-platinum, special-offer and offerwall pages: none on this server
 
             case Opcode.SettingsChangedMessage:
                 break; // phone notification settings and push tokens: nothing to do on this server
@@ -519,6 +546,9 @@ public sealed partial class GameServer : IDisposable
         SendSkillToggles(s);
         DiscoverLeystones(s);
         QuestMove(s);
+        // Sent once the client is ready (CGame.Ready drops them before): reputation, the item shop's no-cash offers.
+        SendFactions(s);
+        SendNoCashOffers(s);
     }
 
     private void OnPlayerMove(Session s, PlayerMove move)
@@ -593,6 +623,7 @@ public sealed partial class GameServer : IDisposable
         public List<ActiveEffect> Effects { get; } = new();
         public CharacterSheet? Sheet { get; set; }
         public int? LastChestTemplate { get; set; }
+        public Dictionary<int, int> PledgesSpent { get; } = new();
         public HashSet<int> Teleports { get; } = new();
         public bool IsGm { get; set; }
         public int FailedLogins { get; set; }

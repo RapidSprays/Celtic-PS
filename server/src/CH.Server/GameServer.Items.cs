@@ -163,6 +163,7 @@ public sealed partial class GameServer
         else
         {
             _store.SetItemQuantity(item.Id, item.Quantity - Math.Clamp(req.Quantity, 1, item.Quantity));
+            NotePledgeDestroyed(s, item.TemplateId, Math.Clamp(req.Quantity, 1, item.Quantity));
         }
         var updated = RefreshSheet(s);
         // DeleteItemReply carries the lists even when rejected (NetworkManager.cs:5042).

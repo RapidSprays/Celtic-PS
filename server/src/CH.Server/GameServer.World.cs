@@ -141,6 +141,7 @@ public sealed partial class GameServer
         if (now < _nextTick) return;
         _nextTick = now + TickSeconds;
         foreach (var zone in _zones.Values.Where(z => z.Players.Count > 0).ToList()) Tick(zone, now);
+        ExpireAuctions(now);
         TickDuels(now);
     }
 

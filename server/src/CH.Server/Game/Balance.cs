@@ -182,6 +182,8 @@ public sealed class Balance
 
     /// <summary>Cooking recipes (CraftingTemplates): recipe id → name.</summary>
     public IReadOnlyDictionary<int, string> Recipes { get; private init; } = new Dictionary<int, string>();
+    /// <summary>Reputation factions (FactionTemplates): level thresholds and titles.</summary>
+    public IReadOnlyDictionary<int, FactionInfo> Factions { get; private init; } = new Dictionary<int, FactionInfo>();
     public IReadOnlyDictionary<int, MobInfo> Mobs { get; }
     public IReadOnlyDictionary<int, ZoneInfo> Zones { get; }
     public IReadOnlyDictionary<int, int[]> MobSets { get; }
@@ -308,8 +310,15 @@ public sealed class Balance
         var recipes = new Dictionary<int, string>();
         foreach (var (key, e) in Entries(root, "CraftingTemplates")) recipes[int.Parse(key)] = Str(e, "RecipeName");
 
+        var factions = new Dictionary<int, FactionInfo>();
+        foreach (var (key, e) in Entries(root, "FactionTemplates"))
+            factions[int.Parse(key)] = new FactionInfo(int.Parse(key), Str(e, "Name"),
+                e.TryGetProperty("Levels", out var fl) && fl.ValueKind == JsonValueKind.Array
+                    ? fl.EnumerateArray().Select(l => new FactionLevel(Int(l, "Value"), Int(l, "Points"), Str(l, "Title"))).ToList() : [],
+                Int(e, "Min"), Int(e, "Max"));
+
         var version = root.TryGetProperty("Version", out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
-        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects) { Recipes = recipes };
+        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects) { Recipes = recipes, Factions = factions };
     }
 
     /// <summary>Whether an item is an openable container (see <see cref="ChestCatalog"/>).</summary>

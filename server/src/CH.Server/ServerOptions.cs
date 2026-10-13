@@ -78,6 +78,12 @@ public sealed class ServerOptions
     /// <summary>Our own fixed-price merchant stock (server/content/shop-extras.json, copied next to the server binary).</summary>
     public string? ShopExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "shop-extras.json");
 
+    /// <summary>Faction reputation sources (server/content/factions.json, copied next to the server binary).</summary>
+    public string? FactionsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "factions.json");
+
+    /// <summary>The platinum item shop catalogue (server/content/item-shop.json, copied next to the server binary).</summary>
+    public string? ItemShopPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "item-shop.json");
+
     /// <summary>The passive tree (server/content/passive-tree.json, copied next to the server binary).</summary>
     public string? PassiveTreePath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "passive-tree.json");
 

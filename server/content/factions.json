@@ -1,0 +1,14 @@
+{
+  "_comment": "Reputation sources (our own design; the official ones are server-only). Factions 4 Liches, 5 Reavers, 6 Hiddenfolks (balance FactionTemplates). 'shown' are sent at login so conversations can test them.",
+  "shown": [4, 5, 6],
+  "rules": [
+    { "faction": 4, "points": 1500, "quests": [3002, 3003, 3004, 3005, 3006, 3038] },
+    { "faction": 5, "points": -750, "quests": [3002, 3003, 3004, 3005, 3006, 3038] },
+    { "faction": 5, "points": 1500, "quests": [3007, 3008, 3009, 3010, 3011, 3037, 3088] },
+    { "faction": 4, "points": -750, "quests": [3007, 3008, 3009, 3010, 3011, 3037, 3088] },
+    { "faction": 6, "points": 1000, "quests": [3325, 3326, 3327, 3355, 3358] },
+    { "faction": 6, "points": 500, "quests": [3307, 3348, 3349, 3350, 3351, 3352, 3356] },
+    { "faction": 6, "points": 1500, "archetype": "AncientBountyBoard" },
+    { "faction": 6, "points": 5, "killsInZone": 27 }
+  ]
+}

@@ -53,6 +53,11 @@ public sealed record QuestInfo(int Id, string Name, int? Zone, int Level, int Mi
     public int RewardXp => (int)(Progression.XpToNextLevel(Math.Max(1, Level)) * 0.35);
 
     public int RewardCoins => 10 + Level * 8;
+
+    /// <summary>RepeatArchetype: "BountyBoard" and "AncientBountyBoard" quests are offered only by the bounty boards.</summary>
+    public string Archetype { get; init; } = "NoRepeat";
+
+    public bool IsBounty => Archetype is "BountyBoard" or "AncientBountyBoard";
 }
 
 /// <summary>An NPC from scripts/gen-world.py: the official spawn id (for the client's icons), template and conversation.</summary>
@@ -89,7 +94,10 @@ public sealed class QuestBook
                     s.GetProperty("details").GetString() ?? "", s.GetProperty("next").GetInt32(), s.GetProperty("total").GetInt32())
                 {
                     Sources = s.TryGetProperty("sources", out var src) ? src.EnumerateArray().Select(x => x.GetInt32()).ToList() : [],
-                }).ToList());
+                }).ToList())
+            {
+                Archetype = e.TryGetProperty("archetype", out var arch) ? arch.GetString() ?? "NoRepeat" : "NoRepeat",
+            };
         }
         var npcs = doc.RootElement.GetProperty("npcs").EnumerateArray().Select(n => new NpcPlacement(
             n.GetProperty("spawnId").GetInt32(), n.GetProperty("template").GetInt32(), n.GetProperty("conversation").GetInt32(),

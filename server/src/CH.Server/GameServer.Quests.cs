@@ -41,7 +41,7 @@ public sealed partial class GameServer
         s.Quests.Clear();
         foreach (var r in _store.ListQuests(s.Character!.Id))
         {
-            if (!_quests.Quests.TryGetValue(r.QuestId, out var info)) continue;
+            if (!TryQuestInfo(r.QuestId, out var info)) continue;
             var q = new QuestState { Info = info, Completed = r.Completed, Tracked = r.Tracked };
             for (var i = 0; i < info.Stages.Count; i++)
             {
@@ -75,7 +75,7 @@ public sealed partial class GameServer
         var level = s.Sheet?.Level ?? 1;
         foreach (var q in _quests.Quests.Values)
         {
-            if (q.Giver is null || q.Seasonal) continue;
+            if (q.Giver is null || q.Seasonal || q.IsBounty) continue; // bounties come from the boards
             if (s.Quests.TryGetValue(q.Id, out var state) && (!state.Completed || !q.Repeatable)) continue;
             if (!q.Prerequisites.All(p => QuestDone(s, p))) continue;
             (level >= q.MinLevel ? available : notYet).Add(q.Id);
@@ -115,23 +115,20 @@ public sealed partial class GameServer
             {
                 var fromLog = msg.ReadBoolean();
                 var id = msg.ReadInt32();
-                var info = _quests.Quests.GetValueOrDefault(id);
+                var info = TryQuestInfo(id, out var found) ? found : null;
                 Send(s, Opcode.PreviewQuestRewards, b => QuestMessages.WritePreview(b, fromLog, id, info?.RewardXp ?? 0, info?.RewardCoins ?? 0));
                 break;
             }
             case Opcode.DeleteQuest:
             {
                 var id = msg.ReadInt32();
-                if (s.Quests.TryGetValue(id, out var q) && !q.Completed)
-                {
-                    s.Quests.Remove(id);
-                    _store.DeleteQuest(s.Character!.Id, id);
-                }
-                Send(s, Opcode.QuestRefreshMessage, b =>
-                {
-                    QuestMessages.WriteFullList(b, CompletedQuestIds(s), ActiveQuests(s));
-                    WriteQuestLists(b, s);
-                });
+                if (s.Quests.TryGetValue(id, out var q) && !q.Completed) DropQuest(s, q);
+                else
+                    Send(s, Opcode.QuestRefreshMessage, b =>
+                    {
+                        QuestMessages.WriteFullList(b, CompletedQuestIds(s), ActiveQuests(s));
+                        WriteQuestLists(b, s);
+                    });
                 break;
             }
             case Opcode.TrackQuest:
@@ -160,8 +157,7 @@ public sealed partial class GameServer
 
     private void StartQuest(Session s, int questId)
     {
-        var (available, _) = QuestLists(s);
-        if (!_quests.Quests.TryGetValue(questId, out var info) || !available.Contains(questId))
+        if (!TryQuestInfo(questId, out var info) || !(info.IsBounty ? CanStartBounty(s, info) : QuestLists(s).Available.Contains(questId)))
         {
             Send(s, Opcode.QuestStartReply, b => QuestMessages.WriteRejected(b, "You can't take that quest right now."));
             return;
@@ -177,6 +173,7 @@ public sealed partial class GameServer
             QuestMessages.WriteStartReply(b, q.ToWire(), a, n);
         });
         _log.LogInformation("{Name} started quest {Id} ({Quest})", s.Name, questId, info.Name);
+        MarkBounty(s, info, BountyStarted);
         foreach (var i in initial) CheckStageAlreadyMet(s, q, i);
         SendQuestData(s);
     }
@@ -273,6 +270,8 @@ public sealed partial class GameServer
         });
         _log.LogInformation("{Name} completed quest {Id} ({Quest})", s.Name, info.Id, info.Name);
         if (level != before) AnnounceLevel(s, level);
+        FactionQuestReward(s, info);
+        MarkBounty(s, info, BountyHandedIn);
         // Quests waiting on this one (CompletedQuest stages).
         foreach (var other in s.Quests.Values.Where(o => !o.Completed).ToList())
             for (var i = 0; i < other.Stages.Count; i++)
@@ -341,6 +340,7 @@ public sealed partial class GameServer
     private List<(int, int)> QuestKill(Session s, Mob mob)
     {
         var granted = new List<(int, int)>();
+        FactionKill(s);
         foreach (var (q, i) in OpenStages(s, StageType.MobKill).ToList())
             if (q.Info.Stages[i].Target.Id == mob.Template.Id) Advance(s, q, i);
         foreach (var (q, i) in OpenStages(s, StageType.MobSetKill).ToList())
