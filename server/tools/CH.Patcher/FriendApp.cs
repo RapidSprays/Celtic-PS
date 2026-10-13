@@ -9,7 +9,8 @@ namespace CH.Patcher;
 /// The friends' one-click program (docs/friends.md): double-click it and it does everything. The first time (or when a
 /// newer kit arrives) it makes the patched private copy from the player's own Steam install, installs itself next to
 /// it and puts a "Celtic Heroes Private" shortcut on the desktop. Every time it starts Steam if needed, waits for
-/// Steam to sign in, checks the host's server is reachable and launches the game. Problems are shown as plain dialogs.
+/// Steam to sign in, checks the host's server is reachable, launches the game and relays its HTTP traffic to the
+/// server until it closes (<see cref="LocalRelay"/>). Problems are shown as plain dialogs.
 /// The server address is built in (make-friend-kit.sh).
 /// </summary>
 public static class FriendApp
@@ -53,7 +54,11 @@ public static class FriendApp
             if (!FriendSetup.Reachable(host, HttpPort))
                 throw new InvalidOperationException($"Can't reach the server ({host}).\n\nCheck that Tailscale is running and connected, then try again. " +
                                                     "If it still fails, the host's server may be off.");
-            LaunchGame(dest, platform);
+            // The game talks to the relay on 127.0.0.1 (LocalRelay explains why); keep it up until the game closes.
+            using var relay = LocalRelay.Start(host, HttpPort);
+            using var game = LaunchGame(dest, platform);
+            Ui.HideOwnConsole();
+            game.WaitForExit();
             return 0;
         }
         catch (Exception ex) when (FriendSetup.IsSetupError(ex))
@@ -197,7 +202,7 @@ public static class FriendApp
     }
 
     /// <summary>Starts the private copy with its folder as the working directory (steam_appid.txt there names the game).</summary>
-    private static void LaunchGame(string dest, ClientPlatform platform)
+    private static Process LaunchGame(string dest, ClientPlatform platform)
     {
         var exe = platform == ClientPlatform.Mac
             ? Path.Combine(dest, "CelticHeroes.app", "Contents", "MacOS", "Celtic Heroes")
@@ -207,7 +212,7 @@ public static class FriendApp
         if (!File.Exists(exe)) throw new InvalidOperationException("The game is missing from the private copy. Delete the CelticHeroesPrivate folder and run this again.");
         var psi = new ProcessStartInfo(exe) { WorkingDirectory = dest, UseShellExecute = false };
         if (platform == ClientPlatform.Windows) File.WriteAllText(Path.Combine(dest, "steam_appid.txt"), KnownBuild.SteamAppId.ToString());
-        Process.Start(psi);
+        return Process.Start(psi) ?? throw new InvalidOperationException("The game didn't start. Try again.");
     }
 
     private static void Exec(string file, params string[] arguments)
@@ -237,6 +242,26 @@ public static class FriendApp
             else if (OperatingSystem.IsWindows())
                 MessageBoxW(IntPtr.Zero, text, ShortcutName, 0x10 /* MB_ICONERROR */);
         }
+
+        /// <summary>
+        /// Windows: hides the console window the program opened when double-clicked, since it stays running (relaying) for
+        /// as long as the game is open. A console the player started it from (shared with other processes) is left alone.
+        /// </summary>
+        public static void HideOwnConsole()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+            var window = GetConsoleWindow();
+            if (window != IntPtr.Zero && GetConsoleProcessList(new uint[2], 2) == 1) ShowWindow(window, 0 /* SW_HIDE */);
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetConsoleWindow();
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetConsoleProcessList(uint[] processList, uint processCount);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         private static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 

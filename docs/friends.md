@@ -69,6 +69,21 @@ Send them `HOW-TO-JOIN.txt` and their file. In short:
 
 Their private copy lives in `~/CelticHeroesPrivate` (Mac) or `%LOCALAPPDATA%\CelticHeroesPrivate` (Windows). The launcher logs to `~/Library/Logs/CelticHeroesPrivate.log` on a Mac. The first username and password they type become their account on your server.
 
+## How a friend's game reaches the server
+The game ships with Unity's "Allow downloads over HTTP" set to Not allowed, and Unity only exempts localhost. A copy
+patched straight to your Tailscale address had its first request refused ("Insecure connection not allowed" in
+`Player.log`) and hung on the loading screen. So a friend's copy is patched to `http://127.0.0.1:5565`, exactly like
+your own copy talks to `127.0.0.1`, and the friend program keeps a small relay running on that port while the game is
+open, forwarding to your server (`CH.Patcher/LocalRelay.cs`). The program must stay running while they play: on
+Windows its console window hides itself, and it exits when the game closes. The game's UDP connection goes straight to
+the address in the world list.
+
+The server builds every HTTP link it sends (patch root, privacy, stats) from the address the client used to reach it,
+so links stay on `127.0.0.1` as well (`PatchServer.Origin`).
+
+Moving off Tailscale later only changes the relay's upstream (for example to HTTPS on a public host); friends' game
+copies don't need patching again.
+
 ## Game version
 
 The kit only accepts the client build it was verified against (24928510, in `server/tools/CH.Patcher/KnownBuilds.cs`).

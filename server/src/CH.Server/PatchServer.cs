@@ -30,6 +30,16 @@ public sealed class PatchServer : IAsyncDisposable
 
     public string Root => $"http://{_options.PublicHost}:{Port}/patchserver/";
 
+    /// <summary>
+    /// The HTTP origin the client used to reach us (its Host header), so every link we hand out stays on that origin.
+    /// Friends' clients talk to their launcher's relay on 127.0.0.1 (FriendApp), because the client's Unity build refuses
+    /// plain HTTP to anything but localhost; a link to <see cref="ServerOptions.PublicHost"/> would be refused.
+    /// </summary>
+    private string Origin(HttpContext ctx) =>
+        ctx.Request.Host.HasValue && HostHeader.IsMatch(ctx.Request.Host.Value) ? $"http://{ctx.Request.Host.Value}" : $"http://{_options.PublicHost}:{Port}";
+
+    private static readonly System.Text.RegularExpressions.Regex HostHeader = new(@"^[A-Za-z0-9.\-]+(:\d{1,5})?$|^\[[0-9A-Fa-f:.]+\](:\d{1,5})?$");
+
     public async Task StartAsync()
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -101,7 +111,8 @@ public sealed class PatchServer : IAsyncDisposable
         {
             case "patchserverurl.aspx":
                 // env,patchServerUrl,redeemEnabled,balanceCdnUrlFormat (EnvironmentSetup.cs:115-128). Env 0 = Test.
-                return Text($"0,{Root},0,{Root}balancefiles/{{0}}/balance-client.json");
+                var root = $"{Origin(ctx)}/patchserver/";
+                return Text($"0,{root},0,{root}balancefiles/{{0}}/balance-client.json");
 
             case "patchinforequest.aspx":
                 return Text(_options.PatchLevel.ToString());
@@ -110,7 +121,7 @@ public sealed class PatchServer : IAsyncDisposable
                 return Text("");
 
             case "worldlist.aspx":
-                return Text(WorldList(q["uname"].ToString()));
+                return Text(WorldList(q["uname"].ToString(), Origin(ctx)));
 
             case "checkaccountconflictstate.aspx":
                 return Text("0"); // no conflict (AccountConflictHelper.cs:71-91)
@@ -121,8 +132,8 @@ public sealed class PatchServer : IAsyncDisposable
                     "1",
                     "Private test server.",
                     "No data leaves this machine.",
-                    $"http://{_options.PublicHost}:{Port}/privacy",
-                    $"http://{_options.PublicHost}:{Port}/terms"));
+                    $"{Origin(ctx)}/privacy",
+                    $"{Origin(ctx)}/terms"));
 
             case "purchaseslist.aspx":
                 return Text("");
@@ -147,8 +158,11 @@ public sealed class PatchServer : IAsyncDisposable
         }
     }
 
-    /// <summary>World list (NetworkManager.cs:5580-5639). One world, pointing at our game server.</summary>
-    internal string WorldList(string username)
+    /// <summary>
+    /// World list (NetworkManager.cs:5580-5639). One world, pointing at our game server: its UDP address is always
+    /// <see cref="ServerOptions.PublicHost"/>, while the stats link uses the HTTP <paramref name="origin"/>.
+    /// </summary>
+    internal string WorldList(string username, string origin)
     {
         var characters = 0;
         if (!string.IsNullOrWhiteSpace(username))
@@ -160,7 +174,7 @@ public sealed class PatchServer : IAsyncDisposable
         return string.Join("\n",
             "ok",
             $"{o.PatchLevel},0",
-            $"http://{o.PublicHost}:{Port}/stats/",
+            $"{origin}/stats/",
             o.MaxCharacterSlots.ToString(),
             "1",
             // worldID,name,ip,port,blocked,private,unused,hostName,globalServerZone,numCharacters
