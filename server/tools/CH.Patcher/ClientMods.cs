@@ -13,11 +13,15 @@ public static class ClientMods
     }
 
     /// <summary>Writes CHPrivateMods.dll and its custom item list next to the patched Assembly-CSharp.dll.</summary>
-    public static void Install(string assemblyCSharpPath)
+    public static void Install(string assemblyCSharpPath, NameMap? names = null)
     {
         var dir = Path.GetDirectoryName(assemblyCSharpPath)!;
         File.WriteAllBytes(Path.Combine(dir, AssemblyPatcher.ModsAssembly + ".dll"), Bytes());
         File.WriteAllLines(Path.Combine(dir, AssemblyPatcher.ModsAssembly + ".items.txt"), ItemLines());
+        // The obfuscated (Windows) build: the mod looks the game's members up through this (CHPrivateMods.R).
+        var namesFile = Path.Combine(dir, AssemblyPatcher.ModsAssembly + ".names.txt");
+        if (names is { IsIdentity: false }) File.WriteAllLines(namesFile, names.ModLines());
+        else if (File.Exists(namesFile)) File.Delete(namesFile);
     }
 
     /// <summary>

@@ -78,6 +78,8 @@ codesign --force --deep --sign - "$APP" 2>/dev/null
 # ---- Windows: one exe (once the Windows build is verified) --------------------------------------------------------
 WINDOWS=0
 if grep -q "ClientPlatform.Windows," "$REPO/server/tools/CH.Patcher/KnownBuilds.cs"; then
+  # The obfuscated Windows build is patched through its name map; build it if this machine doesn't have it yet.
+  ls "$HOME"/CelticHeroesAnalysis/extracted/*/names-*.json >/dev/null 2>&1 || "$REPO/scripts/map-windows.sh"
   publish win-x64 "$WORK/win-x64"
   cp "$WORK/win-x64/CelticHeroesPrivate.exe" "$OUT/"
   WINDOWS=1

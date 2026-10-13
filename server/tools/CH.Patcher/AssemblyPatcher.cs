@@ -23,13 +23,20 @@ public sealed class AssemblyPatcher
     private readonly string _host;
     private readonly List<PatchResult> _results = new();
     private readonly HashSet<MethodDefinition> _edited = new();
+    private readonly NameMap _names;
 
     /// <param name="host">the private server's address: 127.0.0.1 on the host's own machine, its Tailscale IP for friends</param>
-    public AssemblyPatcher(ModuleDefinition module, int httpPort, string host = "127.0.0.1")
+    /// <param name="names">
+    /// where the Mac build's names are in this module: <see cref="NameMap.Identity"/> for the Mac build, the Windows
+    /// build's map otherwise (docs/windows-names.md). Patches are written in Mac names; site counts count real code only,
+    /// while URL and field rewrites also cover the obfuscator's decoy copies so no live address is left anywhere.
+    /// </param>
+    public AssemblyPatcher(ModuleDefinition module, int httpPort, string host = "127.0.0.1", NameMap? names = null)
     {
         _module = module;
         _httpPort = httpPort;
         _host = host;
+        _names = names ?? NameMap.Identity;
     }
 
     public IReadOnlyList<PatchResult> Results => _results;
@@ -77,7 +84,7 @@ public sealed class AssemblyPatcher
 
         // P12: the rainbow effect on weapons, once a character model has finished loading.
         InjectModCall("P12", "CMD5_Model", "checkDownloadComplete", argument: 0, modType: "RainbowWeapons", modMethod: "OnModelLoaded",
-            after: ins => ins.OpCode == OpCodes.Stfld && ins.Operand is FieldReference { Name: "m_isFullyLoaded" } && ins.Previous?.OpCode == OpCodes.Ldc_I4_1);
+            after: ins => ins.OpCode == OpCodes.Stfld && ins.Operand is FieldReference f && _names.MacName(f) == "m_isFullyLoaded" && ins.Previous?.OpCode == OpCodes.Ldc_I4_1);
 
         // P14: the passive tree panel reads the server's own messages (TreeLayout/TreeState) before the client's switch.
         InjectModCall("P14", "NetworkManager", "processCommand", argument: 1, modType: "PassiveTree", modMethod: "OnMessage", after: null);
@@ -86,7 +93,7 @@ public sealed class AssemblyPatcher
         // game's own listeners are all in place before the mod takes a button over.
         InjectModCall("P15", "Assets.Main.HUD.HUDOptionsScreen", "Init", argument: 0, modType: "PassiveTree", modMethod: "AttachMenuButton",
             after: ins => ins.OpCode == OpCodes.Callvirt && ins.Operand is MethodReference { Name: "AddListener" }
-                && ins.Previous?.Previous?.Operand is MethodReference { Name: "OnFreePlatButtonPressed" });
+                && ins.Previous?.Previous?.Operand is MethodReference handler && _names.MacName(handler) == "OnFreePlatButtonPressed");
 
         // Inserting instructions can push short-form branches out of range; re-pick branch sizes for every edited method.
         foreach (var method in _edited) method.Body.OptimizeMacros();
@@ -108,19 +115,19 @@ public sealed class AssemblyPatcher
 
     private void ReplaceFieldReads(string id, string typeName, IReadOnlyDictionary<string, string> values, int expectedSites)
     {
-        var type = _module.GetType(typeName) ?? throw new PatchException(id, $"type {typeName} not found");
+        _ = _names.FindType(_module, typeName) ?? throw new PatchException(id, $"type {typeName} not found");
         var sites = 0;
         foreach (var (method, ins) in AllInstructions().ToList())
         {
-            if (ins.OpCode != OpCodes.Ldfld || ins.Operand is not FieldReference f || f.DeclaringType.FullName != type.FullName) continue;
-            if (!values.TryGetValue(f.Name, out var value)) continue;
+            if (ins.OpCode != OpCodes.Ldfld || ins.Operand is not FieldReference f || _names.MacName(f.DeclaringType) != typeName) continue;
+            if (!values.TryGetValue(_names.MacName(f), out var value)) continue;
             // ldfld consumes the instance and pushes the string: pop the instance, push the constant instead. The original
             // instruction becomes the pop so any branch that targeted it still lands on a balanced sequence.
             var il = BeginEdit(method);
             ins.OpCode = OpCodes.Pop;
             ins.Operand = null;
             il.InsertAfter(ins, il.Create(OpCodes.Ldstr, value));
-            sites++;
+            if (_names.IsReal(method)) sites++;
         }
         Record(id, $"{typeName}: reads of {string.Join(", ", values.Keys)} replaced with private-server URLs", sites, expectedSites);
     }
@@ -128,12 +135,12 @@ public sealed class AssemblyPatcher
     private void RewriteLiveUrlLiterals(string id, int expectedSites)
     {
         var sites = 0;
-        foreach (var (_, ins) in AllInstructions())
+        foreach (var (method, ins) in AllInstructions())
         {
             if (ins.OpCode != OpCodes.Ldstr || ins.Operand is not string s || !LiveHostUrl.IsMatch(s)) continue;
             var uri = new Uri(s);
             ins.Operand = Local($"external/{uri.Host}{uri.PathAndQuery}");
-            sites++;
+            if (_names.IsReal(method)) sites++;
         }
         Record(id, $"live URL literals rewritten to http://{_host}:<port>/external/<host><path>", sites, expectedSites);
     }
@@ -174,13 +181,17 @@ public sealed class AssemblyPatcher
         foreach (var (method, ins) in AllInstructions().ToList())
         {
             if (ins.Operand is not MethodReference callee || callee.Name != "InitializeAsync" || !callee.DeclaringType.FullName.Contains("ZendeskSdk")) continue;
-            Neutralize(method, ins, callee);
             // Its result feeds Task.ContinueWith(...) and then a pop. Remove that continuation call too.
             var next = ins.Next;
             while (next is not null && !(next.Operand is MethodReference m && m.Name == "ContinueWith")) next = next.Next;
-            if (next is null) throw new PatchException(id, "ContinueWith after ZendeskSdk.InitializeAsync not found");
+            if (next is null)
+            {
+                if (_names.IsReal(method)) throw new PatchException(id, "ContinueWith after ZendeskSdk.InitializeAsync not found");
+                continue; // an obfuscator decoy: never runs, leave it
+            }
+            Neutralize(method, ins, callee);
             Neutralize(method, next, (MethodReference)next.Operand);
-            sites++;
+            if (_names.IsReal(method)) sites++;
         }
         Record(id, "CController.Init: ZendeskSdk.InitializeAsync(...).ContinueWith(...) removed", sites, expected: 1);
     }
@@ -195,7 +206,7 @@ public sealed class AssemblyPatcher
     /// </summary>
     private void InjectMaxButton(string id)
     {
-        var popup = _module.GetType("CSkillPopup");
+        var popup = _names.FindType(_module, "CSkillPopup");
         var ctors = popup?.Methods.Where(m => m.IsConstructor && !m.IsStatic && m.Parameters.Count == 5).ToList() ?? [];
         var sites = 0;
         if (ctors.Count == 1 && popup!.Methods.All(m => m.Name != "CHPrivate_AttachMax"))
@@ -243,8 +254,8 @@ public sealed class AssemblyPatcher
     private void InjectModCall(string id, string typeName, string methodName, int argument, string modType, string modMethod,
         Func<Instruction, bool>? after)
     {
-        var type = _module.GetType(typeName);
-        var targets = type?.Methods.Where(m => m.Name == methodName && m.HasBody && m.Parameters.Count >= (argument == 0 ? 0 : argument)).ToList() ?? [];
+        var type = _names.FindType(_module, typeName);
+        var targets = type?.Methods.Where(m => _names.MacName(m) == methodName && m.HasBody && m.Parameters.Count >= (argument == 0 ? 0 : argument)).ToList() ?? [];
         var helperName = $"CHPrivate_{modType}_{modMethod}";
         var sites = 0;
         if (targets.Count == 1 && type!.Methods.All(m => m.Name != helperName))
@@ -313,13 +324,15 @@ public sealed class AssemblyPatcher
         }
     }
 
-    private static bool InScope(MethodDefinition method, string typeName, string methodName)
+    private bool InScope(MethodDefinition method, string typeName, string methodName)
     {
+        if (!_names.IsReal(method)) return false;
         var t = method.DeclaringType;
+        var macType = _names.MacName(t);
         // Coroutines and async methods compile to nested <Name>d__N types.
-        if (t.DeclaringType is { } outer && t.Name.StartsWith($"<{methodName}>", StringComparison.Ordinal))
-            return outer.FullName == typeName;
-        return t.FullName == typeName && method.Name == methodName;
+        if (t.DeclaringType is { } outer && macType[(macType.LastIndexOf('/') + 1)..].StartsWith($"<{methodName}>", StringComparison.Ordinal))
+            return _names.MacName(outer) == typeName;
+        return macType == typeName && _names.MacName(method) == methodName;
     }
 
     private IEnumerable<(MethodDefinition Method, Instruction Ins)> AllInstructions() =>

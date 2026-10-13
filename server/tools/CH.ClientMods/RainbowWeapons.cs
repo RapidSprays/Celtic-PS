@@ -17,25 +17,24 @@ namespace CHPrivateMods
             try
             {
                 if (model == null) return;
-                var ids = model.GetType().GetField("m_modelIDs", CustomItems.Any)?.GetValue(model);
-                var visible = ids?.GetType().GetField("m_visibleEquipmentTemplates", CustomItems.Any)?.GetValue(ids) as IDictionary;
+                var ids = R.Get(model, "m_modelIDs");
+                var visible = R.Get(ids, "m_visibleEquipmentTemplates") as IDictionary;
                 if (visible == null) return;
                 var rainbow = false;
                 foreach (DictionaryEntry kv in visible)
                 {
-                    if (kv.Key.ToString() != "Weapon" || kv.Value == null) continue;
-                    var id = kv.Value.GetType().GetField("ID", CustomItems.Any)?.GetValue(kv.Value);
+                    if (R.EnumName(kv.Key) != "Weapon" || kv.Value == null) continue;
+                    var id = R.Get(kv.Value, "ID");
                     rainbow = id is int templateId && CustomItems.IsRainbow(templateId);
                 }
                 if (!rainbow) return;
-                var components = model.GetType().GetField("m_modelComponents", CustomItems.Any)?.GetValue(model) as IList;
+                var components = R.Get(model, "m_modelComponents") as IList;
                 if (components == null) return;
                 var index = 0;
                 foreach (var component in components)
                 {
-                    var type = component.GetType();
-                    if (type.GetField("m_slotType", CustomItems.Any)?.GetValue(component)?.ToString() != "Weapon") continue;
-                    if (!(type.GetField("m_gameObject", CustomItems.Any)?.GetValue(component) is GameObject go) || go.GetComponent<RainbowCycler>() != null) continue;
+                    if (R.EnumName(R.Get(component, "m_slotType")) != "Weapon") continue;
+                    if (!(R.Get(component, "m_gameObject") is GameObject go) || go.GetComponent<RainbowCycler>() != null) continue;
                     var cycler = go.AddComponent<RainbowCycler>();
                     cycler.Component = component;
                     cycler.Offset = 0.15f * index++;
@@ -64,9 +63,9 @@ namespace CHPrivateMods
         {
             if (Component == null) return;
             var type = Component.GetType();
-            _primary = type.GetProperty("PrimaryColour", CustomItems.Any);
-            _material = type.GetField("m_material", CustomItems.Any);
-            _effect = type.GetField("effectMesh", CustomItems.Any)?.GetValue(Component) is bool b && b;
+            _primary = R.Property(type, "PrimaryColour");
+            _material = R.Field(type, "m_material");
+            _effect = R.Get(Component, "effectMesh") is bool b && b;
         }
 
         private void Update()

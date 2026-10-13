@@ -21,16 +21,16 @@ namespace CHPrivateMods
         {
             try
             {
-                var templates = balanceClient?.GetType().GetField("SkillTemplates", CustomItems.Any)?.GetValue(balanceClient) as IDictionary;
+                var templates = R.Get(balanceClient, "SkillTemplates") as IDictionary;
                 if (templates == null) return;
                 foreach (var template in templates.Values)
                 {
                     var type = template.GetType();
-                    var ability = (int)type.GetField("AbilityId", CustomItems.Any).GetValue(template);
-                    var levels = type.GetField("Levels", CustomItems.Any).GetValue(template) as IList;
+                    var ability = (int)R.Field(type, "AbilityId").GetValue(template);
+                    var levels = R.Field(type, "Levels").GetValue(template) as IList;
                     if (ability < 0 || levels == null || levels.Count < 2) continue;
                     ExtendList(levels);
-                    if (type.GetField("PvpLevels", CustomItems.Any)?.GetValue(template) is IList pvp && pvp.Count >= 2) ExtendList(pvp);
+                    if (R.Field(type, "PvpLevels")?.GetValue(template) is IList pvp && pvp.Count >= 2) ExtendList(pvp);
                 }
             }
             catch (Exception ex)
@@ -43,10 +43,10 @@ namespace CHPrivateMods
         {
             if (levels.Count >= Ranks) return;
             var type = levels[0].GetType();
-            var minLevel = type.GetField("MinLevel");
-            var templateLevel = type.GetField("TemplateLevel");
-            var initial = type.GetField("InitialDamage");
-            var baseDamage = type.GetField("BaseDamage");
+            var minLevel = R.Field(type, "MinLevel");
+            var templateLevel = R.Field(type, "TemplateLevel");
+            var initial = R.Field(type, "InitialDamage");
+            var baseDamage = R.Field(type, "BaseDamage");
             foreach (var level in levels) minLevel.SetValue(level, 0);
             var last = levels[levels.Count - 1];
             var prev = levels[levels.Count - 2];

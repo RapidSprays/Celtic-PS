@@ -63,11 +63,11 @@ namespace CHPrivateMods
 
         private static void Bind(Type type)
         {
-            _position = type.GetProperty("Position", Any);
-            _readVarUInt = type.GetMethod("ReadVariableUInt32", Any, null, Type.EmptyTypes, null);
-            _readVarInt = type.GetMethod("ReadVariableInt32", Any, null, Type.EmptyTypes, null);
-            _readString = type.GetMethod("ReadString", Any, null, Type.EmptyTypes, null);
-            _readByte = type.GetMethod("ReadByte", Any, null, Type.EmptyTypes, null);
+            _position = R.Property(type, "Position");
+            _readVarUInt = R.Method(type, "ReadVariableUInt32", 0);
+            _readVarInt = R.Method(type, "ReadVariableInt32", 0);
+            _readString = R.Method(type, "ReadString", 0);
+            _readByte = R.Method(type, "ReadByte", 0);
         }
 
         private static int Int(object m) => (int)_readVarInt.Invoke(m, null);
@@ -119,10 +119,10 @@ namespace CHPrivateMods
         {
             try
             {
-                var controllerType = Type.GetType("CController, Assembly-CSharp");
-                var controller = controllerType?.GetField("instance", Any)?.GetValue(null);
-                var network = controllerType?.GetField("m_networkManager", Any)?.GetValue(controller);
-                var send = network?.GetType().GetMethod("sendChatMessage", Any);
+                var controllerType = R.GameType("CController");
+                var controller = R.Field(controllerType, "instance")?.GetValue(null);
+                var network = R.Get(controller, "m_networkManager");
+                var send = network == null ? null : R.Method(network.GetType(), "sendChatMessage", 3);
                 if (send == null) return;
                 var channel = Enum.ToObject(send.GetParameters()[1].ParameterType, 3); // HW_CHAT_BOX_CHANNEL_LOCAL
                 send.Invoke(network, new[] { text, channel, "" });
@@ -139,8 +139,8 @@ namespace CHPrivateMods
             try
             {
                 var type = optionsScreen.GetType();
-                var stats = type.GetField("statsButton", Any)?.GetValue(optionsScreen) as Button;
-                var freePlat = type.GetField("freePlatButton", Any)?.GetValue(optionsScreen) as Button;
+                var stats = R.Field(type, "statsButton")?.GetValue(optionsScreen) as Button;
+                var freePlat = R.Field(type, "freePlatButton")?.GetValue(optionsScreen) as Button;
                 GameObject target;
                 if (freePlat != null && freePlat.gameObject.activeSelf)
                 {
@@ -232,9 +232,9 @@ namespace CHPrivateMods
         {
             try
             {
-                var type = Type.GetType("GUIManager, Assembly-CSharp");
-                var manager = type?.GetField("instance", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(null);
-                var flag = type?.GetField("htmlWindowOpen", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var type = R.GameType("GUIManager");
+                var manager = R.Field(type, "instance")?.GetValue(null);
+                var flag = R.Field(type, "htmlWindowOpen");
                 if (manager == null || flag == null) return;
                 if (block)
                 {

@@ -25,6 +25,44 @@ if (args.Length > 0 && args[0] == "notices")
 if (args.Length == 0 && FriendSetup.FriendHost() is not null) return FriendApp.Run(args);
 if (args.Length > 0 && args[0] == "setup") return FriendSetup.Run(args[1..]);
 if (args.Length > 0 && args[0] == "verify") return Verify.Run(args[1..]);
+if (args.Length > 0 && args[0] == "map")
+{
+    // CH.Patcher map --mac <Mac Assembly-CSharp.dll> --windows <Windows Assembly-CSharp.dll> [--out names.json]
+    string? macPath = null, winPath = null, outPath = null;
+    for (var i = 1; i < args.Length; i++)
+        switch (args[i])
+        {
+            case "--mac": macPath = args[++i]; break;
+            case "--windows": winPath = args[++i]; break;
+            case "--out": outPath = args[++i]; break;
+        }
+    if (macPath is null || winPath is null) { Console.Error.WriteLine("usage: map --mac DLL --windows DLL [--out FILE]"); return 2; }
+    ModuleDefinition Read(string path)
+    {
+        var r = new DefaultAssemblyResolver();
+        r.AddSearchDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+        return ModuleDefinition.ReadModule(path, new ReaderParameters { AssemblyResolver = r });
+    }
+    using var macModule = Read(macPath);
+    using var winModule = Read(winPath);
+    var started = Stopwatch.StartNew();
+    var matcher = new NameMatcher(macModule, winModule);
+    var map = matcher.Build();
+    Console.WriteLine($"{matcher.Report} ({started.ElapsedMilliseconds} ms)");
+    if (outPath is not null) File.WriteAllText(outPath, map.ToJson());
+    // --check a,b,c: where each member name is declared on the Mac side, and whether the map covers it.
+    var check = Array.IndexOf(args, "--check") is var ci and >= 0 ? args[ci + 1].Split(',') : [];
+    foreach (var name in check)
+        foreach (var t in macModule.GetTypes())
+        {
+            var hits = t.Fields.Where(f => f.Name == name).Select(f => $"{t.FullName}::{name}")
+                .Concat(t.Properties.Where(p => p.Name == name).Select(p => $"{t.FullName}::{name}"))
+                .Concat(t.Methods.Where(m => m.Name == name).Select(m => $"{t.FullName}::{name}/{m.Parameters.Count}"));
+            foreach (var key in hits)
+                Console.WriteLine($"  {key} -> {(map.Members.TryGetValue(key, out var w) ? w : "MISSING")}  (type {(map.Types.TryGetValue(t.FullName, out var wt) ? wt : "MISSING")})");
+        }
+    return 0;
+}
 
 var build = "24928510";
 var host = "127.0.0.1";

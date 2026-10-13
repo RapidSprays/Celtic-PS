@@ -140,3 +140,105 @@ public class PatcherTests
         Assert.Equal(0, CH.Patcher.AssetUrlPatcher.PatchCompanyName(bytes)); // idempotent: nothing left to rename
     }
 }
+
+/// <summary>
+/// The Windows build is obfuscated: the patch set and the client mod go through its name map (docs/windows-names.md).
+/// Needs the downloaded Windows depot and the host's generated map; passes without checking otherwise.
+/// </summary>
+public class WindowsBuildTests
+{
+    private static readonly string Home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    private static readonly string Depot = Path.Combine(Home, "Library", "Application Support", "Steam", "Steam.AppBundle", "Steam", "Contents", "MacOS",
+        "steamapps", "content", "app_2829820", "depot_2829821");
+    private static readonly string Dll = Path.Combine(Depot, "CelticHeroes_Data", "Managed", "Assembly-CSharp.dll");
+    private static readonly string MacDll = Path.Combine(Home, "CelticHeroesAnalysis", "snapshots", "24928510", "Contents", "Resources", "Data", "Managed", "Assembly-CSharp.dll");
+
+    private static (ModuleDefinition Module, NameMap Names)? Load()
+    {
+        if (!File.Exists(Dll)) return null;
+        var known = KnownBuild.All.Single(b => b.Platform == ClientPlatform.Windows);
+        var names = NameMap.Embedded(known.DllSha256);
+        if (names is null) return null;
+        var resolver = new DefaultAssemblyResolver();
+        resolver.AddSearchDirectory(Path.GetDirectoryName(Dll)!);
+        return (ModuleDefinition.ReadModule(new MemoryStream(File.ReadAllBytes(Dll)), new ReaderParameters { AssemblyResolver = resolver }), names);
+    }
+
+    [Fact]
+    public void The_patch_set_applies_to_the_obfuscated_build_with_the_same_site_counts()
+    {
+        if (Load() is not var (module, names)) return;
+        using var _ = module;
+        var patcher = new AssemblyPatcher(module, 5555, "100.64.0.1", names);
+        patcher.ApplyAll(); // throws if any real site count differs from the Mac build's
+        Assert.Equal(13, patcher.Results.Count);
+        Assert.Empty(patcher.RemainingLiveUrls()); // decoy copies included
+    }
+
+    [Fact]
+    public void The_matcher_reproduces_the_shipped_map()
+    {
+        if (!File.Exists(Dll) || !File.Exists(MacDll) || Load() is not var (win, shipped)) return;
+        using var _ = win;
+        using var mac = ModuleDefinition.ReadModule(MacDll);
+        var built = new NameMatcher(mac, win).Build();
+        Assert.Equal(shipped.Types.Count, built.Types.Count);
+        Assert.Equal(shipped.Methods.Count, built.Methods.Count);
+        Assert.Equal("CKGBDDIKPME", built.Types["NetworkManager"]);
+        Assert.Equal("LCIMANMMKCC", built.Members["NetworkManager::sendChatMessage/3"]);
+    }
+
+    /// <summary>Every member the client mod looks up by name (CHPrivateMods.R), resolved as the mod resolves it.</summary>
+    [Theory]
+    [InlineData("CSkillPopup", "m_btnUpgrade", -1)]
+    [InlineData("CSkillPopup", "SetLevelToUpgradeTo", 1)]
+    [InlineData("CSkillPopup", "ConfirmButtonPressed", 0)]
+    [InlineData("Lidgren.Network.NetIncomingMessage", "Position", -2)]
+    [InlineData("Lidgren.Network.NetIncomingMessage", "ReadVariableUInt32", 0)]
+    [InlineData("Lidgren.Network.NetIncomingMessage", "ReadVariableInt32", 0)]
+    [InlineData("Lidgren.Network.NetIncomingMessage", "ReadString", 0)]
+    [InlineData("Lidgren.Network.NetIncomingMessage", "ReadByte", 0)]
+    [InlineData("CController", "instance", -1)]
+    [InlineData("CController", "m_networkManager", -1)]
+    [InlineData("NetworkManager", "sendChatMessage", 3)]
+    [InlineData("GUIManager", "instance", -1)]
+    [InlineData("GUIManager", "htmlWindowOpen", -1)]
+    [InlineData("Assets.Main.HUD.HUDOptionsScreen", "statsButton", -1)]
+    [InlineData("Assets.Main.HUD.HUDOptionsScreen", "freePlatButton", -1)]
+    [InlineData("CMD5_Model", "m_modelIDs", -1)]
+    [InlineData("CMD5_Model", "m_modelComponents", -1)]
+    [InlineData("CModelIDs", "m_visibleEquipmentTemplates", -1)]
+    [InlineData("ModelComponent", "m_slotType", -1)]
+    [InlineData("ModelComponent", "m_gameObject", -1)]
+    [InlineData("ModelComponent", "m_material", -1)]
+    [InlineData("ModelComponent", "effectMesh", -1)]
+    [InlineData("ModelComponent", "PrimaryColour", -2)]
+    [InlineData("Balance.Model.BalanceClient", "ItemTemplates", -1)]
+    [InlineData("Balance.Model.BalanceClient", "SkillTemplates", -1)]
+    [InlineData("Balance.Model.BalanceClient", "EquipmentModelIDTemplates", -1)]
+    [InlineData("Balance.Model.Templates.Skills.Client.SkillTemplateLevel", "InitialDamage", -1)]
+    [InlineData("Balance.Model.Templates.Visual.ModelIDParticleComponent", "AttachBone1", -1)]
+    public void The_client_mod_finds_its_members_in_the_obfuscated_build(string macType, string member, int arity)
+    {
+        if (Load() is not var (module, names)) return;
+        using var _ = module;
+        var lines = names.ModLines().Select(l => l.Split('|')).ToList();
+        var types = lines.Where(p => p[0] == "T").ToDictionary(p => p[1], p => p[2]);
+        var back = types.ToDictionary(kv => kv.Value, kv => kv.Key);
+        var members = lines.Where(p => p[0] == "M").ToDictionary(p => p[1], p => p[2]);
+        var type = module.GetType(types.GetValueOrDefault(macType, macType));
+        Assert.NotNull(type);
+        for (var t = type; t is not null; t = t.BaseType?.Resolve())
+        {
+            if (t.Module != module) break;
+            var mac = back.GetValueOrDefault(t.FullName, t.FullName);
+            var key = $"{mac}::{member}{(arity >= 0 ? $"/{arity}" : "")}";
+            var name = members.GetValueOrDefault(key, member);
+            var found = arity == -1 ? t.Fields.Any(f => f.Name == name)
+                : arity == -2 ? t.Properties.Any(p => p.Name == name)
+                : t.Methods.Any(m => m.Name == name && m.Parameters.Count == arity);
+            if (found) return;
+        }
+        Assert.Fail($"{macType}::{member} not found in the Windows build");
+    }
+}

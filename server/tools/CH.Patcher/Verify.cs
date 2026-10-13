@@ -4,7 +4,7 @@ using Mono.Cecil;
 namespace CH.Patcher;
 
 /// <summary>
-/// <c>verify --game-dir DIR</c>: read-only analysis of a game folder (a .app on macOS, or a Windows game folder such as
+/// <c>verify --game-dir DIR [--names FILE]</c>: read-only analysis of a game folder (a .app on macOS, or a Windows game folder such as
 /// a downloaded depot). Prints the build's hashes and runs the whole patch set in discovery mode, so a new platform or
 /// build can be added to <see cref="KnownBuild"/> with confidence. Writes nothing.
 /// </summary>
@@ -12,9 +12,12 @@ public static class Verify
 {
     public static int Run(string[] args)
     {
-        string? dir = null;
+        string? dir = null, namesPath = null;
         for (var i = 0; i < args.Length; i++)
+        {
             if (args[i] == "--game-dir") dir = Path.GetFullPath(args[++i]);
+            else if (args[i] == "--names") namesPath = Path.GetFullPath(args[++i]);
+        }
         if (dir is null || !Directory.Exists(dir))
         {
             Console.Error.WriteLine("usage: verify --game-dir <CelticHeroes.app or Windows game folder>");
@@ -36,7 +39,10 @@ public static class Verify
         var resolver = new DefaultAssemblyResolver();
         resolver.AddSearchDirectory(Path.GetDirectoryName(dll)!);
         using var module = ModuleDefinition.ReadModule(new MemoryStream(File.ReadAllBytes(dll)), new ReaderParameters { AssemblyResolver = resolver });
-        var patcher = new AssemblyPatcher(module, 5555, "100.64.0.1") { Discover = true };
+        // Windows: the obfuscated build needs its name map (--names FILE, or the one embedded for this hash).
+        var names = namesPath is not null ? NameMap.FromJson(File.ReadAllText(namesPath)) : mac ? NameMap.Identity : NameMap.Embedded(Sha256(dll));
+        Console.WriteLine($"names      {(names is null ? "none (pass --names, see docs/windows-names.md)" : names.IsIdentity ? "readable build" : $"{names.Methods.Count} real methods mapped")}");
+        var patcher = new AssemblyPatcher(module, 5555, "100.64.0.1", names) { Discover = true };
         patcher.ApplyAll();
         foreach (var r in patcher.Results) Console.WriteLine($"  {r.Id,-4} {r.Sites,2} site(s)  {r.Description}");
         Console.WriteLine($"  live URLs left after patching: {patcher.RemainingLiveUrls().Count}");

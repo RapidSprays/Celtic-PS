@@ -64,7 +64,7 @@ namespace CHPrivateMods
             {
                 Load();
                 if (balanceClient == null || _entries.Count == 0) return;
-                var templates = balanceClient.GetType().GetField("ItemTemplates", Any)?.GetValue(balanceClient) as IDictionary;
+                var templates = R.Get(balanceClient, "ItemTemplates") as IDictionary;
                 if (templates == null) return;
                 foreach (var e in _entries)
                 {
@@ -76,14 +76,14 @@ namespace CHPrivateMods
                         var donor = templates[e.Stats];
                         foreach (var name in StatFields)
                         {
-                            var field = type.GetField(name, Any);
+                            var field = R.Field(type, name);
                             if (field != null) field.SetValue(copy, field.GetValue(donor));
                         }
                     }
-                    type.GetField("ID", Any)?.SetValue(copy, e.Id);
-                    type.GetField("Name", Any)?.SetValue(copy, e.Name);
-                    if (!string.IsNullOrEmpty(e.Description)) type.GetField("Description", Any)?.SetValue(copy, e.Description);
-                    if (e.ModelId >= 0) type.GetField("ModelID", Any)?.SetValue(copy, e.ModelId);
+                    R.Field(type, "ID")?.SetValue(copy, e.Id);
+                    R.Field(type, "Name")?.SetValue(copy, e.Name);
+                    if (!string.IsNullOrEmpty(e.Description)) R.Field(type, "Description")?.SetValue(copy, e.Description);
+                    if (e.ModelId >= 0) R.Field(type, "ModelID")?.SetValue(copy, e.ModelId);
                     templates[e.Id] = copy;
                 }
             }
@@ -103,7 +103,7 @@ namespace CHPrivateMods
             {
                 Load();
                 if (balanceClient == null) return;
-                var bySlot = balanceClient.GetType().GetField("EquipmentModelIDTemplates", Any)?.GetValue(balanceClient) as IDictionary;
+                var bySlot = R.Get(balanceClient, "EquipmentModelIDTemplates") as IDictionary;
                 if (bySlot == null) return;
                 IDictionary weapons = null;
                 foreach (DictionaryEntry kv in bySlot)
@@ -115,8 +115,8 @@ namespace CHPrivateMods
                     if (e.ModelId < 0 || weapons.Contains(e.ModelId) || !weapons.Contains(e.ModelBase)) continue;
                     var model = Clone.Invoke(weapons[e.ModelBase], null);
                     var type = model.GetType();
-                    type.GetField("Name", Any)?.SetValue(model, e.Name);
-                    var listField = type.GetField("ParticleComponents", Any);
+                    R.Field(type, "Name")?.SetValue(model, e.Name);
+                    var listField = R.Field(type, "ParticleComponents");
                     if (listField != null && prototype != null && e.Particles.Count > 0)
                     {
                         var list = (IList)Activator.CreateInstance(listField.FieldType);
@@ -139,7 +139,7 @@ namespace CHPrivateMods
         {
             foreach (DictionaryEntry kv in weapons)
             {
-                var list = kv.Value?.GetType().GetField("ParticleComponents", Any)?.GetValue(kv.Value) as IList;
+                var list = R.Get(kv.Value, "ParticleComponents") as IList;
                 if (list != null && list.Count > 0) return list[0];
             }
             return null;
@@ -149,11 +149,11 @@ namespace CHPrivateMods
         {
             var copy = Clone.Invoke(prototype, null);
             var type = copy.GetType();
-            void Set(string name, object value) => type.GetField(name, Any)?.SetValue(copy, value);
+            void Set(string name, object value) => R.Field(type, name)?.SetValue(copy, value);
             object EnumValue(string field, string name)
             {
-                var t = type.GetField(field, Any)?.FieldType;
-                return t != null && t.IsEnum ? Enum.Parse(t, name) : null;
+                var t = R.Field(type, field)?.FieldType;
+                return t != null && t.IsEnum ? R.Enum(t, name) : null;
             }
             Set("ParticleEffectId", p.Effect);
             Set("Scale", p.Scale);

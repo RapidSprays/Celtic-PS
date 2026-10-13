@@ -22,10 +22,10 @@ namespace CHPrivateMods
             try
             {
                 var type = popup.GetType();
-                var upgrade = type.GetField("m_btnUpgrade", Any)?.GetValue(popup) as Button;
+                var upgrade = R.Field(type, "m_btnUpgrade")?.GetValue(popup) as Button;
                 if (upgrade == null) return;
-                var setLevel = type.GetMethod("SetLevelToUpgradeTo", Any);
-                var confirm = type.GetMethod("ConfirmButtonPressed", Any);
+                var setLevel = R.Method(type, "SetLevelToUpgradeTo", 1);
+                var confirm = R.Method(type, "ConfirmButtonPressed", 0);
                 if (setLevel == null || confirm == null) return;
 
                 var copy = UnityEngine.Object.Instantiate(upgrade.gameObject, upgrade.transform.parent, false);

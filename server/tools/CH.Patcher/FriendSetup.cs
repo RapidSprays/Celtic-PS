@@ -106,18 +106,20 @@ public static class FriendSetup
             var dll = Path.Combine(copy, known.DllPath);
             var ggm = Path.Combine(copy, known.GlobalGameManagersPath);
             Require(Sha256(dll) == known.DllSha256 && Sha256(ggm) == known.GlobalGameManagersSha256, "the copy doesn't match the verified build");
+            var names = platform == ClientPlatform.Mac ? NameMap.Identity
+                : NameMap.Embedded(known.DllSha256) ?? throw new InvalidOperationException("This kit is missing its Windows support files. Ask the host for a new kit.");
             var resolver = new DefaultAssemblyResolver();
             resolver.AddSearchDirectory(Path.GetDirectoryName(dll)!);
             var results = new List<PatchResult>();
             using (var module = ModuleDefinition.ReadModule(new MemoryStream(File.ReadAllBytes(dll)), new ReaderParameters { AssemblyResolver = resolver }))
             {
-                var patcher = new AssemblyPatcher(module, httpPort, host);
+                var patcher = new AssemblyPatcher(module, httpPort, host, names);
                 patcher.ApplyAll();
                 Require(patcher.RemainingLiveUrls().Count == 0, "live URLs remain after patching");
                 results.AddRange(patcher.Results);
                 module.Write(dll);
             }
-            ClientMods.Install(dll); // P10's Max button
+            ClientMods.Install(dll, names); // the client mod (P10-P15), plus its name map on Windows
             var (ggmPatched, ggmChanges) = AssetUrlPatcher.Patch(File.ReadAllBytes(ggm), httpPort);
             Require(ggmChanges.Count == 7 && AssetUrlPatcher.RemainingUnityUrls(ggmPatched).Count == 0, "Unity telemetry URLs not patched as expected");
             results.Add(new PatchResult("P8", "globalgamemanagers: Unity engine telemetry URLs → same-length localhost URLs", ggmChanges.Count));
