@@ -32,8 +32,7 @@ if (-not (Test-Path (Extracted 'balance-client.json'))) { Invoke-Python @((Scrip
 # NPCs are placed before monster camps, which keep clear of them (docs/world-placement.md).
 $venvPy = Join-Path $Analysis 'venv\Scripts\python.exe'
 if ((Test-Path $venvPy) -and (Out-Of-Date 'zone-worlds.json' @((Script 'extract-zone-worlds.py')))) {
-    & $venvPy (Script 'extract-zone-worlds.py') $Build | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'extract-zone-worlds.py failed' }
+    Invoke-Checked $venvPy @((Script 'extract-zone-worlds.py'), $Build) | Out-Null
 }
 Regen 'zone-points.json' 'extract-zone-points.py'
 $worldInputs = @((Extracted 'zone-worlds.json'), (Script 'worldplace.py'))

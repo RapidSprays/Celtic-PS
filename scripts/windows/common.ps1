@@ -56,14 +56,20 @@ function Get-Python {
 
 function Invoke-Python([string[]]$Arguments) {
     $py = Get-Python
-    $exe = $py[0]
     $rest = @()
     if ($py.Count -gt 1) { $rest = $py[1..($py.Count - 1)] }
-    & $exe @rest @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "python $($Arguments -join ' ') failed ($LASTEXITCODE)" }
+    Invoke-Checked $py[0] ($rest + $Arguments)
 }
 
+# Runs a program and fails on a non-zero exit code. Its stderr is shown, not treated as failure: Windows PowerShell 5.1
+# otherwise turns any stderr line (pip's upgrade notice, dotnet's workload hint) into a terminating error under 'Stop'.
 function Invoke-Checked([string]$Exe, [string[]]$Arguments) {
-    & $Exe @Arguments
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Exe @Arguments 2>&1 | ForEach-Object { if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.Exception.Message } else { $_ } }
+    } finally {
+        $ErrorActionPreference = $previous
+    }
     if ($LASTEXITCODE -ne 0) { throw "$Exe $($Arguments -join ' ') failed ($LASTEXITCODE)" }
 }

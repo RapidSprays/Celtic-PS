@@ -78,9 +78,16 @@ if (Test-Path $snapshot) {
 # 3. Python environment for UnityPy (never in the repo).
 $venvPy = Join-Path $Analysis 'venv\Scripts\python.exe'
 if (-not (Test-Path $venvPy)) {
-    Write-Host 'Creating the Python environment with UnityPy...'
+    Write-Host 'Creating the Python environment...'
     Invoke-Python @('-m', 'venv', (Join-Path $Analysis 'venv'))
-    Invoke-Checked $venvPy @('-m', 'pip', 'install', '-q', 'UnityPy')
+}
+$ErrorActionPreference = 'Continue' # a failed import writes to stderr, which 5.1 would treat as fatal
+& $venvPy -c 'import UnityPy' 2>$null
+$hasUnityPy = $LASTEXITCODE -eq 0
+$ErrorActionPreference = 'Stop'
+if (-not $hasUnityPy) {
+    Write-Host 'Installing UnityPy...'
+    Invoke-Checked $venvPy @('-m', 'pip', 'install', '-q', '--disable-pip-version-check', 'UnityPy')
 }
 
 # 4. Windows name map, then the server's data and build.

@@ -29,4 +29,4 @@ New-Item -ItemType Directory -Force $Extracted | Out-Null
 $patcher = Join-Path $Repo 'server\tools\CH.Patcher'
 Invoke-Checked 'dotnet' @('run', '--project', $patcher, '--', 'map', '--mac', $mac, '--windows', $win, '--out', $out)
 Write-Host "Wrote $out"
-& dotnet run --project $patcher -- verify --game-dir $GameDir --names $out | Select-String -Pattern 'site|URLs|names'
+Invoke-Checked 'dotnet' @('run', '--project', $patcher, '--', 'verify', '--game-dir', $GameDir, '--names', $out) | Select-String -Pattern 'site|URLs|names'
