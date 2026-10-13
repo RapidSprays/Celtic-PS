@@ -26,7 +26,7 @@
   </ItemGroup>
   <!-- Windows name maps (docs/windows-names.md): generated on the host from both builds, never in git. -->
   <ItemGroup>
-    <EmbeddedResource Include="$(HOME)/CelticHeroesAnalysis/extracted/*/names-*.json" LogicalName="%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(AnalysisRoot)/extracted/*/names-*.json" LogicalName="%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup Condition="Exists('$(ClientModsDll)')">
     <EmbeddedResource Include="$(ClientModsDll)" LogicalName="CHPrivateMods.dll" />

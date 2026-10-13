@@ -38,6 +38,10 @@ cd ~/CelticHeroesAnalysis/client/24928510 && "CelticHeroes.app/Contents/MacOS/Ce
 ```
 The client log is at `~/Library/Logs/One Thumb Mobile Ltd/Celtic Heroes/Player.log`.
 
+## Windows host
+Development and hosting also run on Windows: [docs/windows-host.md](docs/windows-host.md) covers moving from the Mac and
+the `scripts/windows/*.ps1` equivalents of the scripts below (`server-service.ps1`, `play.ps1`, `release-kit.ps1`, ...).
+
 ## Git hygiene
 ```bash
 ln -sf ../../scripts/pre-commit.sh .git/hooks/pre-commit

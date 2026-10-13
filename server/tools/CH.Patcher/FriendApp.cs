@@ -19,16 +19,18 @@ public static class FriendApp
     private const int HttpPort = 5555;
 
     /// <summary>
-    /// Options (for testing; players pass none): --dest DIR, --steam-dir DIR, --no-launch, --no-shortcut.
+    /// Options (players pass none): --host ADDRESS (the server; the host's own play script passes 127.0.0.1), --dest DIR,
+    /// --steam-dir DIR, --no-launch, --no-shortcut.
     /// </summary>
     public static int Run(string[] args)
     {
-        string? dest = null, steamDir = null;
+        string? dest = null, steamDir = null, hostArg = null;
         bool launch = true, shortcut = true;
         for (var i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
+                case "--host": hostArg = args[++i]; break;
                 case "--dest": dest = args[++i]; break;
                 case "--steam-dir": steamDir = args[++i]; break;
                 case "--no-launch": launch = false; break;
@@ -38,7 +40,7 @@ public static class FriendApp
         try
         {
             var platform = FriendSetup.CurrentPlatform();
-            var host = FriendSetup.FriendHost() ?? throw new InvalidOperationException("This copy has no server address. Ask the host for a new one.");
+            var host = hostArg ?? FriendSetup.FriendHost() ?? throw new InvalidOperationException("This copy has no server address. Ask the host for a new one.");
             dest = Path.GetFullPath(dest ?? FriendSetup.DefaultDestination(platform));
 
             if (NeedsSetup(dest, host))
@@ -46,8 +48,9 @@ public static class FriendApp
                 Ui.Notify("Setting up Celtic Heroes Private. This copies the game once and takes a minute or two.");
                 FriendSetup.Install(host, HttpPort, platform, steamDir, dest, Console.WriteLine);
             }
-            var installed = InstallSelf(dest, platform);
-            if (shortcut) MakeShortcut(installed, dest, platform);
+            // The shortcut points at a copy of this program next to the game; without one (the host's play script runs a
+            // dev build) there is nothing to install.
+            if (shortcut) MakeShortcut(InstallSelf(dest, platform), dest, platform);
             if (!launch) return 0;
 
             StartSteam(platform);

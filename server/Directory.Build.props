@@ -1,4 +1,10 @@
 <Project>
+  <!-- ~/CelticHeroesAnalysis (client data, never in git). HOME isn't set on Windows outside Git Bash. -->
+  <PropertyGroup>
+    <UserHome Condition="'$(HOME)' != ''">$(HOME)</UserHome>
+    <UserHome Condition="'$(UserHome)' == ''">$(USERPROFILE)</UserHome>
+    <AnalysisRoot Condition="'$(AnalysisRoot)' == ''">$(UserHome)/CelticHeroesAnalysis</AnalysisRoot>
+  </PropertyGroup>
   <PropertyGroup Condition="!$(MSBuildProjectDirectory.Contains('vendor'))">
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

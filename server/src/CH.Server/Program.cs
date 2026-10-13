@@ -1,6 +1,10 @@
 using CH.Server;
 using Microsoft.Extensions.Logging;
 
+// CH.Server backup --data DIR --out FILE: an online copy of the database, safe while the server runs (the background
+// service's daily backup; no sqlite3 command needed, which Windows doesn't have).
+if (args.Length > 0 && args[0] == "backup") return Backup.Run(args[1..]);
+
 ServerOptions options;
 try
 {

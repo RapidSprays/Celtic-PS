@@ -9,6 +9,8 @@ and patches *their own* install. The kit contains only our setup tool, your addr
 
 ## You (the host)
 
+The steps below are for a Mac host. On a Windows host, use the `scripts\windows\*.ps1` equivalents (docs/windows-host.md).
+
 1. Install Tailscale on this Mac and log in.
 2. Share this Mac with each friend: Tailscale admin console → Machines → this Mac → Share, and send them the link.
    Sharing gives them this one machine only, not your whole network.

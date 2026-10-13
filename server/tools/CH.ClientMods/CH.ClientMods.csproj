@@ -14,7 +14,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <DebugType>none</DebugType>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <ManagedDir Condition="'$(ManagedDir)' == ''">$(HOME)/CelticHeroesAnalysis/client/24928510/CelticHeroes.app/Contents/Resources/Data/Managed</ManagedDir>
+    <ManagedDir Condition="'$(ManagedDir)' == ''">$(AnalysisRoot)/client/24928510/CelticHeroes.app/Contents/Resources/Data/Managed</ManagedDir>
   </PropertyGroup>
 
   <ItemGroup>
