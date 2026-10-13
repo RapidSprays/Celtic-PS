@@ -28,6 +28,28 @@ and patches *their own* install. The kit contains only our setup tool, your addr
    - `.gm <account>` / `.gm <account> off` grants or removes GM rights.
    - `.resetpassword <account>` helps a friend who forgot their password: their next login sets a new one.
 
+## Always on: the background service
+So friends can play without you starting anything, run the server as a background service on this Mac:
+```bash
+scripts/server-service.sh install
+```
+It then starts by itself whenever you log in. While it runs, it:
+- restarts the server within seconds if the server stops;
+- keeps the Mac from idle-sleeping (a closed laptop lid still sleeps);
+- uses Tailscale mode as soon as Tailscale is up;
+- backs up the database daily to `~/CelticHeroesAnalysis/server-data/backups`, keeping the last 14.
+
+`scripts/run-private.sh` then only launches your game against it.
+
+| Command | What it does |
+|---|---|
+| `scripts/server-service.sh update` | Rebuilds and restarts after server code changes. `status` tells you when this is needed. |
+| `scripts/server-service.sh status` | Shows whether it's running, which mode, and the last backup. |
+| `scripts/server-service.sh logs` | Follows its log. |
+| `scripts/server-service.sh uninstall` | Stops it and removes it from login. The database and backups are kept. |
+
+Friends can play whenever this Mac is on, awake, online and signed in to Tailscale.
+
 ## Your friends
 
 1. Install Steam, then Celtic Heroes (free). Start it once, then quit it.

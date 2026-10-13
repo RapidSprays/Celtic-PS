@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Start the private server and launch the patched pinned client against it.
+# Start the private server and launch the patched pinned client against it. If the background service is installed
+# (scripts/server-service.sh), it is the server and this only launches the game.
 #
 #   scripts/run-private.sh               server + client; Ctrl+C stops both
 #   scripts/run-private.sh --server      server only
@@ -30,48 +31,55 @@ patched="$(grep -o '"patchedSha256": "[0-9a-f]*"' "$CLIENT_DIR/patch-state.json"
 actual="$(shasum -a 256 "$CLIENT_DIR/CelticHeroes.app/Contents/Resources/Data/Managed/Assembly-CSharp.dll" | cut -c1-64)"
 [[ "$patched" == "$actual" ]] || { echo "client DLL differs from patch-state.json; re-run CH.Patcher" >&2; exit 1; }
 pgrep -x steam_osx >/dev/null || { echo "Steam is not running" >&2; exit 1; }
-if lsof -nP -iTCP:5555 -sTCP:LISTEN >/dev/null 2>&1 || lsof -nP -iUDP:5556 >/dev/null 2>&1; then
-  echo "A private server is already running (ports 5555/5556 in use):" >&2
-  pgrep -fl 'CH.Server.dll' >&2 || true
-  echo "Quit the game and stop the other run-private.sh (Ctrl+C in its terminal) first." >&2
-  exit 1
-fi
-
-EXTRACTED="$HOME/CelticHeroesAnalysis/extracted/$BUILD"
-[[ -f "$EXTRACTED/balance-client.json" ]] || python3 "$REPO/scripts/extract-balance.py" "$BUILD"
-# Derived data: (re)generated when missing or when its script (or the shared chdata.py) changed.
-regen() { local out="$EXTRACTED/$1" script="$REPO/scripts/$2"
-  if [[ ! -f "$out" || "$script" -nt "$out" || "$REPO/scripts/chdata.py" -nt "$out" ]]; then python3 "$script" "$BUILD" >/dev/null; fi; }
-regen zone-points.json extract-zone-points.py
-regen zone-population.json gen-zone-population.py
-regen world.json gen-world.py
-
-mkdir -p "$LOGS"
-dotnet build -c Release "$REPO/server/src/CH.Server" >/dev/null
-dotnet "$REPO/server/src/CH.Server/bin/Release/net8.0/CH.Server.dll" --data "$DATA" ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"} > "$LOGS/server-$STAMP.log" 2>&1 &
-SERVER=$!
+SERVER=""
 CLIENT=""
-cleanup() {
-  [[ -n "$CLIENT" ]] && kill "$CLIENT" 2>/dev/null || true
-  [[ -n "$SERVER" ]] && kill -TERM "$SERVER" 2>/dev/null || true
-  [[ -n "$SERVER" ]] && wait "$SERVER" 2>/dev/null || true
-  echo "Stopped. Server log: $LOGS/server-$STAMP.log"
-}
-trap cleanup EXIT INT TERM
-# Loading the client balance data takes a few seconds; wait until the server actually answers.
-for _ in $(seq 1 60); do
-  kill -0 "$SERVER" 2>/dev/null || { echo "Server failed to start:" >&2; tail -20 "$LOGS/server-$STAMP.log" >&2; SERVER=""; exit 1; }
-  curl -sf -o /dev/null "http://127.0.0.1:5555/ping" && break
-  sleep 0.5
-done
-curl -sf -o /dev/null "http://127.0.0.1:5555/ping" || { echo "Server did not answer within 30s; see $LOGS/server-$STAMP.log" >&2; exit 1; }
-echo "Server up (pid $SERVER). Log: $LOGS/server-$STAMP.log"
+mkdir -p "$LOGS"
+if launchctl print "gui/$(id -u)/local.celticheroes.private-server" >/dev/null 2>&1; then
+  # The background service (scripts/server-service.sh) is the server: just launch the game against it.
+  if [[ "$SERVER_ONLY" == 1 ]]; then echo "The background service is the server (scripts/server-service.sh status)."; exit 0; fi
+  for _ in $(seq 1 30); do curl -sf -o /dev/null --max-time 2 "http://127.0.0.1:5555/ping" && break; sleep 1; done
+  curl -sf -o /dev/null --max-time 2 "http://127.0.0.1:5555/ping" \
+    || { echo "The background server isn't answering: scripts/server-service.sh logs" >&2; exit 1; }
+  echo "Using the background server (scripts/server-service.sh status)."
+  [[ "$(cat "$HOME/CelticHeroesAnalysis/service/bin/REVISION" 2>/dev/null)" != "$(git -C "$REPO" rev-parse --short HEAD 2>/dev/null)" ]] \
+    && echo "Note: the repo has newer code than the background server; run scripts/server-service.sh update." || true
+  trap '[[ -n "$CLIENT" ]] && kill "$CLIENT" 2>/dev/null || true' EXIT INT TERM
+else
+  if lsof -nP -iTCP:5555 -sTCP:LISTEN >/dev/null 2>&1 || lsof -nP -iUDP:5556 >/dev/null 2>&1; then
+    echo "A private server is already running (ports 5555/5556 in use):" >&2
+    pgrep -fl 'CH.Server.dll' >&2 || true
+    echo "Quit the game and stop the other run-private.sh (Ctrl+C in its terminal) first." >&2
+    exit 1
+  fi
 
-TS_HOST="$(grep -o 'Tailscale address [0-9.]*' "$LOGS/server-$STAMP.log" | cut -d' ' -f3 || true)"
-[[ -n "$TS_HOST" ]] && echo "Friends join at $TS_HOST over Tailscale (docs/friends.md)."
-if [[ "$SERVER_ONLY" == 1 ]]; then
-  wait "$SERVER"
-  exit 0
+  "$REPO/scripts/prepare-server.sh"
+
+  mkdir -p "$LOGS"
+  dotnet "$REPO/server/src/CH.Server/bin/Release/net8.0/CH.Server.dll" --data "$DATA" ${SERVER_ARGS[@]+"${SERVER_ARGS[@]}"} > "$LOGS/server-$STAMP.log" 2>&1 &
+  SERVER=$!
+  CLIENT=""
+  cleanup() {
+    [[ -n "$CLIENT" ]] && kill "$CLIENT" 2>/dev/null || true
+    [[ -n "$SERVER" ]] && kill -TERM "$SERVER" 2>/dev/null || true
+    [[ -n "$SERVER" ]] && wait "$SERVER" 2>/dev/null || true
+    echo "Stopped. Server log: $LOGS/server-$STAMP.log"
+  }
+  trap cleanup EXIT INT TERM
+  # Loading the client balance data takes a few seconds; wait until the server actually answers.
+  for _ in $(seq 1 60); do
+    kill -0 "$SERVER" 2>/dev/null || { echo "Server failed to start:" >&2; tail -20 "$LOGS/server-$STAMP.log" >&2; SERVER=""; exit 1; }
+    curl -sf -o /dev/null "http://127.0.0.1:5555/ping" && break
+    sleep 0.5
+  done
+  curl -sf -o /dev/null "http://127.0.0.1:5555/ping" || { echo "Server did not answer within 30s; see $LOGS/server-$STAMP.log" >&2; exit 1; }
+  echo "Server up (pid $SERVER). Log: $LOGS/server-$STAMP.log"
+
+  TS_HOST="$(grep -o 'Tailscale address [0-9.]*' "$LOGS/server-$STAMP.log" | cut -d' ' -f3 || true)"
+  [[ -n "$TS_HOST" ]] && echo "Friends join at $TS_HOST over Tailscale (docs/friends.md)."
+  if [[ "$SERVER_ONLY" == 1 ]]; then
+    wait "$SERVER"
+    exit 0
+  fi
 fi
 
 # Steam must have finished signing in. A game started while Steam still shows "Refresh sign-in" makes Steam shut
