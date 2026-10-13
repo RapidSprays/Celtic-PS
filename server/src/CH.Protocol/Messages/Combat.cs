@@ -201,6 +201,8 @@ public enum StatKey
     Health = 27,
     Energy = 28,
     WeaponDamage = 29,
+    PvpExperience = 31, // percent × 100 toward the next PvP rank
+    Concentration = 32,
 }
 
 /// <summary>StatsUpdate (15015) in delta form: only the listed integer stats change.</summary>

@@ -110,6 +110,8 @@ public sealed partial class GameServer
         SendGroundItems(zone, s);
         Send(s, Opcode.AllZoningMessagesSent, _ => { });
         AnnounceArrival(zone, s, wasPresent);
+        RefreshHateList(s);
+        RefreshZoneHate(zone.Id);
     }
 
     /// <summary>Leaves the current zone on disconnect or zone change (buffs survive a zone change).</summary>
@@ -120,6 +122,7 @@ public sealed partial class GameServer
         SetAttackTarget(s, null);
         if (zone.Players.Remove(s)) AnnounceDeparture(zone, s);
         s.InZone = false;
+        RefreshZoneHate(zone.Id);
         s.Casts.Clear();
         if (!changingZone)
         {
@@ -519,6 +522,7 @@ public sealed partial class GameServer
             if (cast.Skill.StatusEffectId > 0) ApplyEffect(r, cast.Skill, cast.Level, now, abilityLevel);
             if (!heals) continue;
             var heal = Math.Max(1, (int)(amount * sheet.HealFactor(cast.Skill.Id) * AbilityDamageFactor(s, cast.Skill)));
+            _store.AddStat(s.Character!.Id, "heal", Math.Min(heal, r.MaxHealth - r.Health));
             r.Health = Math.Min(r.MaxHealth, r.Health + heal);
             var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, r.CharacterId, AttackKind.Skill, cast.Skill.Id,
                 -heal, r.Health, Reaction.SkillHitPositive, ++_damageId, false);
@@ -570,6 +574,7 @@ public sealed partial class GameServer
         }
         if (critical) TrainAbility(s, kind == AttackKind.Attack ? CriticalStrike : CriticalSkills);
         mob.Damage[s] = mob.Damage.GetValueOrDefault(s) + damage;
+        if (damage > 0 && kind is AttackKind.Attack or AttackKind.Skill) _store.AddStat(s.Character!.Id, kind == AttackKind.Attack ? "melee_hit" : "skills_hit", damage);
         var procs = kind == AttackKind.Attack && damage > 0 && mob.Health > 0 ? RollProcs(s) : [];
         var entry = new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)mob.ServerId, kind, skillId, damage, mob.Health, reaction, ++_damageId, critical);
         Broadcast(zone, Opcode.CombatDamageMessage, new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Mob, (int)mob.ServerId, Math.Max(0, mob.Health))]).Write);
@@ -664,6 +669,8 @@ public sealed partial class GameServer
             FishingReward(s, mob);
             return;
         }
+        _store.AddStat(s.Character!.Id, "kills", 1);
+        if (mob.Template.Power is >= 1 and <= 6) _store.AddStat(s.Character.Id, $"star_{mob.Template.Power}", 1);
         var c = s.Character!;
         var progress = _store.GetProgress(c.Id);
         var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects
@@ -746,6 +753,8 @@ public sealed partial class GameServer
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s)).ToList()) StartReturn(zone, mob, now);
         SendEffects(s);
         SendSkillToggles(s);
+        _store.AddStat(s.Character!.Id, "deaths", 1);
+        RefreshZoneHate(zone.Id);
         _log.LogInformation("{Name} died", s.Name);
     }
 
@@ -759,6 +768,11 @@ public sealed partial class GameServer
             var nearest = zone.PlayerSpawns.OrderBy(p => (p.X - x) * (p.X - x) + (p.Z - z) * (p.Z - z)).First();
             (x, y, z) = (nearest.X, nearest.Y, nearest.Z);
         }
+        else if (IsPvpZone(zoneId))
+        {
+            var entry = _travel.Entry(zoneId); // the arena has no leystone: back at its entrance
+            (x, y, z) = (entry.X, entry.Y, entry.Z);
+        }
         s.Dead = false;
         s.Health = s.MaxHealth;
         s.Energy = s.MaxEnergy;
@@ -771,6 +785,7 @@ public sealed partial class GameServer
         {
             SendToOthers(here, s, Opcode.RespawnPlayer, new RespawnPlayer([((uint)s.CharacterId, x, y, z, 50)]).Write);
             here.NextBatchAt = 0;
+            RefreshZoneHate(zoneId);
         }
         SendEffects(s); // clears buff icons and resends full stats
     }

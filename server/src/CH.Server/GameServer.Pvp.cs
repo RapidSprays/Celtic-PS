@@ -128,12 +128,6 @@ public sealed partial class GameServer
         b.Write(text);
     }
 
-    private static void SendHateList(GameServer server, Session s, Session? enemy) =>
-        server.Send(s, Opcode.PlayerHateList, b =>
-        {
-            b.WriteVariableInt32(enemy is null ? 0 : 1);
-            if (enemy is not null) b.WriteVariableUInt32((uint)enemy.CharacterId);
-        });
 
     /// <summary>Countdown, time limit and distance for every duel. Runs every tick.</summary>
     private void TickDuels(double now)
@@ -149,8 +143,8 @@ public sealed partial class GameServer
             if (!duel.Started && now >= duel.StartsAt)
             {
                 duel.Started = true;
-                SendHateList(this, a, b);
-                SendHateList(this, b, a);
+                RefreshHateList(a);
+                RefreshHateList(b);
             }
             if (now >= duel.EndsAt) EndDuel(duel, null, DuelEnd.TimeOut);
             else if (Dist2D(a.Position.X, a.Position.Z, b.Position.X, b.Position.Z) > DuelRange) EndDuel(duel, null, DuelEnd.RangeOut);
@@ -176,14 +170,11 @@ public sealed partial class GameServer
                 b.WriteVariableInt32((int)result);
                 b.Write("");
             });
-            SendHateList(this, p, null);
+            RefreshHateList(p);
         }
         _log.LogInformation("Duel {A} vs {B} ended: {Result}{Winner}", duel.A.Name, duel.B.Name, reason, winner is null ? "" : $", {winner.Name} won");
     }
 
-    /// <summary>A player this one may attack right now: their started duel opponent.</summary>
-    private static Session? Enemy(Session s, int targetId) =>
-        s.Duel is { Started: true } duel && duel.Other(s).CharacterId == targetId ? duel.Other(s) : null;
 
     private void SetPvpTarget(Session s, Session? target)
     {
@@ -220,7 +211,8 @@ public sealed partial class GameServer
     /// <summary>Damage between duelling players: the target's armour and defence apply as against monsters.</summary>
     private void PlayerHitsPlayer(Zone zone, Session s, Session target, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
     {
-        if (target.Duel is not { } duel) return;
+        var duel = target.Duel is { Started: true } d && ReferenceEquals(d.Other(target), s) ? d : null;
+        if (duel is null && !ZoneHostile(s, target)) return;
         s.LastCombatAt = target.LastCombatAt = now;
         BreakStealth(s);
         BreakStealth(target);
@@ -237,12 +229,20 @@ public sealed partial class GameServer
         }
         LifeTap(s, damage);
         if (damage > 0) MaybeInterrupt(target, now);
-        // Duels stop at 1 HP: nobody dies.
+        // Duels stop at 1 HP: nobody dies. PvP zones are for real.
         var lethal = target.Health - damage <= 0;
-        target.Health = Math.Max(1, target.Health - damage);
+        target.Health = Math.Max(duel is null ? 0 : 1, target.Health - damage);
         var reaction = miss ? Reaction.Miss : kind is AttackKind.Skill ? Reaction.SkillHitAggressive : Reaction.Hit;
         var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, target.CharacterId, kind, skillId, damage, target.Health, reaction, ++_damageId, critical);
         SendPlayerDamage(zone, target, entry);
-        if (lethal) EndDuel(duel, s, DuelEnd.Victory);
+        if (damage > 0) _store.AddStat(s.Character!.Id, kind == AttackKind.Attack ? "melee_hit" : "skills_hit", damage);
+        if (!lethal) return;
+        if (duel is not null)
+        {
+            EndDuel(duel, s, DuelEnd.Victory);
+            return;
+        }
+        PlayerDies(zone, target, now);
+        PvpKill(zone, s, target);
     }
 }

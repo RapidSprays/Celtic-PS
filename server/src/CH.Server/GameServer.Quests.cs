@@ -271,6 +271,7 @@ public sealed partial class GameServer
         _log.LogInformation("{Name} completed quest {Id} ({Quest})", s.Name, info.Id, info.Name);
         if (level != before) AnnounceLevel(s, level);
         FactionQuestReward(s, info);
+        _store.AddStat(c.Id, "quests", 1);
         MarkBounty(s, info, BountyHandedIn);
         // Quests waiting on this one (CompletedQuest stages).
         foreach (var other in s.Quests.Values.Where(o => !o.Completed).ToList())

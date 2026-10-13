@@ -38,11 +38,13 @@ public sealed partial class GameServer
         ".who - who is online | .gm <account> [off] - grant or remove GM | .resetpassword <account> - forget a password",
         TreeHelp);
 
-    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree"];
+    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree", "battleground", "tutorial"];
 
     private static readonly string PlayerHelp = string.Join("\n",
         "Commands:",
         ".who - who is online",
+        ".battleground - enter or leave the Clan Battleground (clan members; everyone outside your clan is an enemy)",
+        ".tutorial on|off - the new-player tutorial hints",
         ".where - your zone and position",
         ".zones - list the zones",
         TreeHelp,
@@ -268,6 +270,14 @@ public sealed partial class GameServer
 
             case "tree":
                 TreeCommand(s, args);
+                break;
+
+            case "battleground":
+                BattlegroundCommand(s);
+                break;
+
+            case "tutorial":
+                TutorialCommand(s, args);
                 break;
 
             case "gold":

@@ -22,7 +22,8 @@ public sealed class ServerHost : IAsyncDisposable
             ? $"version {Balance.Version}, {Balance.Items.Count} items, {Balance.Skills.Count} skills, {Balance.Mobs.Count} mobs, {Balance.Zones.Count} zones"
             : "not loaded (run scripts/extract-balance.py); gear stats will be zero");
         Game = new GameServer(options, _store, _frames, Balance, logs.CreateLogger("game"));
-        Patch = new PatchServer(options, () => _store, logs.CreateLogger("http")) { GamePortProvider = () => Game.Port };
+        // HTTP requests run on other threads: each gets its own connection (the game's is single-threaded).
+        Patch = new PatchServer(options, () => new GameStore(options.DatabasePath), logs.CreateLogger("http")) { GamePortProvider = () => Game.Port };
     }
 
     public ServerOptions Options { get; }

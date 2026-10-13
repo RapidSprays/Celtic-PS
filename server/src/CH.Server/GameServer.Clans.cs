@@ -59,8 +59,10 @@ public sealed partial class GameServer
     private void ClanChanged(long characterId)
     {
         if (OnlineById(characterId) is not { } p) return;
+        p.ClanId = _store.GetMembership(characterId)?.ClanId;
         RefreshSheet(p);
         SendClanList(p);
+        RefreshZoneHate(p.Position.Zone);
         if (!p.InZone || !_zones.TryGetValue(p.Position.Zone, out var zone)) return;
         var name = p.Sheet!.ClanName;
         SendToOthers(zone, p, Opcode.PlayerAppearanceUpdate, b =>

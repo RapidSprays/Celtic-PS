@@ -96,7 +96,7 @@ public sealed partial class GameServer
         var summary = s.Sheet.Summary(_options.WorldId);
         var progress = s.Sheet.Progress;
         SendToOthers(zone, s, Opcode.PlayerAppearanceUpdate, b => PlayerAppearanceUpdate.Write(b, (uint)s.CharacterId, summary.Equipment,
-            progress.ShowHeadgear, progress.ShowFashion, s.Sheet.Level));
+            progress.ShowHeadgear, progress.ShowFashion, s.Sheet.Level, s.Sheet.PvpLevel, s.Sheet.PvpRating));
     }
 
     /// <summary>The same character logging in again (a second client): the old session is dropped.</summary>
@@ -290,6 +290,7 @@ public sealed partial class GameServer
         party.Members.Add(s);
         s.Party = party;
         SendRoster(party);
+        RefreshZoneHate(s.Position.Zone);
         _log.LogInformation("{Name} joined {Leader}'s party ({Count} members)", s.Name, requester.Name, party.Members.Count);
     }
 
@@ -298,6 +299,7 @@ public sealed partial class GameServer
         if (s.Party is not { } party) return;
         party.Members.Remove(s);
         s.Party = null;
+        RefreshZoneHate(s.Position.Zone);
         if (s.Character is not null) Send(s, Opcode.PartyMessage, b => PartyMessage.WriteRoster(b, []));
         if (party.Members.Count == 1)
         {

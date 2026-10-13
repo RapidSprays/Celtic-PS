@@ -18,6 +18,8 @@ public sealed partial class GameServer
             BankExpansions = _store.GetExpansions(c.Id).Bank, BackpackExpansions = _store.GetExpansions(c.Id).Backpack,
             ClanName = _store.GetMembership(c.Id) is { } m ? _store.GetClan(m.ClanId)?.Name ?? "" : "",
             FishingLevel = _store.GetCrafts(c.Id).FishingLevel, FishingXpPercent = Crafting.Percent(_store.GetCrafts(c.Id).FishingLevel, _store.GetCrafts(c.Id).FishingXp),
+            PvpLevel = _store.GetPvp(c.Id).Level, PvpProgress = PvpRanks.Progress(_store.GetPvp(c.Id).Level, _store.GetPvp(c.Id).Xp),
+            PvpRating = PvpRanks.Rating(_store.GetStat(c.Id, "pvp_kills"), _store.GetStat(c.Id, "pvp_deaths")),
             CookingLevel = _store.GetCrafts(c.Id).CookingLevel, CookingXpPercent = Crafting.Percent(_store.GetCrafts(c.Id).CookingLevel, _store.GetCrafts(c.Id).CookingXp),
         };
 
@@ -109,8 +111,8 @@ public sealed partial class GameServer
         Send(s, Opcode.AppearanceOnlyUpdate, b =>
         {
             s.Sheet!.Appearance().Write(b);
-            b.WriteVariableInt32(0);
-            b.WriteVariableInt32(0);
+            b.WriteVariableInt32(s.Sheet.PvpRating);
+            b.WriteVariableInt32(s.Sheet.PvpLevel);
         });
         BroadcastAppearance(s);
     }

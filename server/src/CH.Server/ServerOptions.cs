@@ -90,6 +90,9 @@ public sealed class ServerOptions
     /// <summary>Our own fixed-price merchant stock (server/content/shop-extras.json, copied next to the server binary).</summary>
     public string? ShopExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "shop-extras.json");
 
+    /// <summary>The living calendar's daily track (server/content/calendar.json, copied next to the server binary).</summary>
+    public string? CalendarPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "calendar.json");
+
     /// <summary>Faction reputation sources (server/content/factions.json, copied next to the server binary).</summary>
     public string? FactionsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "factions.json");
 

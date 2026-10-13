@@ -117,7 +117,7 @@ public sealed class MultiplayerTests : IDisposable
         Say(a, ChatChannel.Local, ".level 5");
         var look = b.Expect(Opcode.PlayerAppearanceUpdate);
         Assert.Equal(aId, look.ReadVariableUInt32());
-        Assert.Equal(28, look.ReadVariableInt32()); // 25 equipment slots + headgear + fashion + level
+        Assert.Equal(30, look.ReadVariableInt32()); // 25 equipment slots + headgear + fashion + level + PvP rank and rating
 
         // A kill near Bran shares the XP with him.
         Say(a, ChatChannel.Local, ".spawn Scrawny Coast Wolf 1");

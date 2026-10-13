@@ -46,12 +46,13 @@ public static class PlayerAppearanceUpdate
     public const int Level = 69;
     public const int ShowHeadgear = 63;
     public const int ShowFashion = 64;
+    public const int PvpLevel = 72, PvpRating = 73;
 
-    /// <summary>Equipment slots 0-24 (template id, −1 empty), the display options and the level.</summary>
-    public static void Write(NetBuffer b, uint serverId, IReadOnlyList<int> equipment, bool showHeadgear, bool showFashion, int level)
+    /// <summary>Equipment slots 0-24 (template id, −1 empty), the display options, the level and the PvP rank and rating.</summary>
+    public static void Write(NetBuffer b, uint serverId, IReadOnlyList<int> equipment, bool showHeadgear, bool showFashion, int level, int pvpLevel = 0, int pvpRating = 4)
     {
         b.WriteVariableUInt32(serverId);
-        b.WriteVariableInt32(equipment.Count + 3);
+        b.WriteVariableInt32(equipment.Count + 5);
         for (var slot = 0; slot < equipment.Count; slot++)
         {
             b.WriteVariableInt32(slot);
@@ -63,6 +64,10 @@ public static class PlayerAppearanceUpdate
         b.Write((byte)(showFashion ? 1 : 0));
         b.WriteVariableInt32(Level);
         b.WriteVariableInt32(level);
+        b.WriteVariableInt32(PvpLevel);
+        b.WriteVariableInt32(pvpLevel);
+        b.WriteVariableInt32(PvpRating);
+        b.WriteVariableInt32(pvpRating);
     }
 }
 

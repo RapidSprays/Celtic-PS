@@ -376,6 +376,36 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, recipe_id)
         );
         """,
+        """
+        ALTER TABLE characters ADD COLUMN pvp_level INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE characters ADD COLUMN pvp_xp INTEGER NOT NULL DEFAULT 0;
+        CREATE TABLE character_stats (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            stat         TEXT NOT NULL,
+            value        INTEGER NOT NULL,
+            PRIMARY KEY (character_id, stat)
+        );
+        CREATE TABLE tutorial_flags (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            flag         INTEGER NOT NULL,
+            PRIMARY KEY (character_id, flag)
+        );
+        CREATE TABLE calendar (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            track_id     INTEGER NOT NULL,
+            claimed      INTEGER NOT NULL,
+            last_day     INTEGER NOT NULL,
+            PRIMARY KEY (character_id, track_id)
+        );
+        CREATE TABLE tarot (
+            character_id INTEGER NOT NULL REFERENCES characters(id) ON DELETE CASCADE,
+            deck         INTEGER NOT NULL,
+            cycle        INTEGER NOT NULL,
+            plays        INTEGER NOT NULL,
+            wins         INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (character_id, deck)
+        );
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -1154,6 +1184,94 @@ public sealed class GameStore : IDisposable
     public void SetRecipeFavourite(long characterId, int recipeId, bool favourite) =>
         Exec(favourite ? "INSERT OR IGNORE INTO recipe_favourites(character_id, recipe_id) VALUES ($c, $r)"
             : "DELETE FROM recipe_favourites WHERE character_id = $c AND recipe_id = $r", null, ("$c", characterId), ("$r", recipeId));
+
+    // ---- PvP, statistics, tutorials, calendar, tarot (section 6) ----------------------------------------------------
+
+    public (int Level, int Xp) GetPvp(long characterId)
+    {
+        using var cmd = Command("SELECT pvp_level, pvp_xp FROM characters WHERE id = $id", null, ("$id", characterId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1)) : (0, 0);
+    }
+
+    public void SavePvp(long characterId, int level, int xp) =>
+        Exec("UPDATE characters SET pvp_level = $l, pvp_xp = $x WHERE id = $id", null, ("$l", level), ("$x", xp), ("$id", characterId));
+
+    /// <summary>Running totals for leaderboards and ratings ("kills", "deaths", "pvp_kills", "melee_hit", …).</summary>
+    public void AddStat(long characterId, string stat, long amount) =>
+        Exec("INSERT INTO character_stats(character_id, stat, value) VALUES ($c, $s, $v) ON CONFLICT(character_id, stat) DO UPDATE SET value = value + $v", null,
+            ("$c", characterId), ("$s", stat), ("$v", amount));
+
+    public long GetStat(long characterId, string stat) =>
+        Convert.ToInt64(Scalar("SELECT value FROM character_stats WHERE character_id = $c AND stat = $s", ("$c", characterId), ("$s", stat)) ?? 0L);
+
+    /// <summary>Every character with a value for the stat (0 for none), with what leaderboards show beside it.</summary>
+    public IReadOnlyList<(long Id, string Name, int Class, int Level, long Value)> StatBoard(string stat)
+    {
+        using var cmd = Command("""
+            SELECT c.id, c.name, c.class, c.level, COALESCE(s.value, 0) FROM characters c
+            LEFT JOIN character_stats s ON s.character_id = c.id AND s.stat = $s
+            """, null, ("$s", stat));
+        using var r = cmd.ExecuteReader();
+        var list = new List<(long, string, int, int, long)>();
+        while (r.Read()) list.Add((r.GetInt64(0), r.GetString(1), r.GetInt32(2), r.GetInt32(3), r.GetInt64(4)));
+        return list;
+    }
+
+    /// <summary>A characters-table column for leaderboards (level, coins, fishing_level, cooking_level, pvp_level).</summary>
+    public IReadOnlyList<(long Id, string Name, int Class, int Level, long Value)> ColumnBoard(string column)
+    {
+        if (column is not ("level" or "coins" or "fishing_level" or "cooking_level" or "pvp_level")) throw new ArgumentException(column);
+        using var cmd = Command($"SELECT id, name, class, level, {column} FROM characters", null);
+        using var r = cmd.ExecuteReader();
+        var list = new List<(long, string, int, int, long)>();
+        while (r.Read()) list.Add((r.GetInt64(0), r.GetString(1), r.GetInt32(2), r.GetInt32(3), r.GetInt64(4)));
+        return list;
+    }
+
+    public IReadOnlyList<(long Id, string Name)> ListClans()
+    {
+        using var cmd = Command("SELECT id, name FROM clans ORDER BY id", null);
+        using var r = cmd.ExecuteReader();
+        var list = new List<(long, string)>();
+        while (r.Read()) list.Add((r.GetInt64(0), r.GetString(1)));
+        return list;
+    }
+
+    public IReadOnlySet<int> ListTutorialFlags(long characterId)
+    {
+        using var cmd = Command("SELECT flag FROM tutorial_flags WHERE character_id = $c", null, ("$c", characterId));
+        using var r = cmd.ExecuteReader();
+        var set = new HashSet<int>();
+        while (r.Read()) set.Add(r.GetInt32(0));
+        return set;
+    }
+
+    public void SetTutorialFlag(long characterId, int flag, bool on = true) =>
+        Exec(on ? "INSERT OR IGNORE INTO tutorial_flags(character_id, flag) VALUES ($c, $f)" : "DELETE FROM tutorial_flags WHERE character_id = $c AND flag = $f",
+            null, ("$c", characterId), ("$f", flag));
+
+    public (int Claimed, int LastDay) GetCalendar(long characterId, int trackId)
+    {
+        using var cmd = Command("SELECT claimed, last_day FROM calendar WHERE character_id = $c AND track_id = $t", null, ("$c", characterId), ("$t", trackId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1)) : (0, -1);
+    }
+
+    public void SaveCalendar(long characterId, int trackId, int claimed, int lastDay) =>
+        Exec("INSERT INTO calendar(character_id, track_id, claimed, last_day) VALUES ($c, $t, $n, $d) ON CONFLICT(character_id, track_id) DO UPDATE SET claimed = $n, last_day = $d",
+            null, ("$c", characterId), ("$t", trackId), ("$n", claimed), ("$d", lastDay));
+
+    public (int Cycle, int Plays, int Wins) GetTarot(long characterId, int deck)
+    {
+        using var cmd = Command("SELECT cycle, plays, wins FROM tarot WHERE character_id = $c AND deck = $d", null, ("$c", characterId), ("$d", deck));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? (r.GetInt32(0), r.GetInt32(1), r.GetInt32(2)) : (-1, 0, 0);
+    }
+
+    public void SaveTarot(long characterId, int deck, int cycle, int plays, int wins) =>
+        Exec("INSERT INTO tarot(character_id, deck, cycle, plays, wins) VALUES ($c, $d, $y, $p, $w) ON CONFLICT(character_id, deck) DO UPDATE SET cycle = $y, plays = $p, wins = $w",
+            null, ("$c", characterId), ("$d", deck), ("$y", cycle), ("$p", plays), ("$w", wins));
 
     public void Dispose() => _db.Dispose();
 }

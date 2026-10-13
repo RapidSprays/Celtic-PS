@@ -26,7 +26,7 @@ What's still to port of the client's feature set, from the client message list (
 - [x] Friends list and block list: mutual friends with the client's request popup; blocks enforced by the server (whispers, chat, invitations, trade, duels, mail)
 - [x] Mail: Postage Stamps, gold and up to 2 items, returns, take-all, 30-day expiry, system mail for server rewards
 - [x] Clans and clan bank: banner to found, invite, promote, demote, kick, leave, hand over, message, permissions, chat, nameplates, bank with log and slot purchases; rank rules invented
-- [ ] Clan Battleground (zone 14): with the PvP zones in §6
+- [x] Clan Battleground (zone 14): clan against clan, entered with `.battleground` (§6)
 
 ## 5. Economy
 - [x] Auction house: listings, search, bids, buyouts, cancels, expiry; deposits and the 5% fee
@@ -35,11 +35,11 @@ What's still to port of the client's feature set, from the client message list (
 - [x] Platinum item shop: our catalogue (`server/content/item-shop.json`), no cash offers; Bags of Gold and Auction House Slots apply on receipt. Platinum comes from chests and GM `.platinum`
 
 ## 6. Content systems
-- [ ] Achievements, leaderboards
-- [ ] Tarot mini-game
-- [ ] Living calendar and seasonal events
-- [ ] PvP area battles and arena rating
-- [ ] Tutorial and first-time flags
+- [x] Leaderboards: the client's JSON web service on the patch server, from character columns and running totals (boss boards empty). Achievements: nothing to port, the client ignores them
+- [x] Tarot: the Fortune Teller's three decks, attempts, extra moves, prizes by mail; costs invented
+- [x] Living calendar: a 28-day daily login track (`server/content/calendar.json`); rewards invented. Seasonal events stay off (seasonal quests closed)
+- [x] PvP: Global Arena free-for-all and Clan Battleground (`.battleground`) through hate lists, real deaths, PvP rank and rating; formulas invented
+- [x] Tutorial and first-time hints below level 20, completions kept, `.tutorial off`
 
 ## Not porting
 - Real-money purchases (Steam, app stores), offerwall, "rate us", support tickets.

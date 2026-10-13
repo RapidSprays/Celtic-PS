@@ -9,6 +9,7 @@
   {"id": 6,  "template": 36762, "quantity": 1,  "price": 25, "category": 1},
   {"id": 7,  "template": 8,     "quantity": 1,  "price": 10, "category": 1},
   {"id": 8,  "template": 9,     "quantity": 1,  "price": 10, "category": 1},
+  {"id": 9,  "template": 73651, "quantity": 1,  "price": 10, "category": 1},
   {"id": 20, "template": 162,   "quantity": 1,  "price": 5,  "category": 2},
   {"id": 21, "template": 36759, "quantity": 1,  "price": 10, "category": 2},
   {"id": 30, "template": 62,    "quantity": 1,  "price": 6,  "category": 3},

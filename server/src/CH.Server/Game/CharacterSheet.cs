@@ -203,7 +203,7 @@ public sealed class CharacterSheet
         foreach (var item in Equipped.Where(i => i.Slot < CharacterSummary.EquipmentSlots)) appearanceIds[item.Slot] = item.TemplateId;
         var c = Character;
         return new CharacterSummary((uint)c.Id, (uint)c.Id, worldId, c.Name, 0, ClanName,
-            Appearance(), appearanceIds, c.Zone, Level, FishingLevel, CookingLevel, c.Class, AttackRange, AttackSpeed, 0, 0, false);
+            Appearance(), appearanceIds, c.Zone, Level, FishingLevel, CookingLevel, c.Class, AttackRange, AttackSpeed, PvpLevel, PvpRating, false);
     }
 
     public Appearance Appearance()
@@ -304,6 +304,9 @@ public sealed class CharacterSheet
     /// <summary>Bank Expansions and Backpack Expansions applied to this character (GameServer.Character).</summary>
     public int BankExpansions { get; init; }
 
+    public int PvpLevel { get; init; }
+    public int PvpRating { get; init; } = 4;
+    public int PvpProgress { get; init; }
     public int FishingLevel { get; init; } = 1;
     public float FishingXpPercent { get; init; }
     public int CookingLevel { get; init; } = 1;
@@ -323,6 +326,7 @@ public sealed class CharacterSheet
         Character = Summary(worldId),
         FishingLevel = FishingLevel,
         FishingExperience = FishingXpPercent,
+        PvpExperience = PvpProgress,
         CookingLevel = CookingLevel,
         CookingExperience = CookingXpPercent,
         Experience = XpPercent,

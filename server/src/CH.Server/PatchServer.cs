@@ -67,6 +67,22 @@ public sealed class PatchServer : IAsyncDisposable
         });
         // Connectivity check (P4b): the client only needs a 200.
         _app.MapGet("/ping", () => Results.Text("ok"));
+        // The leaderboard screen's JSON (Leaderboards); page names arrive in any case.
+        _app.MapGet("/stats/{page}", (HttpContext ctx, string page) =>
+        {
+            var q = ctx.Request.Query.ToDictionary(p => p.Key, p => p.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+            using var store = _store();
+            object body = page.ToLowerInvariant() switch
+            {
+                "globalpage.aspx" => Leaderboards.Global(_options),
+                "rankingpage.aspx" => Leaderboards.Ranking(store, _options, q),
+                "theclanpage.aspx" => Leaderboards.Clans(store, _options, q),
+                "theclandict.aspx" => Leaderboards.ClanDict(store),
+                "bossranking.ashx" => Leaderboards.Boss(q),
+                _ => null!,
+            };
+            return body is null ? Results.NotFound() : Results.Json(body, ExactNames); // JsonUtility matches names exactly
+        });
         _app.MapFallback((HttpContext ctx) =>
         {
             _log.LogWarning("HTTP unhandled {Path}", ctx.Request.Path);
@@ -137,7 +153,7 @@ public sealed class PatchServer : IAsyncDisposable
         var characters = 0;
         if (!string.IsNullOrWhiteSpace(username))
         {
-            var store = _store();
+            using var store = _store();
             characters = store.ListCharacters(store.GetOrCreateAccount(username).Id).Count;
         }
         var o = _options;
@@ -155,6 +171,8 @@ public sealed class PatchServer : IAsyncDisposable
     public Func<int>? GamePortProvider { get; set; }
 
     private static IResult Text(string body) => Results.Text(body, "text/plain");
+
+    private static readonly System.Text.Json.JsonSerializerOptions ExactNames = new() { PropertyNamingPolicy = null };
 
     public async ValueTask DisposeAsync()
     {

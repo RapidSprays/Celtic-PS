@@ -1,0 +1,12 @@
+{
+  "_comment": "The living calendar's daily login track (our own design; the official tracks are server-only). One reward per UTC day claimed, 28 in a cycle, then it starts over. Templates must be client item ids.",
+  "trackId": 1,
+  "name": "Daily Rewards",
+  "description": "A gift for every day you visit. Claim today's reward, then come back tomorrow for the next.",
+  "rewards": [
+    [14, 5], [162, 5], [62, 1], [14, 10], [36759, 3], [217, 1], [8, 2],
+    [14, 10], [162, 10], [64, 1], [14, 15], [73651, 1], [217, 2], [13, 1],
+    [14, 15], [9, 2], [66, 1], [14, 20], [36759, 5], [73651, 1], [92, 1],
+    [14, 20], [8, 3], [68, 1], [14, 25], [73651, 2], [217, 3], [34781, 1]
+  ]
+}

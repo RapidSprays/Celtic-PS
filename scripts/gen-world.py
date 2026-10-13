@@ -279,7 +279,8 @@ for key, coll in bal["SpawnIconInfoCollections"].items():
 # Service NPCs whose spawn icons don't name a conversation (token vendors): placed by hand around the Farcrag Castle
 # stables. (template, conversation file)
 SERVICE = [(897, "cv_pet_vendor"), (898, "cv_pet_breeder"), (916, "cv_fc_delwen_pet_exchange"), (920, "cv_mount_vendor"),
-           (141047, "cv_mount_breeder"), (141051, "cv_saddle_vendor"), (901, "cv_bounty_vendor")]
+           (141047, "cv_mount_breeder"), (141051, "cv_saddle_vendor"), (901, "cv_bounty_vendor"),
+           (142359, "cv_samhain_2025_tarot")]  # the Fortune Teller: Tarot (GameServer.Tarot)
 by_file = {c["file"]: cid for cid, c in convs.items()}
 placed_templates = {n["template"] for n in npcs}
 spawn_of = {}

@@ -59,6 +59,7 @@ public sealed partial class GameServer : IDisposable
         _fishing = FishingZone.Load(options.FishingPath);
         _itemPoints = LoadItemPoints(options.ItemSpawnsPath);
         _ingredients = LoadIngredients(options.CookingPath);
+        _calendar = LoadCalendar(options.CalendarPath);
         if (_tree.IsLoaded) log.LogInformation("Passive tree: {Nodes} nodes", _tree.Nodes.Count);
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_bounties.Count > 0)
@@ -237,6 +238,22 @@ public sealed partial class GameServer : IDisposable
 
             case Opcode.CraftingMessage:
                 if (InWorld(s)) OnCrafting(s, msg);
+                break;
+
+            case Opcode.TarotGameMessage:
+                if (InWorld(s)) OnTarot(s, msg);
+                break;
+
+            case Opcode.LivingCalendarAction:
+                if (InWorld(s)) OnCalendarAction(s, msg);
+                break;
+
+            case Opcode.Tutorial:
+                if (InWorld(s)) OnTutorial(s, msg);
+                break;
+
+            case Opcode.FirstTime:
+                if (InWorld(s)) OnFirstTime(s, msg.ReadVariableInt32());
                 break;
 
             case Opcode.PickupItem:
@@ -558,6 +575,7 @@ public sealed partial class GameServer : IDisposable
         (s.SigilsOfHealth, s.SigilsOfEnergy) = _store.GetSigils(character.Id);
         s.Blocked.Clear();
         s.Blocked.UnionWith(_store.ListBlocked(character.Id));
+        s.ClanId = _store.GetMembership(character.Id)?.ClanId;
         LoadQuests(s);
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), CompletedQuestIds(s), ActiveQuests(s)).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
@@ -585,6 +603,8 @@ public sealed partial class GameServer : IDisposable
         SendClanList(s);
         SharePresence(s);
         if (_store.ListMail(s.Character.Id).Any(m => !m.Read)) SendMailNotice(s);
+        SendTutorials(s);
+        SendCalendarIfDue(s);
     }
 
     private void OnPlayerMove(Session s, PlayerMove move)
@@ -661,6 +681,9 @@ public sealed partial class GameServer : IDisposable
         public int? LastChestTemplate { get; set; }
         public Dictionary<int, int> PledgesSpent { get; } = new();
         public HashSet<long> Blocked { get; } = new();
+        public long? ClanId { get; set; }
+        public bool TutorialsSent { get; set; }
+        public bool CalendarOffered { get; set; }
         public int Concentration { get; set; } = BaseConcentration;
         public double LastFishingAt { get; set; } = double.MinValue;
         public HashSet<int> Teleports { get; } = new();
