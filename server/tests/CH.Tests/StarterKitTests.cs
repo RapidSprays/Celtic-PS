@@ -45,9 +45,10 @@ public sealed class StarterKitTests : IAsyncDisposable
         Assert.Equal(2, start.HudSets.Count);
         Assert.Equal(new IdValue(1, 1), start.HudSets[0].Slots[0]);
 
-        // Full stats follow StartGameReply (the client drops most of them from the reply itself).
+        // Full stats follow StartGameReply (the client drops most of them from the reply itself). Damage is the whole
+        // weapon hit: the starter weapon's 9 with the Strength and weapon-ability multiplier.
         var stats = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
-        Assert.Equal((9, 17, 2012), (stats.WeaponDamage, stats.ArmourValue, stats.AttackSpeed));
+        Assert.Equal((12, 17, 2012), (stats.WeaponDamage, stats.ArmourValue, stats.AttackSpeed));
         client.Expect(Opcode.GameDataMessage);
 
         // Learn a skill from a book.

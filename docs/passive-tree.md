@@ -52,7 +52,7 @@ All of them are applied by the server. The stats page shows them because the cli
 | `evadePct` | Chance for monsters to miss you (added to the miss chance, capped at 50%) | MobHits, duels |
 | `attackSpeedPct` `runSpeedPct` | Faster attacks and running, with no ceiling | LiveStats |
 | `healthRegenPct` `energyRegenPct` | % of maximum regenerated every 3 s, in and out of combat | regen tick |
-| `critChance` `critMulti` | Critical strikes: base 5% chance and ×1.5 | PlayerHits, duels |
+| `critChance` `critMulti` | Critical strikes: base 5% chance and ×2 | PlayerHits, duels |
 | `damagePct` `attackDamagePct` `skillDamagePct` `healPct` | Damage and healing | auto-attack, ResolveCast |
 | `xpPct` `goldPct` | Kill rewards | Reward |
 

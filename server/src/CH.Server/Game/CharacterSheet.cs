@@ -13,8 +13,13 @@ public sealed class CharacterSheet
 {
     public const int SkillMaxLevelAtStart = 4; // template levels 0-4 need no minimum character level
     public const int HudSlotsPerSet = 8;
-    private const int HealthPerLevel = 8;
-    private const int EnergyPerLevel = 3;
+    /// <summary>
+    /// Health and energy per point of Vitality and Focus, matched to a live level 200 warrior (2026-10-15): 980 Vitality
+    /// gave 7,825 health = 6.25 × 980 + 1,200 armour + 500 Dragon set; 10 Focus gave 1,139 energy = 600 armour + 500 set
+    /// + about 4 per Focus. Level adds nothing of its own; the class kit's starting health and energy don't either.
+    /// </summary>
+    private const double HealthPerVitality = 6.25;
+    private const double EnergyPerFocus = 4;
 
     private readonly Balance _balance;
 
@@ -57,6 +62,10 @@ public sealed class CharacterSheet
                 setEnergy += aura.Energy;
                 DivineDamage += aura.Divine;
                 auras.Add(aura.Name);
+                // The set's other bonuses still count (chaos resist: Exalted Dragonlord +1200, Frozen +400…), and so does
+                // its own damage: live shows the Dragon set's 150 divine in the stats page's Damage (2026-10-15). The
+                // owner's values only replace its health and energy; their Divine Strike is a separate proc.
+                gear.Add(reward with { Bonuses = reward.Bonuses.Where(b => b.Type is not ("HealthBonus" or "EnergyBonus")).ToList() });
             }
             else
             {
@@ -74,9 +83,9 @@ public sealed class CharacterSheet
         CombinedVitality = Vitality + gear.Sum(g => g.StatBonus("Vitality")) + (int)t["vit"];
 
         var healthKeystones = (t.Has(PassiveTree.AssassinsMark) ? 0.75 : 1) * (t.Has(PassiveTree.GlassCannon) ? 0.7 : 1);
-        MaxHealth = Math.Max(1, (int)((Kit.Health + (level - 1) * HealthPerLevel + (CombinedVitality - baseVit) * 6 + gear.Sum(g => g.Bonus("HealthBonus")) + setHealth + t["health"])
+        MaxHealth = Math.Max(1, (int)(((int)(CombinedVitality * HealthPerVitality) + gear.Sum(g => g.Bonus("HealthBonus")) + setHealth + t["health"])
             * (1 + t["healthPct"] / 100) * healthKeystones));
-        MaxEnergy = Math.Max(1, (int)((Kit.Energy + (level - 1) * EnergyPerLevel + (CombinedFocus - baseFoc) * 4 + gear.Sum(g => g.Bonus("EnergyBonus")) + setEnergy + t["energy"])
+        MaxEnergy = Math.Max(1, (int)(((int)(CombinedFocus * EnergyPerFocus) + gear.Sum(g => g.Bonus("EnergyBonus")) + setEnergy + t["energy"])
             * (1 + t["energyPct"] / 100)));
         Health = progress.Health < 0 ? MaxHealth : Math.Clamp(progress.Health, 0, MaxHealth);
         Energy = progress.Energy < 0 ? MaxEnergy : Math.Clamp(progress.Energy, 0, MaxEnergy);
@@ -96,12 +105,16 @@ public sealed class CharacterSheet
             * (t.Has(PassiveTree.IronHide) ? 1.5 : 1) * (t.Has(PassiveTree.Windrunner) ? 0.7 : 1));
         Encumbrance = equipped.Sum(i => i.Weight);
         var ranged = weapon is { Range: > 3 };
-        _attackBase = Kit.Attack + level + (ranged ? CombinedDexterity - baseDex : CombinedStrength - baseStr) + gear.Sum(g => g.Bonus("AttackBonus")) + t["attack"];
+        // Live (2026-10-15): a level 200 warrior with 2,071 Spear (the halberd's +500 included) and 225 Dexterity shows
+        // 2,296 attack: weapon ability + Dexterity, for melee and ranged alike. Strength adds damage, not attack; level
+        // and the class kit add nothing.
+        _attackBase = CombinedDexterity + gear.Sum(g => g.Bonus("AttackBonus")) + t["attack"];
         _attackFactor = 1 + (t["attackPct"] + gear.Sum(g => g.AttackPercent)) / 100;
         _weaponAbility = GameServer.WeaponAbility(weapon);
         // Owner's rule (2026-10-14): 2 Defence per point of Dexterity; level and armour don't add Defence (armour is
-        // physical resist instead). Defence only decides how often monsters hit: attack ÷ (attack + defence).
-        Defence = (int)((Kit.Defence + 2 * CombinedDexterity + gear.Sum(g => g.Bonus("DefenceBonus")) + t["defence"])
+        // physical resist instead). Defence only decides how often monsters hit: attack ÷ (attack + defence). Live
+        // (2026-10-15): 225 Dexterity and 2,200 from gear show 2,650, so there's no class base on top.
+        Defence = (int)((2 * CombinedDexterity + gear.Sum(g => g.Bonus("DefenceBonus")) + t["defence"])
             * (1 + t["defencePct"] / 100));
     }
 
@@ -122,8 +135,11 @@ public sealed class CharacterSheet
     /// <summary>Base 5% critical strike chance, plus passives; Assassin's Mark doubles it.</summary>
     public double CritChance => (0.05 + Tree["critChance"] / 100) * (Tree.Has(PassiveTree.AssassinsMark) ? 2 : 1);
 
-    /// <summary>Base ×1.5 on a critical strike; passives add to the extra, Assassin's Mark doubles the extra.</summary>
-    public double CritMultiplier => 1 + (0.5 + Tree["critMulti"] / 100) * (Tree.Has(PassiveTree.AssassinsMark) ? 2 : 1);
+    /// <summary>
+    /// Base ×2 on a critical strike, as on live (2026-10-15: 832 and 782 crits beside 332-467 hits); passives add to the
+    /// extra, Assassin's Mark doubles the extra.
+    /// </summary>
+    public double CritMultiplier => 1 + (1.0 + Tree["critMulti"] / 100) * (Tree.Has(PassiveTree.AssassinsMark) ? 2 : 1);
 
     public double AttackDamageFactor => (1 + (Tree["damagePct"] + Tree["attackDamagePct"]) / 100) * (Tree.Has(PassiveTree.GlassCannon) ? 1.3 : 1);
 
@@ -367,15 +383,26 @@ public sealed class CharacterSheet
 
     public IReadOnlyList<IdValue> Abilities()
     {
-        var levels = Kit.Abilities.Concat(LearnedAbilities).Distinct().ToDictionary(a => a, a => Math.Max(1, AbilityLevels.GetValueOrDefault(a, 1)));
+        var levels = TrainedAbilities().ToDictionary(a => a.Id, a => a.Value);
         foreach (var (id, amount) in Gear.SelectMany(g => g.AbilityBonuses)) levels[id] = levels.GetValueOrDefault(id) + amount;
         return levels.Select(kv => new IdValue(kv.Key, kv.Value)).ToList();
     }
 
+    /// <summary>
+    /// Ability levels without equipment: the client's base ability list. The abilities page compares it with the
+    /// compiled levels in the stats (<see cref="Abilities"/>) and shows a gear bonus in green, "2071/2500" for 1,571
+    /// Spear with the Voidfire Halberd's +500, as on live.
+    /// </summary>
+    public IReadOnlyList<IdValue> TrainedAbilities() =>
+        Kit.Abilities.Concat(LearnedAbilities).Distinct().Select(a => new IdValue(a, Math.Max(1, AbilityLevels.GetValueOrDefault(a, 1)))).ToList();
+
     /// <summary>Resist and other BonusTypes for the stats page, as client BonusType ids (see <see cref="BonusTypeIds"/>).</summary>
+    /// Pierce, slash and crush always show, as the armour plus any gear resist to that type: what monsters' physical
+    /// hits are resisted with (GameServer.World MobHitDamage).
     public IReadOnlyList<IdValue> GearBonuses() =>
-        Gear.SelectMany(g => g.Bonuses).Where(b => BonusTypeIds.ContainsKey(b.Type))
-            .GroupBy(b => BonusTypeIds[b.Type]).Select(g => new IdValue(g.Key, g.Sum(b => b.Amount))).ToList();
+        Gear.SelectMany(g => g.Bonuses).Where(b => BonusTypeIds.TryGetValue(b.Type, out var id) && id > 2)
+            .GroupBy(b => BonusTypeIds[b.Type]).Select(g => new IdValue(g.Key, g.Sum(b => b.Amount)))
+            .Concat(new[] { 0, 1, 2 }.Select(type => new IdValue(type, Armour + Resist(type)))).OrderBy(b => b.Id).ToList();
 
     /// <summary>Client BonusType enum values by name. Filled from the client enum (Balance.Model BonusType).</summary>
     /// <summary>
@@ -452,7 +479,7 @@ public sealed class CharacterSheet
         CookingLevel = CookingLevel,
         CookingExperience = CookingXpPercent,
         Experience = XpPercent,
-        Abilities = Abilities(),
+        Abilities = TrainedAbilities(),
         Skills = SkillEntries(),
         Stats = Stats(),
         Level = Level,

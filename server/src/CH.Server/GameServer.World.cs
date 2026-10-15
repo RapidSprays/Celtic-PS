@@ -264,6 +264,9 @@ public sealed partial class GameServer
                     mob.AttackAnnounced = false;
                     break;
                 }
+                RunMobScripts(zone, mob, now);
+                if (mob.State is not (MobState.Chasing or MobState.Fighting) || mob.Target is not Session) break;
+                target = (Session)mob.Target;
                 var (mx, mz) = mob.PositionAt(now);
                 var (_, px, _, pz, _) = target.Position;
                 var distance = MathF.Sqrt((px - mx) * (px - mx) + (pz - mz) * (pz - mz));
@@ -344,6 +347,7 @@ public sealed partial class GameServer
     {
         if (mob.IsNpc || mob.State == MobState.Dead) return;
         if (mob.State is MobState.Chasing or MobState.Fighting && ReferenceEquals(mob.Target, target)) return;
+        if (mob.State is MobState.Idle or MobState.Returning) mob.Scripts.Start(now); // a new fight: its scripts' clocks start
         AddThreat(mob, target, 1); // being noticed puts you on its list (a token amount)
         mob.Target = target;
         mob.State = MobState.Chasing;
@@ -428,6 +432,7 @@ public sealed partial class GameServer
         mob.State = MobState.Returning;
         mob.Damage.Clear();
         mob.Threat.Clear();
+        mob.Scripts.Clear();
         mob.MoveTo(now, mob.HomeX, mob.HomeZ, Mob.ChaseSpeed);
         BroadcastLeg(zone, mob, returning: true);
         Broadcast(zone, Opcode.EntityCombatStateChanged, new CombatStateChanged([(1, (int)mob.ServerId, false)]).Write);
@@ -615,10 +620,33 @@ public sealed partial class GameServer
         };
         // Against a monster the skill's own damage type meets its resist (Master's Grimoire's skill list gives the type;
         // skills without one aren't resisted), and a weapon hit included in the skill is resisted type by type.
-        if (mob?.Combat is { } combat && _skillTypes.TryGetValue(cast.Skill.Id, out var type)) amount = combat.AfterResist(type, amount, sheet.Level);
-        if (cast.Skill.IncludesWeaponAttack)
-            amount += mob?.Combat is { } c ? sheet.DamageByType.Sum(d => c.AfterResist(d.Key, d.Value, sheet.Level)) : sheet.WeaponDamage;
+        if (mob?.Combat is { } combat && _skillTypes.TryGetValue(cast.Skill.Id, out var type)) amount = combat.AfterResist(type, amount, sheet.Level, ResistChange(mob.Effects, type));
+        if (cast.Skill.IncludesWeaponAttack) amount += WeaponHit(s, buffs, mob); // the auto-attack's weapon hit, Strength and weapon ability included
         return (int)(amount * sheet.SkillDamageFactor(cast.Skill.Id) * (againstPlayer ? 1 : LevelFactor(sheet.Level, targetLevel)));
+    }
+
+    /// <summary>
+    /// The share of a hit's maximum (Master's Grimoire's damage figure) that lands, evenly between two-thirds and all of
+    /// it. Measured on live (2026-10-15): a level 200 warrior's auto-attacks on Akais' Spawn, whose formula maximum is
+    /// 483, landed 332-467 (69-97%), averaging 389. Skills take the same roll until they're measured; damage over time
+    /// isn't rolled.
+    /// </summary>
+    private const double DamageRollFloor = 2.0 / 3;
+
+    private static double DamageRoll(Session s, AttackKind kind) =>
+        kind is AttackKind.Attack or AttackKind.Skill ? DamageRollFloor + Random.Shared.NextDouble() * (1 - DamageRollFloor) : 1;
+
+    /// <summary>
+    /// Whether a monster evades a player's skill (Master's Grimoire): it lands with |E × m ÷ (E + 50 × player level) − 1|,
+    /// where E is the monster's evasion to the skill's avoidance type and m depends on the caster's class (0.95 Warrior and
+    /// Rogue, 0.7 the others). Skills without an avoidance type always land.
+    /// </summary>
+    private static bool MobEvadesSkill(Session s, Mob mob, SkillInfo skill)
+    {
+        if (skill.AvoidanceType < 0 || mob.Combat is not { } c || !c.Evade.TryGetValue(skill.AvoidanceType, out var evade) || evade <= 0) return false;
+        var multiplier = (CharacterClass)s.Character!.Class is CharacterClass.Warrior or CharacterClass.Rogue ? 0.95 : 0.7;
+        var lands = Math.Abs(evade * multiplier / (evade + 50.0 * s.Sheet!.Level) - 1);
+        return Random.Shared.NextDouble() >= lands;
     }
 
     /// <summary>Skill id → damage type (scripts/import-grimoire.py writes skill-types.json beside the balance JSON).</summary>
@@ -736,6 +764,14 @@ public sealed partial class GameServer
             foreach (var victim in victims)
             {
                 if (victim.State == MobState.Dead) continue;
+                if (MobEvadesSkill(s, victim, cast.Skill))
+                {
+                    if (!OwnsOrShares(s, victim) && !OwnerStillHere(zone, victim)) SetMobOwner(zone, victim, s);
+                    if (victim.State is MobState.Idle or MobState.Returning) Engage(zone, victim, s, now);
+                    Broadcast(zone, Opcode.CombatDamageMessage, new CombatDamage([new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)victim.ServerId,
+                        AttackKind.Skill, cast.Skill.Id, 0, victim.Health, Reaction.SkillAvoided, ++_damageId, false)], []).Write);
+                    continue;
+                }
                 // Each monster resists for itself (an area skill can hit a mix).
                 if (DealsNoDamage(s, cast))
                 {
@@ -813,7 +849,7 @@ public sealed partial class GameServer
         }
         else
         {
-            damage = (int)Math.Round(baseDamage * (0.8 + Random.Shared.NextDouble() * 0.4));
+            damage = (int)Math.Round(baseDamage * DamageRoll(s, kind));
             if (Random.Shared.NextDouble() < CritChance(s, mob, kind))
             {
                 critical = true;
@@ -822,6 +858,7 @@ public sealed partial class GameServer
             damage = Math.Max(1, damage);
         }
         mob.Health -= damage;
+        if (mob.Scripts.HitsTaken.Count < 64) mob.Scripts.HitsTaken.Add((kind == AttackKind.Attack ? 0 : skillId, damage));
         LifeTap(s, damage);
         if (!OwnsOrShares(s, mob) && !OwnerStillHere(zone, mob)) SetMobOwner(zone, mob, s);
         // An auto-attack that lands trains the weapon's ability (Bow, Sword…); Melee and Ranged Combat come from the skills
@@ -876,18 +913,21 @@ public sealed partial class GameServer
 
     private void MobHits(Zone zone, Mob mob, Session target, double now)
     {
-        if (_brains.TryGet(mob.Template.Id, out var brain) && ChooseMobSkill(mob, brain, now) is { } choice
-            && _balance.Skills.TryGetValue(choice.SkillId, out var mobSkill))
+        if (_brains.TryGet(mob.Template.Id, out var brain))
         {
-            MobCastsSkill(zone, mob, target, mobSkill, choice, brain, now);
-            return;
+            if (CurrentAi(mob, brain).Decisions.Count == 0) return; // "none" and "inanimate" AI: only its scripts act
+            if (ChooseMobSkill(mob, brain, now) is { } choice && _balance.Skills.TryGetValue(choice.SkillId, out var mobSkill))
+            {
+                MobCastsSkillArea(zone, mob, target, mobSkill, choice, brain, now);
+                return;
+            }
         }
         target.LastCombatAt = now;
         BreakStealth(target);
         var m = Modifiers(target);
         var sheet = target.Sheet!;
         var miss = !sheet.Tree.Has(PassiveTree.IronHide) && Random.Shared.NextDouble() < MobMissChance(mob, sheet, m);
-        var damage = miss ? 0 : MobHitDamage(mob, sheet, m);
+        var damage = miss ? 0 : MobHitDamage(mob, target, m);
         // Elites and bosses now and then land a special attack (approximated; GameServer.Combat).
         var special = !miss && !_brains.TryGet(mob.Template.Id, out _) && mob.Template.Power >= SpecialAttackMinPower && now >= mob.NextSpecialAt
             && Random.Shared.NextDouble() < SpecialAttackChance;
@@ -901,7 +941,7 @@ public sealed partial class GameServer
         target.Health = Math.Max(0, target.Health - (damage - absorbed));
         var entry = new DamageEntry(DamageDirection.MobToPlayer, (int)mob.ServerId, target.CharacterId,
             specialSkill is not null ? AttackKind.Skill : AttackKind.Attack, specialSkill?.Id ?? 0, damage, target.Health,
-            miss ? Reaction.Miss : specialSkill is not null ? Reaction.SkillHitAggressive : Reaction.Hit, ++_damageId, special);
+            miss ? AvoidedSwing() : specialSkill is not null ? Reaction.SkillHitAggressive : Reaction.Hit, ++_damageId, special);
         SendPlayerDamage(zone, target, entry);
         if (!miss && damage > 0) MaybeInterrupt(target, now);
         if (target.Health <= 0)
@@ -917,16 +957,25 @@ public sealed partial class GameServer
     }
 
     /// <summary>
+    /// How an avoided monster swing shows: miss, dodge or block, evenly. They're one roll (attack against defence); live
+    /// (2026-10-15, 66 swings from a level 140 Dragoncult Sorceror on a 2,650-defence warrior) landed 33% against the
+    /// formula's 34.5%, and the rest split 13 miss, 16 dodge, 15 block.
+    /// </summary>
+    private static Reaction AvoidedSwing() => Random.Shared.Next(3) switch { 0 => Reaction.Miss, 1 => Reaction.Dodge, _ => Reaction.Block };
+
+    /// <summary>
     /// The monster's next action by its AI weights (Master's Grimoire): auto-attack (null), or a ready skill of the kind
     /// chosen. A kind only counts when the monster has a ready skill of it; healing itself only below its threshold.
     /// Buffs and healing others aren't modelled yet, so those weights are left out.
     /// </summary>
     private MobSkillChoice? ChooseMobSkill(Mob mob, MobBrain brain, double now)
     {
-        List<MobSkillChoice> Ready(int kind) => brain.Skills
+        var ai = CurrentAi(mob, brain);
+        var known = brain.SkillsFor(ai);
+        List<MobSkillChoice> Ready(int kind) => known
             .Where(s => s.Kind == kind && s.Weight > 0 && mob.SkillReadyAt.GetValueOrDefault(s.SkillId) <= now).ToList();
         var options = new List<(int Weight, List<MobSkillChoice>? Skills)>();
-        foreach (var (kind, weight) in brain.Ai.Decisions)
+        foreach (var (kind, weight) in ai.Decisions)
         {
             if (weight <= 0) continue;
             switch (kind)
@@ -934,7 +983,7 @@ public sealed partial class GameServer
                 case MobBrains.AutoAttack: options.Add((weight, null)); break;
                 case MobBrains.AttackSkill when Ready(MobBrains.KindAttack) is { Count: > 0 } a: options.Add((weight, a)); break;
                 case MobBrains.DebuffSkill when Ready(MobBrains.KindDebuff) is { Count: > 0 } d: options.Add((weight, d)); break;
-                case MobBrains.HealSelf when mob.Health * 100 < brain.Ai.SelfHealBelow * mob.MaxHealth && Ready(MobBrains.KindHeal) is { Count: > 0 } h:
+                case MobBrains.HealSelf when mob.Health * 100 < ai.SelfHealBelow * mob.MaxHealth && Ready(MobBrains.KindHeal) is { Count: > 0 } h:
                     options.Add((weight, h));
                     break;
             }
@@ -951,6 +1000,19 @@ public sealed partial class GameServer
             return skills[^1];
         }
         return null;
+    }
+
+    /// <summary>
+    /// A monster skill on a player, and on everyone else within its area (Caustic Spray's 7 m) around them. Heals only
+    /// go on itself once.
+    /// </summary>
+    private void MobCastsSkillArea(Zone zone, Mob mob, Session target, SkillInfo skill, MobSkillChoice choice, MobBrain brain, double now)
+    {
+        MobCastsSkill(zone, mob, target, skill, choice, brain, now);
+        if (skill.AreaOfEffect <= 0 || choice.Kind == MobBrains.KindHeal) return;
+        foreach (var other in zone.Players.Where(p => !ReferenceEquals(p, target) && p.InZone && !p.Dead && !IsHiddenFrom(p, mob)
+                     && Dist2D(p.Position.X, p.Position.Z, target.Position.X, target.Position.Z) <= skill.AreaOfEffect).ToList())
+            MobCastsSkill(zone, mob, other, skill, choice, brain, now);
     }
 
     /// <summary>Defensive ability that evades (and trains from) each avoidance type, by the owner's mapping.</summary>
@@ -997,10 +1059,12 @@ public sealed partial class GameServer
                 0, target.Health, Reaction.SkillAvoided, ++_damageId, false));
             return;
         }
-        var amount = SkillInfo.Amount(level, ability, 0);
+        // Rolled like players' skills: live Stonecrusher (2026-10-15) hit Death Wave for 804 and 664 of its 917, Furious
+        // Sweep for 627 of 682.
+        var amount = SkillInfo.Amount(level, ability, 0) * (DamageRollFloor + Random.Shared.NextDouble() * (1 - DamageRollFloor));
         if (amount > 0 && _skillTypes.TryGetValue(skill.Id, out var type) && type != 9)
-            amount *= MobStats.ResistFactor(sheet.Resist(type) + (type <= 2 ? Math.Max(0, sheet.Armour + m.Armour) : 0), mob.Level);
-        if (skill.IncludesWeaponAttack) amount += MobHitDamage(mob, sheet, m);
+            amount *= MobStats.ResistFactor(PlayerResist(target, type, m), mob.Level);
+        if (skill.IncludesWeaponAttack) amount += MobHitDamage(mob, target, m);
         var damage = (int)Math.Round(amount);
         if (damage > 0)
         {
@@ -1036,15 +1100,14 @@ public sealed partial class GameServer
     /// player's resist to that type with the Grimoire's 1 − R / (R + 6 + 3 × monster level). Armour counts as resist to
     /// physical damage (pierce, slash, crush). Monsters without official numbers deal the approximated amount as crush.
     /// </summary>
-    private static int MobHitDamage(Mob mob, CharacterSheet sheet, EffectModifiers m)
+    private static int MobHitDamage(Mob mob, Session target, EffectModifiers m)
     {
-        var armour = Math.Max(0, sheet.Armour + m.Armour);
         IReadOnlyList<(int Type, int Amount)> parts = mob.Combat is { Damage.Count: > 0 } c
             ? c.Damage : [(2, MobStats.HitDamage(mob.Level, mob.Template.Power))];
         var total = 0.0;
         foreach (var (type, amount) in parts)
         {
-            var resist = type == 9 ? 0 : sheet.Resist(type) + (type <= 2 ? armour : 0);
+            var resist = PlayerResist(target, type, m);
             total += amount * (0.5 + Random.Shared.NextDouble() * 0.5) * MobStats.ResistFactor(resist, mob.Level);
         }
         return Math.Max(1, (int)Math.Round(total));
@@ -1151,8 +1214,13 @@ public sealed partial class GameServer
         var progress = _store.GetProgress(c.Id);
         var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects
         var tree = s.Sheet!.Tree;
-        var xp = MobStats.Xp(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.XpBoostPercent) + (int)tree["xpPct"]) / 100;
-        var coins = MobStats.Coins(mob.Level, mob.Template.Power) * (100 + Math.Max(0, boosts.GoldBoostPercent) + (int)tree["goldPct"]) / 100;
+        // Official XP and gold (Master's Grimoire) for monsters that have them; the old formulas for the rest.
+        var baseXp = mob.Combat is { Xp: > 0 } rewards ? rewards.XpFor(s.Sheet.Level) : MobStats.Xp(mob.Level, mob.Template.Power);
+        var baseCoins = mob.Combat is { } combat
+            ? Random.Shared.Next(Math.Min(combat.Gold.Min, combat.Gold.Max), Math.Max(combat.Gold.Min, combat.Gold.Max) + 1)
+            : MobStats.Coins(mob.Level, mob.Template.Power);
+        var xp = baseXp * (100 + Math.Max(0, boosts.XpBoostPercent) + (int)tree["xpPct"]) / 100;
+        var coins = baseCoins * (100 + Math.Max(0, boosts.GoldBoostPercent) + (int)tree["goldPct"]) / 100;
         var loot = new List<(int, int)>();
         var official = _officialLoot.Has(mob.Template.Id);
         var drops = official

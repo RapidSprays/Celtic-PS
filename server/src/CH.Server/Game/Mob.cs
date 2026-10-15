@@ -44,6 +44,9 @@ public sealed class Mob
     /// <summary>When each of its skills can be cast again (skill id → server time).</summary>
     public Dictionary<int, double> SkillReadyAt { get; } = new();
 
+    /// <summary>Its scripts' bookkeeping for the current fight (GameServer.Scripts).</summary>
+    public MobScriptState Scripts { get; } = new();
+
     /// <summary>Official attack, defence and damage (null → the MobStats formulas).</summary>
     public MobCombat? Combat { get; set; }
 
@@ -160,6 +163,7 @@ public sealed class Mob
         Damage.Clear();
         Threat.Clear();
         Effects.Clear();
+        Scripts.Clear();
         FromX = ToX = HomeX;
         FromZ = ToZ = HomeZ;
         LegStart = LegEta = now;
@@ -204,12 +208,29 @@ public static class MobStats
 /// <summary>A monster's official combat numbers: hit chance is attack against the target's defence; damage is per type.</summary>
 public sealed record MobCombat(int Level, int Health, int Attack, int Defence, IReadOnlyList<(int Type, int Amount)> Damage)
 {
+    /// <summary>Official XP for a kill (before the level difference) and the gold range it drops.</summary>
+    public int Xp { get; init; }
+    public (int Min, int Max) Gold { get; init; }
+
+    /// <summary>
+    /// XP a player of <paramref name="playerLevel"/> gets for the kill (Master's Grimoire): full XP from a monster at or
+    /// above their level, × 0.75 for each level they're above it.
+    /// </summary>
+    public int XpFor(int playerLevel) => playerLevel > Level ? (int)Math.Round(Xp * Math.Pow(0.75, playerLevel - Level)) : Xp;
+
     /// <summary>Resist per damage type: a flat amount (through <see cref="MobStats.ResistFactor"/>) and the share let through (0 = immune).</summary>
     public IReadOnlyDictionary<int, (int Flat, double Share)> Resists { get; init; } = new Dictionary<int, (int, double)>();
 
-    /// <summary>The part of <paramref name="amount"/> of a damage type that gets through, against an attacker of <paramref name="attackerLevel"/>.</summary>
-    public double AfterResist(int type, double amount, int attackerLevel) =>
-        Resists.TryGetValue(type, out var r) ? amount * MobStats.ResistFactor(r.Flat, attackerLevel) * r.Share : amount;
+    /// <summary>Evasion against players' skills by avoidance type (0 physical, 1 spell, 2 movement, 3 wounding, 4 weakening, 5 mental).</summary>
+    public IReadOnlyDictionary<int, int> Evade { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>
+    /// The part of <paramref name="amount"/> of a damage type that gets through, against an attacker of
+    /// <paramref name="attackerLevel"/>. <paramref name="change"/> is what lures on the monster add to the flat resist
+    /// (negative), never taking it below 0, as Master's Grimoire's solver does.
+    /// </summary>
+    public double AfterResist(int type, double amount, int attackerLevel, int change = 0) =>
+        Resists.TryGetValue(type, out var r) ? amount * MobStats.ResistFactor(Math.Max(0, r.Flat + change), attackerLevel) * r.Share : amount;
 }
 
 /// <summary>
@@ -236,9 +257,14 @@ public sealed class OfficialMobStats
             e => new MobCombat(Int(e.Value, "level"), Int(e.Value, "health"), Int(e.Value, "attack"), Int(e.Value, "defence"),
                 e.Value.TryGetProperty("damage", out var d) ? d.EnumerateArray().Select(x => (x[0].GetInt32(), x[1].GetInt32())).ToList() : [])
             {
+                Xp = Int(e.Value, "xp"),
+                Gold = e.Value.TryGetProperty("gold", out var g) && g.GetArrayLength() == 2 ? (g[0].GetInt32(), g[1].GetInt32()) : (0, 0),
                 Resists = e.Value.TryGetProperty("resists", out var r)
                     ? r.EnumerateArray().ToDictionary(x => x[0].GetInt32(), x => (x[1].GetInt32(), x[2].GetDouble()))
                     : new Dictionary<int, (int, double)>(),
+                Evade = e.Value.TryGetProperty("evade", out var ev)
+                    ? ev.EnumerateObject().ToDictionary(x => int.Parse(x.Name), x => x.Value.GetInt32())
+                    : new Dictionary<int, int>(),
             }));
     }
 

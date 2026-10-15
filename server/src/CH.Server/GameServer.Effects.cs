@@ -45,6 +45,9 @@ public sealed partial class GameServer
             Defence = Math.Max(0, stats.Defence + m.Defence),
             Attack = Math.Max(0, stats.Attack + m.Attack + (sheet.AttackRange > 3 ? m.RangedAttack : 0)), // Steady Aim: ranged only
             AttackSpeed = AttackSpeedWith(stats.AttackSpeed, m.AttackSpeedPercent + sheet.AttackSpeedPercent),
+            // The stats page's Damage is the whole weapon hit, as on live (1,822 for a 190 pierce + 200 heat halberd at
+            // 650 Strength; Frenzy raises it). The client also adds it to weapon skills' tooltips.
+            WeaponDamage = Math.Max(1, (int)(WeaponHit(s, m, null) + m.ExtraAttackDamage)),
             MaxSpeed = RunSpeedWith(stats.MaxSpeed, m.RunSpeedPercent + sheet.RunSpeedPercent), // riding: the Mounted effect
         };
     }
@@ -60,6 +63,18 @@ public sealed partial class GameServer
     {
         var sheet = s.Sheet!;
         var m = Modifiers(s);
+        var total = WeaponHit(s, m, target) + m.ExtraAttackDamage;
+        if (target is not null) total *= LevelFactor(sheet.Level, target.Level);
+        return Math.Max(1, (int)(total * sheet.AttackDamageFactor));
+    }
+
+    /// <summary>
+    /// One weapon hit, as Master's Grimoire's DPS solver has it for auto-attacks and for skills that include one: physical
+    /// damage × (1 + √(Strength/40) + √(weapon ability/280)), elemental damage as it is, each type cut by the monster's resist.
+    /// </summary>
+    private double WeaponHit(Session s, EffectModifiers m, Mob? target)
+    {
+        var sheet = s.Sheet!;
         var weaponAbility = sheet.AbilityLevel(WeaponAbility(Weapon(s)));
         var multiplier = 1 + Math.Sqrt(Math.Max(0, sheet.CombinedStrength) / 40.0) + Math.Sqrt(Math.Max(0, weaponAbility) / 280.0);
         var pct = (m.PhysicalDamagePct + (sheet.AttackRange > 3 ? m.RangedDamagePct : 0)) / 100;
@@ -67,12 +82,27 @@ public sealed partial class GameServer
         foreach (var (type, amount) in sheet.DamageByType)
         {
             var part = type <= 2 ? (int)(amount * multiplier) + amount * pct : amount;
-            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level) : part;
+            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level, ResistChange(target.Effects, type)) : part;
         }
-        total += m.ExtraAttackDamage;
-        if (target is not null) total *= LevelFactor(sheet.Level, target.Level);
-        return Math.Max(1, (int)(total * sheet.AttackDamageFactor));
+        return total;
     }
+
+    /// <summary>
+    /// What resist-changing effects (ChangeResistance: Lure of Fire, Ice, Magic, Soldiers, Assassins, Giants, Lure of
+    /// Death…) add to resist of a damage type. Each lure's type is in status-effects.json (Fire → heat, Giants → crush).
+    /// </summary>
+    private static int ResistChange(IEnumerable<ActiveEffect> effects, int type)
+    {
+        var now = NetTime.Now;
+        return effects.Where(e => e.Type == EffectType.ChangeResistance && e.Info.DamageType == type && e.ExpiresAt > now).Sum(e => e.Amount);
+    }
+
+    /// <summary>
+    /// A player's resist to a damage type when monsters hit them: gear resist, plus armour for pierce, slash and crush,
+    /// plus lures on them; never below 0. True damage (9) isn't resisted.
+    /// </summary>
+    private static int PlayerResist(Session s, int type, EffectModifiers m) => type == 9 ? 0
+        : Math.Max(0, s.Sheet!.Resist(type) + (type <= 2 ? Math.Max(0, s.Sheet.Armour + m.Armour) : 0) + ResistChange(s.Effects, type));
 
     // Owner's rule: no ceilings on attack or run speed. Only slows keep their floors (half attack speed, 20% run speed).
     public static int AttackSpeedWith(int milliseconds, int percent) => Math.Max(1, milliseconds * 100 / (100 + Math.Max(-50, percent)));
@@ -147,7 +177,7 @@ public sealed partial class GameServer
             var sheet = s.Sheet!;
             var damage = Math.Abs(dot.Amount);
             if (dot.Info.DamageType is { } type and not 9)
-                damage = (int)(damage * MobStats.ResistFactor(sheet.Resist(type) + (type <= 2 ? Math.Max(0, sheet.Armour + Modifiers(s).Armour) : 0), source.Level));
+                damage = (int)(damage * MobStats.ResistFactor(PlayerResist(s, type, Modifiers(s)), source.Level));
             damage = Math.Max(1, damage);
             s.Health = Math.Max(0, s.Health - damage);
             SendPlayerDamage(zone, s, new DamageEntry(DamageDirection.MobToPlayer, (int)source.ServerId, s.CharacterId, AttackKind.StatusEffect, dot.Info.Id,
@@ -241,7 +271,7 @@ public sealed partial class GameServer
             if (dot.Caster is Session caster && zone.Players.Contains(caster) && mob.State != MobState.Dead)
             {
                 double tick = Math.Max(1, dot.Amount);
-                if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level);
+                if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level, ResistChange(mob.Effects, type));
                 PlayerHits(zone, caster, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
             }
         }

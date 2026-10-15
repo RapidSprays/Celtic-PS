@@ -21,7 +21,7 @@ with --balance <output folder>/balance-client.json to use it (its other files ar
   * mob-stats.json: each monster's official level and health (moblist.txt).
 Outputs stay outside git (they are derived from game data).
 """
-import json, math, os, shutil, sys
+import json, math, os, re, shutil, sys
 from collections import Counter
 
 if len(sys.argv) < 3: sys.exit(__doc__)
@@ -162,10 +162,17 @@ for r in rows("moblist.txt"):
             if v.lower() == "immune": resists.append([int(t), 0, 0.0])
             elif v.endswith("%") and v[:-1].lstrip("-").isdigit(): resists.append([int(t), 0, max(0.0, (100 - int(v[:-1])) / 100)])
             elif v.lstrip("-").isdigit(): resists.append([int(t), int(v), 1.0])
+        # Gold: "25 - 52" (a range) or a single number; XP: column 20.
+        gold = [int(g) for g in re.findall(r"\d+", r[7])][:2] or [0]
+        # Evasion against players' skills, per avoidance type (0 physical, 1 spell, 2 movement, 3 wounding, 4 weakening,
+        # 5 mental): column 21, "type,value" pairs.
+        evade = {t: int(v) for t, _, v in (p.partition(",") for p in (r[20].split(";") if len(r) > 20 else []))
+                 if t.isdigit() and v.isdigit()}
         stats[r[0]] = {"level": int(r[5]), "health": int(r[6]), "attack": int(r[8]) if r[8].isdigit() else 0,
-                       "defence": int(r[9]) if r[9].isdigit() else 0, "damage": damage, "resists": resists}
+                       "defence": int(r[9]) if r[9].isdigit() else 0, "damage": damage, "resists": resists,
+                       "xp": int(r[19]) if r[19].isdigit() else 0, "gold": [gold[0], gold[-1]], "evade": evade}
 json.dump({"source": "Master's Grimoire (2022-09)", "mobs": stats}, open(os.path.join(out, "mob-stats.json"), "w", encoding="utf-8"))
-print(f"Monster stats: official level, health, attack, defence and damage for {len(stats)} monsters")
+print(f"Monster stats: official level, health, attack, defence, damage, XP and gold for {len(stats)} monsters")
 
 # ---- Equipment sets ---------------------------------------------------------------------------------------------
 # setbonusitem.txt: set~piece item; setbonusreward.txt: set~reward item~pieces needed. The reward is an unequippable
@@ -213,7 +220,9 @@ print(f"Skill damage types: {len(skill_types)} skills")
 # mobskillsets.txt: mob~skill set~AI (-1: the mob's own, moblist column 19); skillsetweight.txt: set~skill~weight~kind
 # (0 attack, 1 heal, 2 buff, 3 debuff); mobskills.txt: mob~skill~rank; mobabilities.txt: mob~ability~level;
 # ai.txt: id~type~self-heal %~other-heal %~decisions~skill set, decisions "kind,weight;…" with kinds 1 auto-attack,
-# 2 attack skill, 3 debuff, 4 heal self, 5 buff, 6 heal other (as Master's Grimoire reads them).
+# 2 attack skill, 3 debuff, 4 heal self, 5 buff, 6 heal other (as Master's Grimoire reads them). A mob can have several
+# skill sets, each tagged with a slot (mobskillsets column 3); an AI profile's last column says which slot it fights
+# with (-1: the mob's default sets), so bosses that switch AI in a script also switch skills.
 set_skills = {}
 for set_id, skill, weight, kind in rows("skillsetweight.txt"):
     if skill.lstrip("-").isdigit() and int(skill) > 0: set_skills.setdefault(set_id, []).append([int(skill), int(weight), int(kind)])
@@ -221,17 +230,59 @@ ranks = {(m, s): int(r) for m, s, r in rows("mobskills.txt")}
 abilities = {}
 for m, a, l in rows("mobabilities.txt"): abilities.setdefault(m, {})[a] = int(l)
 ai = {r[0]: {"type": int(r[1]), "selfHeal": int(r[2]), "otherHeal": int(r[3]),
-             "decisions": [[int(k), int(w)] for k, w in (d.split(",") for d in r[4].split(";") if d.count(",") == 1)]}
+             "decisions": [[int(k), int(w)] for k, w in (d.split(",") for d in r[4].split(";") if d.count(",") == 1)],
+             "slot": int(r[5]) if len(r) > 5 and r[5].lstrip("-").isdigit() and int(r[5]) >= -1 else -1}
       for r in rows("ai.txt")}
-mob_sets = {r[0]: (r[1], r[2]) for r in rows("mobskillsets.txt")}
+mob_sets = {}
+for m, set_id, slot in rows("mobskillsets.txt"):
+    mob_sets.setdefault(m, []).append((set_id, int(slot)))
+mob_ranks = {}
+for (m, s), r in ranks.items():
+    mob_ranks.setdefault(m, {})[s] = r
+
+# ---- Monster scripts ------------------------------------------------------------------------------------------------
+# scripts.txt: id~script~announcement~priority. A script is "1|triggers;2|failure conditions;3|actions;", each list
+# "code^arg^arg|code^arg…". Every trigger must hold and no failure condition, then the actions run in order (codes as
+# Master's Grimoire describes them; GameServer.Scripts runs them). mobscripts.txt: mob~AI type~script, the script only
+# running while the mob fights with that AI (-1: any).
+def number(v):
+    try:
+        f = float(v)
+        return int(f) if f.is_integer() and "." not in v else f
+    except ValueError:
+        return v
+
+
+scripts = {}
+for r in rows("scripts.txt"):
+    if not r[0].isdigit() or len(r) < 4: continue
+    parts = {"1": [], "2": [], "3": []}
+    for piece in r[1].split(";"):
+        kind, _, rest = piece.partition("|")
+        if kind in parts:
+            parts[kind] += [[number(a) for a in x.split("^")] for x in rest.split("|") if x and x.split("^")[0].isdigit()]
+    priority = r[-1] if r[-1].isdigit() else "1"
+    scripts[r[0]] = {"when": parts["1"], "unless": parts["2"], "do": parts["3"], "say": "~".join(r[2:-1]).strip(),
+                     "priority": int(priority)}
+mob_scripts = {}
+for m, ai_type, script in rows("mobscripts.txt"):
+    if script in scripts and int(m) in known_mobs: mob_scripts.setdefault(m, []).append([int(ai_type), int(script)])
+used = {s for links in mob_scripts.values() for _, s in links}
+json.dump({"source": "Master's Grimoire (2022-09)", "scripts": {k: v for k, v in scripts.items() if int(k) in used},
+           "mobs": mob_scripts}, open(os.path.join(out, "mob-scripts.json"), "w", encoding="utf-8"))
+print(f"Monster scripts: {len(used)} scripts on {len(mob_scripts)} monsters")
+
 brains = {}
 for mob, r in moblist.items():
-    if mob not in known_mobs or str(mob) not in mob_sets: continue
-    set_id, ai_id = mob_sets[str(mob)]
-    if ai_id == "-1": ai_id = r[18] if len(r) > 18 else "-1"
-    skills = [[s, w, k, ranks.get((str(mob), str(s)), 0)] for s, w, k in set_skills.get(set_id, [])]
-    if not skills or ai_id not in ai: continue
-    brains[str(mob)] = {"ai": ai_id, "skills": skills, "abilities": abilities.get(str(mob), {})}
+    if mob not in known_mobs or (str(mob) not in mob_sets and str(mob) not in mob_scripts): continue
+    ai_id = r[18] if len(r) > 18 else "-1"
+    slots = {}
+    for set_id, slot in mob_sets.get(str(mob), []):
+        slots.setdefault(str(slot), []).extend([s, w, k, ranks.get((str(mob), str(s)), 0)] for s, w, k in set_skills.get(set_id, []))
+    skills = slots.pop("-1", [])
+    if ai_id not in ai or not (skills or slots or str(mob) in mob_scripts): continue
+    brains[str(mob)] = {"ai": ai_id, "skills": skills, "slots": slots, "ranks": mob_ranks.get(str(mob), {}),
+                        "abilities": abilities.get(str(mob), {})}
 json.dump({"source": "Master's Grimoire (2022-09)", "mobs": brains, "ai": ai}, open(os.path.join(out, "mob-skills.json"), "w", encoding="utf-8"))
 print(f"Monster skills: {len(brains)} monsters with skill sets, {len(ai)} AI profiles")
 

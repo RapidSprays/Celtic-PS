@@ -94,6 +94,9 @@ public sealed class ServerOptions
     /// <summary>Skill aggro per rank (scripts/import-grimoire.py), beside the balance JSON.</summary>
     public string? SkillAggroPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "skill-aggro.json");
 
+    /// <summary>Monster scripts (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? MobScriptsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "mob-scripts.json");
+
     /// <summary>Monster skill sets and AI (scripts/import-grimoire.py), beside the balance JSON.</summary>
     public string? MobSkillsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "mob-skills.json");
 

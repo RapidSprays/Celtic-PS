@@ -56,6 +56,7 @@ public sealed partial class GameServer : IDisposable
         _mobScales = LoadMobScales(options.MobScalesPath);
         _skillTypes = LoadSkillTypes(options.SkillTypesPath);
         _brains = MobBrains.Load(options.MobSkillsPath);
+        _scripts = MobScriptBook.Load(options.MobScriptsPath);
         _regen = RegenRules.Load(options.RegenPath);
         _skillAggro = LoadSkillAggro(options.SkillAggroPath);
         _combatAbilityChance = options.CombatAbilityChance ?? LoadCombatAbilityChance(options.AbilityGainPath);

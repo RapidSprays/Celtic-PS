@@ -8,11 +8,29 @@ public sealed record MobSkillChoice(int SkillId, int Weight, int Kind, int Rank)
 /// <summary>
 /// A monster AI profile (ai.txt): how often it chooses each action, by weight. Kinds: 1 auto-attack, 2 attack skill,
 /// 3 debuff skill, 4 heal itself (below <see cref="SelfHealBelow"/>% health), 5 buff, 6 heal another.
+/// <see cref="SkillSlot"/> is which of the monster's skill sets it fights with (-1: its default ones). A profile with no
+/// decisions (the "none" and "inanimate" types) doesn't attack at all; only its scripts act.
 /// </summary>
-public sealed record MobAi(int SelfHealBelow, IReadOnlyList<(int Kind, int Weight)> Decisions);
+public sealed record MobAi(int SelfHealBelow, IReadOnlyList<(int Kind, int Weight)> Decisions)
+{
+    public int Id { get; init; } = -1;
+    public int SkillSlot { get; init; } = -1;
+}
 
-/// <summary>What a monster can cast: its AI, its skill set and its ability levels (the skill formula's ability).</summary>
-public sealed record MobBrain(MobAi Ai, IReadOnlyList<MobSkillChoice> Skills, IReadOnlyDictionary<int, int> Abilities);
+/// <summary>
+/// What a monster can cast: its AI, its default skill set, its skill sets for other AI slots, the rank of every skill it
+/// knows (scripts cast skills outside its sets) and its ability levels (the skill formula's ability).
+/// </summary>
+public sealed record MobBrain(MobAi Ai, IReadOnlyList<MobSkillChoice> Skills, IReadOnlyDictionary<int, int> Abilities)
+{
+    public IReadOnlyDictionary<int, IReadOnlyList<MobSkillChoice>> Slots { get; init; } = new Dictionary<int, IReadOnlyList<MobSkillChoice>>();
+    public IReadOnlyDictionary<int, int> Ranks { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>The skills it fights with under <paramref name="ai"/>: its default set, or the set for that AI's slot.</summary>
+    public IReadOnlyList<MobSkillChoice> SkillsFor(MobAi ai) => ai.SkillSlot < 0 ? Skills : Slots.GetValueOrDefault(ai.SkillSlot) ?? [];
+
+    public int RankOf(int skillId) => Ranks.GetValueOrDefault(skillId);
+}
 
 /// <summary>
 /// Monsters' skills and AI from Master's Grimoire (scripts/import-grimoire.py writes mob-skills.json beside the balance
@@ -24,30 +42,47 @@ public sealed class MobBrains
     public const int KindAttack = 0, KindHeal = 1, KindDebuff = 3;
 
     private readonly Dictionary<int, MobBrain> _mobs;
+    private readonly Dictionary<int, MobAi> _ais;
 
-    private MobBrains(Dictionary<int, MobBrain> mobs) => _mobs = mobs;
+    private MobBrains(Dictionary<int, MobBrain> mobs, Dictionary<int, MobAi> ais) => (_mobs, _ais) = (mobs, ais);
 
-    public static MobBrains Empty { get; } = new([]);
+    public static MobBrains Empty { get; } = new([], []);
 
     public int Count => _mobs.Count;
 
     public bool TryGet(int mobTemplate, out MobBrain brain) => _mobs.TryGetValue(mobTemplate, out brain!);
 
+    /// <summary>An AI profile by id (scripts switch monsters between them).</summary>
+    public MobAi? Ai(int id) => _ais.GetValueOrDefault(id);
+
     public static MobBrains Load(string? path)
     {
         if (path is null || !File.Exists(path)) return Empty;
         using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
-        var ais = doc.RootElement.GetProperty("ai").EnumerateObject().ToDictionary(e => e.Name, e => new MobAi(
+        var ais = doc.RootElement.GetProperty("ai").EnumerateObject().ToDictionary(e => int.Parse(e.Name), e => new MobAi(
             e.Value.GetProperty("selfHeal").GetInt32(),
-            e.Value.GetProperty("decisions").EnumerateArray().Select(d => (d[0].GetInt32(), d[1].GetInt32())).ToList()));
+            e.Value.GetProperty("decisions").EnumerateArray().Select(d => (d[0].GetInt32(), d[1].GetInt32())).ToList())
+        {
+            Id = int.Parse(e.Name),
+            SkillSlot = e.Value.TryGetProperty("slot", out var slot) ? slot.GetInt32() : -1,
+        });
+        static List<MobSkillChoice> Choices(JsonElement list) =>
+            list.EnumerateArray().Select(s => new MobSkillChoice(s[0].GetInt32(), s[1].GetInt32(), s[2].GetInt32(), s[3].GetInt32())).ToList();
         var mobs = new Dictionary<int, MobBrain>();
         foreach (var m in doc.RootElement.GetProperty("mobs").EnumerateObject())
         {
-            if (!ais.TryGetValue(m.Value.GetProperty("ai").GetString() ?? "", out var ai)) continue;
-            mobs[int.Parse(m.Name)] = new MobBrain(ai,
-                m.Value.GetProperty("skills").EnumerateArray().Select(s => new MobSkillChoice(s[0].GetInt32(), s[1].GetInt32(), s[2].GetInt32(), s[3].GetInt32())).ToList(),
-                m.Value.GetProperty("abilities").EnumerateObject().ToDictionary(a => int.Parse(a.Name), a => a.Value.GetInt32()));
+            if (!int.TryParse(m.Value.GetProperty("ai").GetString(), out var aiId) || !ais.TryGetValue(aiId, out var ai)) continue;
+            mobs[int.Parse(m.Name)] = new MobBrain(ai, Choices(m.Value.GetProperty("skills")),
+                m.Value.GetProperty("abilities").EnumerateObject().ToDictionary(a => int.Parse(a.Name), a => a.Value.GetInt32()))
+            {
+                Slots = m.Value.TryGetProperty("slots", out var slots)
+                    ? slots.EnumerateObject().ToDictionary(s => int.Parse(s.Name), s => (IReadOnlyList<MobSkillChoice>)Choices(s.Value))
+                    : new Dictionary<int, IReadOnlyList<MobSkillChoice>>(),
+                Ranks = m.Value.TryGetProperty("ranks", out var ranks)
+                    ? ranks.EnumerateObject().ToDictionary(r => int.Parse(r.Name), r => r.Value.GetInt32())
+                    : new Dictionary<int, int>(),
+            };
         }
-        return new MobBrains(mobs);
+        return new MobBrains(mobs, ais);
     }
 }

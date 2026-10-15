@@ -92,14 +92,15 @@ public sealed class PassiveTreeTests : IAsyncDisposable
             Assert.True(state.Open);
             Assert.Equal((WarriorStart, 4, 4), (state.Start, state.PointsFree, state.PointsTotal));
 
-            // +15 Strength: a bonus on the stats page (base unchanged), and more attack for a melee weapon.
+            // +15 Strength: a bonus on the stats page (base unchanged), and more weapon damage (Strength doesn't add attack).
             Chat(client, $".tree alloc {Strength1}");
             var baseStats = client.Expect(Opcode.BaseStats);
             baseStats.ReadVariableInt32();
             Assert.Equal(5, baseStats.ReadVariableInt32()); // base strength unchanged
             var after = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
             Assert.Equal(before.Strength + 15, after.Strength);
-            Assert.Equal(before.Attack + 15, after.Attack);
+            Assert.Equal(before.Attack, after.Attack);
+            Assert.True(after.WeaponDamage > before.WeaponDamage);
             Assert.Equal(new[] { Strength1 }, TreeState.Read(client.Expect(PrivateOpcode.TreeState)).Owned);
 
             // Not connected yet: refused, with the reason in chat.
@@ -162,8 +163,8 @@ public sealed class PassiveTreeTests : IAsyncDisposable
         var assassin = Sheet(With(new() { ["critChance"] = 5 }, PassiveTree.AssassinsMark));
         Assert.Equal((int)(plain.MaxHealth * 0.75), assassin.MaxHealth);
         Assert.Equal(0.2, assassin.CritChance, 6);
-        Assert.Equal(2.0, assassin.CritMultiplier, 6);
-        Assert.Equal((0.05, 1.5), (plain.CritChance, plain.CritMultiplier));
+        Assert.Equal(3.0, assassin.CritMultiplier, 6); // Assassin's Mark doubles the extra: 1 + 2 × 1
+        Assert.Equal((0.05, 2.0), (plain.CritChance, plain.CritMultiplier));
 
         var runner = Sheet(With(new() { ["attackSpeedPct"] = 5 }, PassiveTree.Windrunner));
         Assert.Equal((30, 25), (runner.AttackSpeedPercent, runner.RunSpeedPercent));

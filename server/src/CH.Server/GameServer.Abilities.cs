@@ -82,7 +82,7 @@ public sealed partial class GameServer
         {
             b.WriteVariableInt32(abilityId);
             b.WriteVariableInt32(level);
-            var list = updated.Abilities();
+            var list = updated.TrainedAbilities(); // base levels; the stats that follow carry the gear bonuses
             b.WriteVariableInt32(list.Count);
             foreach (var a in list)
             {
