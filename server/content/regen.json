@@ -1,0 +1,9 @@
+{
+  "_comment": "Health and energy regeneration (owner's rules, 2026-10-14). Every tickSeconds the player regains baseHealth and baseEnergy, flat, not scaled by level or maximums; in combat too when baseInCombat is true. Out of combat (no fighting for outOfCombatSeconds) each Sigil of Health / Energy adds perSigil, and out-of-combat gear (flutes, lutes...) adds its own. Gear regen and regen buffs always add. Restart the server after editing.",
+  "tickSeconds": 5,
+  "baseHealth": 2,
+  "baseEnergy": 2,
+  "baseInCombat": true,
+  "outOfCombatSeconds": 6,
+  "perSigil": 1
+}

@@ -189,24 +189,24 @@ public sealed class CombatTests : IAsyncDisposable
         client.Expect(Opcode.LevelUp);
         client.Expect(Opcode.BaseStats);
         var stats = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
-        Assert.Equal((19, 57), (stats.SkillPoints, stats.AttributePoints));
+        Assert.Equal((19, 95), (stats.SkillPoints, stats.AttributePoints)); // 5 attribute points a level
         var skills = ReadSkillList(client.Expect(Opcode.SkillListUpdate), out var skillPoints);
         Assert.Equal(19, skillPoints);
-        Assert.Equal(SkillLevels.Ranks - 1, skills.Single(k => k.SkillId == 1).MaxLevel); // no rank caps (SkillLevels)
+        Assert.Equal(SkillLevels.Ranks - 1, skills.Single(k => k.SkillId == 1).MaxLevel); // the client gets the whole table (gear ranks); buying stops at 50
 
-        // +5 strength, +3 vitality: more attack and health, 49 points left.
-        client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(5); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(3); b.WriteVariableUInt32(49); });
+        // +5 strength, +3 vitality: more attack and health, 87 points left.
+        client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(5); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(3); b.WriteVariableUInt32(87); });
         var baseStats = client.Expect(Opcode.BaseStats);
         Assert.Equal(13, baseStats.ReadVariableInt32()); // vitality 10 + 3
         Assert.Equal(10, baseStats.ReadVariableInt32()); // strength 5 + 5
         var after = CharacterStats.Read(client.Expect(Opcode.StatsUpdate));
-        Assert.Equal(49, after.AttributePoints);
+        Assert.Equal(87, after.AttributePoints);
         Assert.Equal(stats.MaxHealth + 18, after.MaxHealth);
         Assert.Equal(stats.Attack + 5, after.Attack);
 
         // Spending more than you have is refused.
         client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(100); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); });
-        Assert.Contains("49 attribute points", NextSystemLine(client));
+        Assert.Contains("87 attribute points", NextSystemLine(client));
 
         // Rank Pummel up once, then several ranks in one purchase.
         client.Send(Opcode.BuySkill, b => { b.WriteVariableInt32(1); b.WriteVariableInt32(1); });

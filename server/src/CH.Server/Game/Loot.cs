@@ -79,3 +79,71 @@ public sealed class LootTable
         return lo;
     }
 }
+
+/// <summary>
+/// The official loot tables, from Master's Grimoire (scripts/import-grimoire.py writes loot.json beside the balance JSON).
+/// A monster rolls each of its loot sets (some several times); a set picks one table by weight, -1 being "nothing";
+/// the table picks one item and quantity by weight. Monsters without an entry keep the approximated <see cref="LootTable"/>.
+/// </summary>
+public sealed class OfficialLoot
+{
+    private readonly Dictionary<int, (int Set, int Times)[]> _mobs;
+    private readonly Dictionary<int, (int Table, int Weight)[]> _sets;
+    private readonly Dictionary<int, (int Item, int Quantity, int Weight)[]> _tables;
+
+    private OfficialLoot(Dictionary<int, (int, int)[]> mobs, Dictionary<int, (int, int)[]> sets, Dictionary<int, (int, int, int)[]> tables)
+    {
+        _mobs = mobs;
+        _sets = sets;
+        _tables = tables;
+    }
+
+    public static OfficialLoot Empty { get; } = new([], [], []);
+
+    public int MobCount => _mobs.Count;
+
+    public static OfficialLoot Load(string? path)
+    {
+        if (path is null || !File.Exists(path)) return Empty;
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path));
+        var root = doc.RootElement;
+        Dictionary<int, T[]> Read<T>(string name, Func<System.Text.Json.JsonElement, T> row) => root.GetProperty(name).EnumerateObject()
+            .ToDictionary(e => int.Parse(e.Name), e => e.Value.EnumerateArray().Select(row).ToArray());
+        return new OfficialLoot(
+            Read("mobs", r => (r[0].GetInt32(), r[1].GetInt32())),
+            Read("sets", r => (r[0].GetInt32(), r[1].GetInt32())),
+            Read("tables", r => (r[0].GetInt32(), r[1].GetInt32(), r[2].GetInt32())));
+    }
+
+    public bool Has(int mobTemplate) => _mobs.ContainsKey(mobTemplate);
+
+    /// <summary>This kill's drops as (item, quantity); items the client doesn't know are left out.</summary>
+    public List<(int Item, int Quantity)> Roll(int mobTemplate, Balance balance, Random rng)
+    {
+        var drops = new List<(int, int)>();
+        if (!_mobs.TryGetValue(mobTemplate, out var sets)) return drops;
+        foreach (var (set, times) in sets)
+        {
+            if (!_sets.TryGetValue(set, out var tables)) continue;
+            for (var i = 0; i < times; i++)
+            {
+                var table = Pick(tables, t => t.Weight, rng).Table;
+                if (!_tables.TryGetValue(table, out var items)) continue; // -1: nothing
+                var (item, quantity, _) = Pick(items, t => t.Weight, rng);
+                if (item > 0 && quantity > 0 && balance.Items.ContainsKey(item)) drops.Add((item, quantity));
+            }
+        }
+        return drops;
+    }
+
+    private static T Pick<T>(T[] entries, Func<T, int> weight, Random rng)
+    {
+        var roll = rng.NextDouble() * entries.Sum(e => Math.Max(0, weight(e)));
+        foreach (var e in entries)
+        {
+            roll -= Math.Max(0, weight(e));
+            if (roll < 0) return e;
+        }
+        return entries[^1];
+    }
+}

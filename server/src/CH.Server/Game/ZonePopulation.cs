@@ -6,6 +6,9 @@ public sealed record Camp(int Anchor, float OffsetX, float OffsetZ, float Radius
 /// <summary>A camp from scripts/gen-zone-population.py: absolute centre (y is a nearby walkable point's height).</summary>
 public sealed record GeneratedCamp(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float RoamRadius)
 {
+    /// <summary>Relative chance of each of <see cref="Templates"/> (an official spawn point's mix); empty → equal chances.</summary>
+    public IReadOnlyList<double> Weights { get; init; } = [];
+
     /// <summary>Each monster's home on walkable ground (docs/world-placement.md); empty → random points in the radius.</summary>
     public IReadOnlyList<(float X, float Z)> Points { get; init; } = [];
 }
@@ -62,6 +65,7 @@ public static class ZonePopulation
                 c.GetProperty("templates").EnumerateArray().Select(t => t.GetInt32()).ToArray(),
                 c.GetProperty("minLevel").GetInt32(), c.GetProperty("maxLevel").GetInt32(), c.GetProperty("roam").GetSingle())
             {
+                Weights = c.TryGetProperty("weights", out var w) ? w.EnumerateArray().Select(x => x.GetDouble()).ToList() : [],
                 Points = c.TryGetProperty("points", out var pts)
                     ? pts.EnumerateArray().Select(p => (p[0].GetSingle(), p[1].GetSingle())).ToList()
                     : [],
@@ -72,16 +76,18 @@ public static class ZonePopulation
 
     /// <summary>
     /// Builds the monsters for a zone: the generated camps when the zone has them (placed on the zone's real walkable
-    /// ground), otherwise the hand-made ones. Skips templates the client data doesn't have.
+    /// ground), otherwise the hand-made ones. Skips templates the client data doesn't have. Monsters with
+    /// <paramref name="official"/> stats get their own level and health instead of the camp's level range.
     /// </summary>
-    public static List<Mob> Build(int zoneId, Balance balance, double now, IReadOnlyDictionary<int, GeneratedCamp[]>? generated = null)
+    public static List<Mob> Build(int zoneId, Balance balance, double now, IReadOnlyDictionary<int, GeneratedCamp[]>? generated = null,
+        OfficialMobStats? official = null)
     {
         var mobs = new List<Mob>();
         if (!balance.Zones.TryGetValue(zoneId, out var zone)) return mobs;
-        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam, IReadOnlyList<(float X, float Z)> Points)>();
+        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam, IReadOnlyList<(float X, float Z)> Points, IReadOnlyList<double> Weights)>();
         if (generated is not null && generated.TryGetValue(zoneId, out var gen) && gen.Length > 0)
         {
-            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius, c.Points)));
+            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius, c.Points, c.Weights)));
         }
         else if (Camps.TryGetValue(zoneId, out var camps))
         {
@@ -89,16 +95,27 @@ public static class ZonePopulation
             {
                 var anchor = zone.PlayerSpawns.FirstOrDefault(p => p.Id == camp.Anchor);
                 if (anchor is null) continue;
-                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius, []));
+                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius, [], []));
             }
         }
         var rng = new Random(zoneId * 7919);
         var serverId = FirstAutoServerId + (uint)zoneId * 1000;
         foreach (var camp in centres)
         {
+            // Every template the camp can produce, with its weight, level and health.
+            var variants = new List<MobVariant>();
+            for (var t = 0; t < camp.Templates.Length; t++)
+            {
+                if (!balance.Mobs.TryGetValue(camp.Templates[t], out var info)) continue;
+                var weight = t < camp.Weights.Count ? camp.Weights[t] : 1;
+                if (official is not null && official.TryGet(info.Id, out var combat) && combat.Level > 0 && combat.Health > 0)
+                    variants.Add(new MobVariant(info, combat.Level, combat.Health, weight, combat));
+                else
+                    variants.Add(new MobVariant(info, -1, null, weight)); // level rolled per monster below
+            }
+            if (variants.Count == 0) continue;
             for (var i = 0; i < camp.Count; i++)
             {
-                var templateId = camp.Templates[rng.Next(camp.Templates.Length)];
                 var level = rng.Next(camp.MinLevel, camp.MaxLevel + 1);
                 var angle = rng.NextDouble() * Math.PI * 2;
                 var dist = Math.Sqrt(rng.NextDouble()) * camp.Radius;
@@ -110,20 +127,25 @@ public static class ZonePopulation
                     x = Math.Clamp(x, zone.Min.X + 5, zone.Max.X - 5);
                     z = Math.Clamp(z, zone.Min.Z + 5, zone.Max.Z - 5);
                 }
-                if (!balance.Mobs.TryGetValue(templateId, out var template)) continue;
+                var own = variants.Select(v => v.Level < 0 ? v with { Level = level } : v).ToList();
+                var first = own[0];
                 var mob = new Mob
                 {
                     ServerId = serverId++,
-                    Template = template,
-                    Level = level,
+                    Template = first.Template,
+                    Level = first.Level,
+                    FixedMaxHealth = first.Health,
+                    Combat = first.Combat,
                     HomeX = x,
                     HomeY = camp.Y,
                     HomeZ = z,
                     Direction = (float)(rng.NextDouble() * 360),
                     Opinion = 0,
-                    AggroRange = MobStats.AggroRange(template.Power),
+                    AggroRange = MobStats.AggroRange(first.Template.Power),
                     RoamRadius = camp.Roam,
+                    Variants = own.Count > 1 ? own : [],
                 };
+                mob.Reroll(rng);
                 mob.Reset(now);
                 mobs.Add(mob);
             }

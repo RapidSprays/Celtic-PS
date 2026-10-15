@@ -44,7 +44,13 @@ public sealed class PatchServer : IAsyncDisposable
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
-        builder.WebHost.ConfigureKestrel(k => k.Listen(_options.BindAddress, _options.HttpPort));
+        builder.WebHost.ConfigureKestrel(k =>
+        {
+            k.Listen(_options.BindAddress, _options.HttpPort);
+            // The game copies are patched to the launcher's relay port (5565). Listening there too lets game windows
+            // started straight from the copy (several at once) reach the server with no launcher or relay.
+            if (_options.ClientHttpPort is { } clientPort && clientPort != _options.HttpPort) k.Listen(_options.BindAddress, clientPort);
+        });
         _app = builder.Build();
         _app.Use(async (ctx, next) =>
         {

@@ -41,6 +41,31 @@ public sealed class CharacterSheet
         SkillPoints = Math.Max(0, Progression.SkillPointsPerLevel * (level - 1) - skills.Sum(k => k.Level));
 
         var gear = Equipped.Select(i => _balance.Items.GetValueOrDefault(i.TemplateId)).OfType<ItemInfo>().ToList();
+        // Completed sets: armour auras give the owner's health, energy and Divine Strike; other sets add their reward
+        // item's own bonuses from the game data, as if it were worn.
+        var setHealth = 0;
+        var setEnergy = 0;
+        var auras = new List<string>();
+        var auraEffects = new List<int>();
+        foreach (var set in _balance.SetBonuses.ActiveSets(Equipped.Select(i => i.TemplateId).ToList()))
+        {
+            if (!_balance.Items.TryGetValue(set.Reward, out var reward)) continue;
+            if (set.Effect is { } effect) auraEffects.Add(effect);
+            if (_balance.SetBonuses.AuraFor(reward) is { } aura)
+            {
+                setHealth += aura.Health;
+                setEnergy += aura.Energy;
+                DivineDamage += aura.Divine;
+                auras.Add(aura.Name);
+            }
+            else
+            {
+                gear.Add(reward);
+                auras.Add(reward.Name.Trim());
+            }
+        }
+        SetBonuses = auras;
+        AuraEffects = auraEffects;
         Gear = gear;
         // Passive-tree attributes count as bonuses (combined), never as spent base points.
         CombinedStrength = Strength + gear.Sum(g => g.StatBonus("Strength")) + (int)t["str"];
@@ -49,9 +74,9 @@ public sealed class CharacterSheet
         CombinedVitality = Vitality + gear.Sum(g => g.StatBonus("Vitality")) + (int)t["vit"];
 
         var healthKeystones = (t.Has(PassiveTree.AssassinsMark) ? 0.75 : 1) * (t.Has(PassiveTree.GlassCannon) ? 0.7 : 1);
-        MaxHealth = Math.Max(1, (int)((Kit.Health + (level - 1) * HealthPerLevel + (CombinedVitality - baseVit) * 6 + gear.Sum(g => g.Bonus("HealthBonus")) + t["health"])
+        MaxHealth = Math.Max(1, (int)((Kit.Health + (level - 1) * HealthPerLevel + (CombinedVitality - baseVit) * 6 + gear.Sum(g => g.Bonus("HealthBonus")) + setHealth + t["health"])
             * (1 + t["healthPct"] / 100) * healthKeystones));
-        MaxEnergy = Math.Max(1, (int)((Kit.Energy + (level - 1) * EnergyPerLevel + (CombinedFocus - baseFoc) * 4 + gear.Sum(g => g.Bonus("EnergyBonus")) + t["energy"])
+        MaxEnergy = Math.Max(1, (int)((Kit.Energy + (level - 1) * EnergyPerLevel + (CombinedFocus - baseFoc) * 4 + gear.Sum(g => g.Bonus("EnergyBonus")) + setEnergy + t["energy"])
             * (1 + t["energyPct"] / 100)));
         Health = progress.Health < 0 ? MaxHealth : Math.Clamp(progress.Health, 0, MaxHealth);
         Energy = progress.Energy < 0 ? MaxEnergy : Math.Clamp(progress.Energy, 0, MaxEnergy);
@@ -59,16 +84,24 @@ public sealed class CharacterSheet
         var equipped = Equipped.Select(i => _balance.Items.GetValueOrDefault(i.TemplateId)).Where(i => i is not null).Select(i => i!).ToList();
         var weapon = Equipped.FirstOrDefault(i => i.Slot == (int)EquipSlot.Weapon) is { } w ? _balance.Items.GetValueOrDefault(w.TemplateId) : null;
         var offhand = Equipped.FirstOrDefault(i => i.Slot == (int)EquipSlot.Offhand) is { } o ? _balance.Items.GetValueOrDefault(o.TemplateId) : null;
-        WeaponDamage = weapon?.Damage ?? 1;
+        // The stats page's "Damage" is this number as sent (GUIStatsPage shows the WeaponDamage stat unchanged), and the
+        // auto-attack uses it: the damage of everything worn, not just the weapon. Arrows, offhand daggers, bangles,
+        // necklaces and set bonuses carry damage too. Armour auras' Divine Strike stays a separate proc.
+        WeaponDamage = Math.Max(1, gear.Sum(g => g.Damage));
+        WeaponSubtype = weapon?.Subtype ?? "None";
+        OffhandSubtype = offhand?.Subtype ?? "None";
         AttackSpeed = weapon is { Speed: > 0 } ? weapon.Speed : 1000;
         AttackRange = weapon is { Range: > 0 } ? weapon.Range + (offhand is { Subtype: "Arrow" } ? offhand.Range : 0) : 1f;
         Armour = (int)((equipped.Sum(i => i.Armour) + t["armour"]) * (1 + t["armourPct"] / 100)
             * (t.Has(PassiveTree.IronHide) ? 1.5 : 1) * (t.Has(PassiveTree.Windrunner) ? 0.7 : 1));
         Encumbrance = equipped.Sum(i => i.Weight);
         var ranged = weapon is { Range: > 3 };
-        Attack = (int)((Kit.Attack + level + (ranged ? CombinedDexterity - baseDex : CombinedStrength - baseStr) + gear.Sum(g => g.Bonus("AttackBonus")) + t["attack"])
-            * (1 + t["attackPct"] / 100));
-        Defence = (int)((Kit.Defence + level + Armour / 2 + (CombinedDexterity - baseDex) / 2 + gear.Sum(g => g.Bonus("DefenceBonus")) + t["defence"])
+        _attackBase = Kit.Attack + level + (ranged ? CombinedDexterity - baseDex : CombinedStrength - baseStr) + gear.Sum(g => g.Bonus("AttackBonus")) + t["attack"];
+        _attackFactor = 1 + (t["attackPct"] + gear.Sum(g => g.AttackPercent)) / 100;
+        _weaponAbility = GameServer.WeaponAbility(weapon);
+        // Owner's rule (2026-10-14): 2 Defence per point of Dexterity; level and armour don't add Defence (armour is
+        // physical resist instead). Defence only decides how often monsters hit: attack ÷ (attack + defence).
+        Defence = (int)((Kit.Defence + 2 * CombinedDexterity + gear.Sum(g => g.Bonus("DefenceBonus")) + t["defence"])
             * (1 + t["defencePct"] / 100));
     }
 
@@ -99,14 +132,63 @@ public sealed class CharacterSheet
 
     public double HealFactor(int skillId) => 1 + (Tree["healPct"] + Tree.For(_balance.SkillTags(skillId)).DamagePct) / 100;
 
-    public double RechargeFactor(int skillId) => Math.Max(0, 1 - Tree.For(_balance.SkillTags(skillId)).CooldownPct / 100);
+    /// <summary>
+    /// Share of a skill's cooldown left after gear and passives: the best item that cuts it (items say they don't stack
+    /// with others for the same skill), times the passive tree's cut.
+    /// </summary>
+    public double RechargeFactor(int skillId)
+    {
+        var gear = Gear.SelectMany(g => _balance.RecastReductions(g)).Where(r => r.Skill == skillId).Select(r => r.Percent).DefaultIfEmpty(0).Max();
+        return Math.Max(0, (1 - gear / 100.0) * (1 - Tree.For(_balance.SkillTags(skillId)).CooldownPct / 100));
+    }
 
     public int EnergyCost(int skillId, int cost) => (int)Math.Ceiling(cost * Math.Max(0, 1 - Tree.For(_balance.SkillTags(skillId)).CostPct / 100));
 
     /// <summary>Extra chance for monsters to miss; Iron Hide means they never miss.</summary>
     public double EvadeChance => Tree["evadePct"] / 100;
 
-    public int AttackSpeedPercent => (int)Tree["attackSpeedPct"] + (Tree.Has(PassiveTree.Windrunner) ? 25 : 0);
+    public int AttackSpeedPercent => (int)Tree["attackSpeedPct"] + (Tree.Has(PassiveTree.Windrunner) ? 25 : 0) + GearHastePercent;
+
+    /// <summary>
+    /// The attribute part of a skill's strength, before the square root: the skill's primary attribute ÷ its divisor
+    /// (Sharp Shot: dexterity ÷ 6). Zero for skills without one. Master's Grimoire's formula for skills and their buffs is
+    /// ⌈base + initial × (1 + √(ability ÷ 100) + √(this))⌉ (<see cref="StatusEffectLevel.ModifiedAmount"/>).
+    /// </summary>
+    public double StatRatio(SkillInfo skill)
+    {
+        var stat = skill.PrimaryStat switch
+        {
+            0 => CombinedStrength,
+            1 => CombinedDexterity,
+            2 => CombinedFocus,
+            3 => CombinedVitality,
+            _ => 0,
+        };
+        return stat <= 0 ? 0 : stat / (double)(skill.PrimaryStatDivisor > 0 ? skill.PrimaryStatDivisor : 1);
+    }
+
+    /// <summary>Pierce, slash and crush damage of everything worn: the part Steady Aim and Frenzy raise by a percentage.</summary>
+    public int PhysicalDamage => Gear.Sum(g => g.PhysicalDamage);
+
+    /// <summary>Gear avoidance (AvoidanceBonuses) against one avoidance type (0 physical … 5 mental).</summary>
+    public int Avoidance(int avoidanceType) => Gear.SelectMany(g => g.AvoidanceBonuses).Where(a => a.Id == avoidanceType).Sum(a => a.Amount);
+
+    /// <summary>
+    /// Gear SkillBonuses up to this are extra ranks (Ring of Double Shot +1…+10, Exalted Dragonlord armour +8, Aetheric
+    /// rings +15); larger ones are flat damage ("increases the damage from your Sharp Shot skill by up to 1013").
+    /// </summary>
+    public const int MaxRankBonus = 50;
+
+    /// <summary>Flat damage gear adds to a skill (the large SkillBonuses).</summary>
+    public int SkillBonusDamage(int skillId) =>
+        Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == skillId && Math.Abs(b.Amount) > MaxRankBonus).Sum(b => b.Amount);
+
+    /// <summary>Damage of everything worn, by type (see <see cref="ItemInfo.DamageTypeIds"/>).</summary>
+    public IReadOnlyDictionary<int, int> DamageByType => Gear.SelectMany(g => g.DamageByType)
+        .GroupBy(d => d.Type).ToDictionary(g => g.Key, g => g.Sum(d => d.Amount));
+
+    /// <summary>The best haste item worn (they don't stack with each other); buffs like Rapid Shot add on top.</summary>
+    public int GearHastePercent => Gear.Select(g => g.HastePercent).DefaultIfEmpty(0).Max();
 
     public int RunSpeedPercent => (int)Tree["runSpeedPct"] + (Tree.Has(PassiveTree.Windrunner) ? 25 : 0);
 
@@ -115,7 +197,7 @@ public sealed class CharacterSheet
     /// ranks. The client indexes Levels[compiled], so stay inside the (extended) table.
     /// </summary>
     public int EffectiveRank(int skillId, int trained) => Math.Clamp(
-        trained + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == skillId && Math.Abs(b.Amount) <= 10).Sum(b => b.Amount)
+        trained + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == skillId && Math.Abs(b.Amount) <= MaxRankBonus).Sum(b => b.Amount)
             + Tree.For(_balance.SkillTags(skillId)).Ranks,
         0, Math.Max(0, (_balance.Skills.GetValueOrDefault(skillId)?.Levels.Count ?? 1) - 1));
 
@@ -150,8 +232,6 @@ public sealed class CharacterSheet
     /// <summary>Templates of everything equipped.</summary>
     public IReadOnlyList<ItemInfo> Gear { get; }
 
-    /// <summary>Extra skill damage from Focus. <b>Approximated.</b></summary>
-    public int SkillDamageBonus => (CombinedFocus - ClassKit.BaseAttributes.Foc) / 2;
 
     /// <summary>Skills granted by equipped items (EquipSkillID), usable while worn, not trainable.</summary>
     public IReadOnlyList<int> EquipSkills => Gear.Where(g => g.EquipSkillId > 0 && _balance.Skills.ContainsKey(g.EquipSkillId))
@@ -163,9 +243,43 @@ public sealed class CharacterSheet
     public int MaxEnergy { get; }
     public int Health { get; }
     public int Energy { get; }
-    public int Attack { get; }
+    /// <summary>
+    /// Attack: class, level, attribute, gear and passives, plus the level of the held weapon's ability (Bow, Sword…),
+    /// one for one, so 2000 Bow ability adds 2000 attack. Computed on use, since ability levels are set after the sheet.
+    /// </summary>
+    public int Attack => (int)((_attackBase + Math.Max(0, AbilityLevel(_weaponAbility))) * _attackFactor);
+
+    private readonly double _attackBase;
+    private readonly double _attackFactor;
+    private readonly int _weaponAbility;
     public int Defence { get; }
     public int WeaponDamage { get; }
+
+    /// <summary>Set bonuses in effect (armour auras by name).</summary>
+    public IReadOnlyList<string> SetBonuses { get; } = [];
+
+    /// <summary>The client status effects for the sets worn ("Exalted Aura"), shown as permanent icons under the health bar.</summary>
+    public IReadOnlyList<int> AuraEffects { get; } = [];
+
+    /// <summary>
+    /// Resist against a damage type (0 pierce, 1 slash, 2 crush, 3 heat, 4 cold, 5 magic, 6 poison, 7 divine, 8 chaos;
+    /// the client's BonusType ids) from gear and set bonuses. True damage (9) has none.
+    /// </summary>
+    public int Resist(int damageType) =>
+        Gear.SelectMany(g => g.Bonuses).Where(b => BonusTypeIds.TryGetValue(b.Type, out var id) && id == damageType).Sum(b => b.Amount);
+
+    /// <summary>Divine Strike damage from armour set auras; procs on auto-attack hits (GameServer.World PlayerHits).</summary>
+    public int DivineDamage { get; }
+
+    /// <summary>Subtype of the weapon held ("Bow", "Sword"…), "None" when empty-handed.</summary>
+    public string WeaponSubtype { get; }
+
+    /// <summary>Subtype of the offhand item ("Shield", "Arrow"…), "None" when empty.</summary>
+    public string OffhandSubtype { get; }
+
+    /// <summary>Whether the weapon or offhand held meets the skill's weapon requirement (none → always).</summary>
+    public bool CanUse(SkillInfo skill) =>
+        skill.WeaponRequirements.Count == 0 || skill.WeaponRequirements.Contains(WeaponSubtype) || skill.WeaponRequirements.Contains(OffhandSubtype);
     public int AttackSpeed { get; }
     public float AttackRange { get; }
     public int Armour { get; }
@@ -189,11 +303,19 @@ public sealed class CharacterSheet
 
     public InventoryWithMoney InventoryWithMoney() => new(Progress.Coins, BackpackSlots());
 
-    /// <summary>The highest rank a skill can reach: the end of its (extended, ungated) level table (see <see cref="SkillLevels"/>).</summary>
+    /// <summary>The highest rank a skill can reach: the end of its level table, capped at 50 ranks (see <see cref="SkillLevels"/>).</summary>
+    /// <summary>The last rank in a skill's table (room for gear ranks past the training cap).</summary>
+    public int TableMaxRank(int skillId) => _balance.Skills.TryGetValue(skillId, out var skill) && skill.Levels.Count > 0 ? skill.Levels.Count - 1 : SkillMaxLevelAtStart;
+
     public int MaxRank(int skillId) => _balance.Skills.TryGetValue(skillId, out var skill) && skill.Levels.Count > 0 ? skill.MaxRank(Level) : SkillMaxLevelAtStart;
 
+    /// <summary>
+    /// The skill list for the client. Its maximum is the whole (extended) table, not the training cap: the client shows a
+    /// gear-boosted rank ("+8") only up to that maximum, so a 50 there hid every gear bonus on a trained skill. Buying
+    /// ranks still stops at 50 (<see cref="MaxRank"/>, checked by BuySkill).
+    /// </summary>
     public IReadOnlyList<SkillEntry> SkillEntries() =>
-        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, MaxRank(s.SkillId), 0f))
+        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, TableMaxRank(s.SkillId), 0f))
             .Concat(EquipSkills.Select(id => new SkillEntry(id, 0, 0, 0f)))
             .ToList();
 
@@ -359,7 +481,7 @@ public sealed class CharacterSheet
 public static class Progression
 {
     public const int MaxLevel = 250;
-    public const int AttributePointsPerLevel = 3;
+    public const int AttributePointsPerLevel = 5; // owner's rule (2026-10-14)
     public const int SkillPointsPerLevel = 1;
 
     public static int XpToNextLevel(int level) => (int)(100 * Math.Pow(Math.Max(1, level), 1.6));

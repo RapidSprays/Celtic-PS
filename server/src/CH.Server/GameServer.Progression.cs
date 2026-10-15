@@ -42,6 +42,7 @@ public sealed partial class GameServer
         var target = known == default ? 0 : Math.Min(Math.Min(newRank, sheet.MaxRank(skillId)), known.Level + sheet.SkillPoints);
         string? problem = known == default ? "You don't know that skill."
             : newRank <= known.Level ? "That skill is already at that rank."
+            : known.Level >= sheet.MaxRank(skillId) ? $"That skill is at its highest trainable rank ({Game.SkillLevels.TrainableRanks}); gear can raise it further."
             : sheet.SkillPoints <= 0 ? "You have no skill points."
             : target <= known.Level ? "You need a higher level to train that skill further."
             : null;

@@ -22,6 +22,8 @@ public sealed partial class GameServer : IDisposable
     private readonly IReadOnlyDictionary<int, GeneratedCamp[]> _generatedCamps;
     private readonly ZoneTravel _travel;
     private readonly LootTable _loot;
+    private readonly OfficialLoot _officialLoot;
+    private readonly OfficialMobStats _officialStats;
     private readonly QuestBook _quests;
     private readonly ShopCatalog _shops;
     private readonly TokenVendorCatalog _tokenVendors;
@@ -49,10 +51,22 @@ public sealed partial class GameServer : IDisposable
         _generatedCamps = ZonePopulation.LoadGenerated(options.PopulationPath);
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
         _loot = new LootTable(balance);
+        _officialLoot = OfficialLoot.Load(options.LootPath);
+        _officialStats = OfficialMobStats.Load(options.MobStatsPath);
+        _mobScales = LoadMobScales(options.MobScalesPath);
+        _skillTypes = LoadSkillTypes(options.SkillTypesPath);
+        _brains = MobBrains.Load(options.MobSkillsPath);
+        _regen = RegenRules.Load(options.RegenPath);
+        _skillAggro = LoadSkillAggro(options.SkillAggroPath);
+        _combatAbilityChance = options.CombatAbilityChance ?? LoadCombatAbilityChance(options.AbilityGainPath);
+        _balance.SetBonuses = SetBonusCatalog.Load(options.ItemSetsPath, options.SetAurasPath);
+        balance.LoadStatusDetails(options.StatusEffectsPath); // before the overrides, which may change a tick
+        if (SkillOverrides.Apply(balance, options.SkillOverridesPath) is > 0 and var overridden)
+            log.LogInformation("Skill overrides: {Count} skills changed (server/content/skill-overrides.json)", overridden);
         _quests = QuestBook.Load(options.WorldPath);
         _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath));
         _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
-        _tree = PassiveTree.Load(options.PassiveTreePath);
+        _tree = PassiveTree.Load(options.PassiveTreeEnabled ? options.PassiveTreePath : null);
         _itemShop = LoadItemShop(options.ItemShopPath);
         _factionRules = FactionRules.Load(options.FactionsPath);
         _bounties = BuildBounties();
@@ -60,6 +74,11 @@ public sealed partial class GameServer : IDisposable
         _itemPoints = LoadItemPoints(options.ItemSpawnsPath);
         _ingredients = LoadIngredients(options.CookingPath);
         _calendar = LoadCalendar(options.CalendarPath);
+        if (_officialLoot.MobCount > 0) log.LogInformation("Official loot tables for {Mobs} monsters", _officialLoot.MobCount);
+        if (_balance.SetBonuses.Sets.Count > 0)
+            log.LogInformation("Equipment sets: {Sets} ({Auras} armour auras)", _balance.SetBonuses.Sets.Count, _balance.SetBonuses.Auras.Count);
+        if (_brains.Count > 0) log.LogInformation("Monster skills and AI for {Mobs} monsters", _brains.Count);
+        if (_officialStats.Count > 0) log.LogInformation("Official level and health for {Mobs} monsters", _officialStats.Count);
         if (_tree.IsLoaded) log.LogInformation("Passive tree: {Nodes} nodes", _tree.Nodes.Count);
         if (_quests.Quests.Count > 0) log.LogInformation("Quests: {Quests}, NPCs: {Npcs}", _quests.Quests.Count, _quests.Npcs.Count);
         if (_bounties.Count > 0)
@@ -569,7 +588,7 @@ public sealed partial class GameServer : IDisposable
         s.Health = sheet.Health > 0 ? sheet.Health : sheet.MaxHealth;
         s.Energy = sheet.Energy;
         s.Dead = false;
-        s.NextRegenAt = NetTime.Now + RegenIntervalSeconds;
+        s.NextRegenAt = NetTime.Now + _regen.TickSeconds;
         s.Teleports.Clear();
         s.Teleports.UnionWith(_store.ListTeleports(character.Id));
         (s.SigilsOfHealth, s.SigilsOfEnergy) = _store.GetSigils(character.Id);
@@ -674,6 +693,7 @@ public sealed partial class GameServer : IDisposable
         public double NextSwingAt { get; set; }
         public double LastCombatAt { get; set; } = double.MinValue;
         public double NextRegenAt { get; set; }
+        public double NextConcentrationAt { get; set; }
         public Dictionary<int, double> Cooldowns { get; } = new();
         public List<PendingCast> Casts { get; } = new();
         public List<ActiveEffect> Effects { get; } = new();

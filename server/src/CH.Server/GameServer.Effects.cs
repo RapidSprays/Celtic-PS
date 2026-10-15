@@ -13,6 +13,9 @@ public sealed partial class GameServer
 {
     private const double DotTickSeconds = 3;
 
+    /// <summary>Seconds between an effect's ticks: its own (most damage over time ticks every 5 s), else 3.</summary>
+    private static double TickOf(StatusEffectInfo info) => info.TickSeconds is > 0 and var t ? t : DotTickSeconds;
+
     private EffectModifiers Modifiers(Session s)
     {
         var sheet = s.Sheet!;
@@ -40,10 +43,35 @@ public sealed partial class GameServer
             MaxEnergy = s.MaxEnergy,
             ArmourValue = Math.Max(0, stats.ArmourValue + m.Armour),
             Defence = Math.Max(0, stats.Defence + m.Defence),
-            Attack = Math.Max(0, stats.Attack + m.Attack),
+            Attack = Math.Max(0, stats.Attack + m.Attack + (sheet.AttackRange > 3 ? m.RangedAttack : 0)), // Steady Aim: ranged only
             AttackSpeed = AttackSpeedWith(stats.AttackSpeed, m.AttackSpeedPercent + sheet.AttackSpeedPercent),
             MaxSpeed = RunSpeedWith(stats.MaxSpeed, m.RunSpeedPercent + sheet.RunSpeedPercent), // riding: the Mounted effect
         };
+    }
+
+    /// <summary>
+    /// One auto-attack's damage, by Master's Grimoire's formula. Pierce, slash and crush from everything worn are each
+    /// multiplied by 1 + √(strength ÷ 40) + √(weapon ability ÷ 280); elemental damage adds as it is. Frenzy (and Steady
+    /// Aim with a ranged weapon) add a percentage of the raw physical damage, and Sharpen Weapons, Poison Weapon and
+    /// Reapers Touch a flat amount. Against a monster, each type is cut by its resist (flat, percent or immune) and the
+    /// Grimoire's level factor applies. Attack doesn't add damage: it decides whether the swing hits.
+    /// </summary>
+    private int AutoAttackDamage(Session s, Mob? target = null)
+    {
+        var sheet = s.Sheet!;
+        var m = Modifiers(s);
+        var weaponAbility = sheet.AbilityLevel(WeaponAbility(Weapon(s)));
+        var multiplier = 1 + Math.Sqrt(Math.Max(0, sheet.CombinedStrength) / 40.0) + Math.Sqrt(Math.Max(0, weaponAbility) / 280.0);
+        var pct = (m.PhysicalDamagePct + (sheet.AttackRange > 3 ? m.RangedDamagePct : 0)) / 100;
+        double total = 0;
+        foreach (var (type, amount) in sheet.DamageByType)
+        {
+            var part = type <= 2 ? (int)(amount * multiplier) + amount * pct : amount;
+            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level) : part;
+        }
+        total += m.ExtraAttackDamage;
+        if (target is not null) total *= LevelFactor(sheet.Level, target.Level);
+        return Math.Max(1, (int)(total * sheet.AttackDamageFactor));
     }
 
     // Owner's rule: no ceilings on attack or run speed. Only slows keep their floors (half attack speed, 20% run speed).
@@ -73,21 +101,30 @@ public sealed partial class GameServer
         foreach (var e in s.Effects)
         {
             b.WriteVariableInt32(e.Info.Id);
-            b.WriteVariableInt32(e.LevelIndex);
+            // The level the effect works at. Skill ranks go past an effect's last level (trained rank plus gear ranks,
+            // e.g. Steady Aim 49 + 8 = 57 of 50); the client drops an icon whose level it can't find.
+            b.WriteVariableInt32(Math.Clamp(e.LevelIndex, 0, Math.Max(0, e.Info.Levels.Count - 1)));
             b.WriteVariableInt32((int)Math.Ceiling(Math.Max(0, e.ExpiresAt - now)));
             b.Write(e.AbilityLevel);
-            b.Write(0f);
+            b.Write((float)e.StatRatio); // the client's GetModifiedAmount(ability, stat), so tooltips show the real amount
         }
     }
 
     /// <summary>Applies a skill's status effect to the caster (self and friendly buffs). Re-casting refreshes it.</summary>
-    private void ApplyEffect(Session s, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel)
+    private void ApplyEffect(Session s, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel, double statRatio = 0,
+        Mob? caster = null)
     {
         if (!_balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var info) || info.Level(skillLevel) is not { } level) return;
         s.Effects.RemoveAll(e => e.Info.Id == info.Id);
-        var effect = new ActiveEffect { Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + DotTickSeconds, AbilityLevel = abilityLevel };
+        var effect = new ActiveEffect
+        {
+            Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + TickOf(info),
+            AbilityLevel = abilityLevel, StatRatio = statRatio, Caster = caster,
+        };
         if (EffectModifiers.IsShield(effect.Type)) effect.ShieldRemaining = Math.Max(1, effect.Amount);
         s.Effects.Add(effect);
+        // Rapid Shot and other attack-speed buffs take effect on the very next swing, not the one after.
+        if (effect.Type is EffectType.ChangeAttackSpeed) s.NextSwingAt = Math.Min(s.NextSwingAt, now + LiveStats(s).AttackSpeed / 1000.0);
         SendEffects(s);
     }
 
@@ -102,6 +139,25 @@ public sealed partial class GameServer
     /// <summary>Expires effects and runs damage/heal over time. Called from the player tick.</summary>
     private void TickEffects(Zone zone, Session s, double now)
     {
+        // Damage over time a monster's skill left on the player (bleeds, poisons, burns).
+        foreach (var dot in s.Effects.Where(e => e.Type == EffectType.Dot && e.Caster is Mob && now >= e.NextTickAt && now < e.ExpiresAt).ToList())
+        {
+            dot.NextTickAt = now + TickOf(dot.Info);
+            var source = (Mob)dot.Caster!;
+            var sheet = s.Sheet!;
+            var damage = Math.Abs(dot.Amount);
+            if (dot.Info.DamageType is { } type and not 9)
+                damage = (int)(damage * MobStats.ResistFactor(sheet.Resist(type) + (type <= 2 ? Math.Max(0, sheet.Armour + Modifiers(s).Armour) : 0), source.Level));
+            damage = Math.Max(1, damage);
+            s.Health = Math.Max(0, s.Health - damage);
+            SendPlayerDamage(zone, s, new DamageEntry(DamageDirection.MobToPlayer, (int)source.ServerId, s.CharacterId, AttackKind.StatusEffect, dot.Info.Id,
+                damage, s.Health, Reaction.SkillHitAggressive, ++_damageId, false));
+            if (s.Health <= 0)
+            {
+                PlayerDies(zone, s, now);
+                return;
+            }
+        }
         if (s.Effects.RemoveAll(e => now >= e.ExpiresAt || (EffectModifiers.IsShield(e.Type) && e.ShieldRemaining <= 0)) > 0)
         {
             UpdatePetEffects(s, send: false); // a meal that ran out makes the pet hungry
@@ -125,23 +181,69 @@ public sealed partial class GameServer
 
     // ---- debuffs on mobs (damage over time) ---------------------------------------------------
 
-    private void ApplyMobEffect(Mob mob, Session caster, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel)
+    private void ApplyMobEffect(Mob mob, Session caster, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel, double statRatio = 0)
     {
         if (!_balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var info) || info.Level(skillLevel) is not { } level) return;
-        if ((EffectType)info.Type != EffectType.Dot) return;
         mob.Effects.RemoveAll(e => e.Info.Id == info.Id);
-        mob.Effects.Add(new ActiveEffect { Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + DotTickSeconds, Caster = caster, AbilityLevel = abilityLevel });
+        mob.Effects.Add(new ActiveEffect
+        {
+            Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + TickOf(info), Caster = caster,
+            AbilityLevel = abilityLevel, StatRatio = statRatio,
+        });
+        if (_zones.TryGetValue(caster.Position.Zone, out var zone)) BroadcastMobEffects(zone, mob);
+    }
+
+    /// <summary>
+    /// What players' debuffs do to a monster: attack (Howling Wind and other ChangeAttack/AttackPercent effects, which
+    /// lower its chance to hit), defence (ChangeDefence, DefencePercent, ChangeEvasions: raise players' chance to hit it),
+    /// attack speed (any slow halves its attack rate; see below) and stuns (Stun, Stun2, Frozen, Stasis: no attacks).
+    /// </summary>
+    private static (int Attack, int Defence, int AttackSpeedPercent, bool Stunned) MobDebuffs(Mob mob)
+    {
+        var baseAttack = mob.Combat is { Attack: > 0 } c ? c.Attack : MobStats.Attack(mob.Level, mob.Template.Power);
+        var baseDefence = mob.Combat?.Defence ?? 0;
+        var (attack, defence, speed, stunned, slowed) = (0, 0, 0, false, false);
+        foreach (var e in mob.Effects)
+        {
+            var a = e.Amount;
+            switch (e.Type)
+            {
+                case EffectType.ChangeAttack: attack += a; break;
+                case EffectType.AttackPercent: attack += baseAttack * a / 100; break;
+                case EffectType.ChangeDefence or EffectType.ChangeEvasions: defence += a; break;
+                case EffectType.DefencePercent: defence += baseDefence * a / 100; break;
+                // Owner's rule: any attack-speed-down on a monster halves its attack rate (attacks take twice as long),
+                // whatever the effect's own number; they don't stack. Speed-ups (rare on monsters) add as they are.
+                case EffectType.ChangeAttackSpeed when a < 0:
+                case EffectType.HalfAttackSpeed:
+                    slowed = true;
+                    break;
+                case EffectType.ChangeAttackSpeed: speed += a; break;
+                case EffectType.Stun or EffectType.Stun2 or EffectType.Frozen or EffectType.Stasis: stunned = true; break;
+            }
+        }
+        return (attack, defence, slowed ? -50 : speed, stunned);
+    }
+
+    /// <summary>Tells everyone in the zone a monster's status icons changed (its debuffs, plus Chaos Aura).</summary>
+    private void BroadcastMobEffects(Zone zone, Mob mob)
+    {
+        foreach (var p in zone.Players.ToList()) SendMobEffects(p, [mob]);
     }
 
     private void TickMobEffects(Zone zone, Mob mob, double now)
     {
         if (mob.Effects.Count == 0) return;
-        mob.Effects.RemoveAll(e => now >= e.ExpiresAt);
-        foreach (var dot in mob.Effects.Where(e => now >= e.NextTickAt).ToList())
+        if (mob.Effects.RemoveAll(e => now >= e.ExpiresAt) > 0) BroadcastMobEffects(zone, mob);
+        foreach (var dot in mob.Effects.Where(e => e.Type == EffectType.Dot && now >= e.NextTickAt).ToList())
         {
-            dot.NextTickAt = now + DotTickSeconds;
+            dot.NextTickAt = now + TickOf(dot.Info);
             if (dot.Caster is Session caster && zone.Players.Contains(caster) && mob.State != MobState.Dead)
-                PlayerHits(zone, caster, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, dot.Amount), now, allowMiss: false);
+            {
+                double tick = Math.Max(1, dot.Amount);
+                if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level);
+                PlayerHits(zone, caster, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
+            }
         }
     }
 }

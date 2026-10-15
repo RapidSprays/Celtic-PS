@@ -13,6 +13,13 @@ public sealed class ServerOptions
     /// <summary>HTTP "patch server" port. 0 picks a free port (tests).</summary>
     public int HttpPort { get; set; } = 5555;
 
+    /// <summary>
+    /// A second HTTP port, normally the launcher relay's 5565 that the game copies are patched to (<c>--client-port</c>).
+    /// Then game windows started directly from the copy reach the server without the launcher, so several can run at
+    /// once. The launcher can't run alongside it, since its relay needs the same port.
+    /// </summary>
+    public int? ClientHttpPort { get; set; }
+
     /// <summary>Lidgren UDP game server port. 0 picks a free port (tests).</summary>
     public int GamePort { get; set; } = 5556;
 
@@ -75,6 +82,30 @@ public sealed class ServerOptions
     /// <summary>Fishing spots and catches (scripts/gen-fishing.py), beside the balance JSON.</summary>
     public string? FishingPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "fishing.json");
 
+    /// <summary>Official loot tables (scripts/import-grimoire.py), beside the balance JSON. Missing → approximated drops.</summary>
+    public string? LootPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "loot.json");
+
+    /// <summary>Official monster levels and health (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? MobStatsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "mob-stats.json");
+
+    /// <summary>Status effect tick times and damage types (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? StatusEffectsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "status-effects.json");
+
+    /// <summary>Skill aggro per rank (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? SkillAggroPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "skill-aggro.json");
+
+    /// <summary>Monster skill sets and AI (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? MobSkillsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "mob-skills.json");
+
+    /// <summary>Skill damage types (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? SkillTypesPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "skill-types.json");
+
+    /// <summary>Equipment sets (scripts/import-grimoire.py), beside the balance JSON.</summary>
+    public string? ItemSetsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "item-sets.json");
+
+    /// <summary>Armour set auras with the owner's values (server/content/set-bonuses.json, copied next to the server binary).</summary>
+    public string? SetAurasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "set-bonuses.json");
+
     /// <summary>Zone exits (scripts/extract-zone-points.py), read from beside the balance JSON.</summary>
     public string? ZonePointsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "zone-points.json");
 
@@ -96,11 +127,33 @@ public sealed class ServerOptions
     /// <summary>Faction reputation sources (server/content/factions.json, copied next to the server binary).</summary>
     public string? FactionsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "factions.json");
 
+    /// <summary>Combat ability gain chance (server/content/ability-gain.json, copied next to the server binary).</summary>
+    public string? AbilityGainPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "ability-gain.json");
+
+    /// <summary>Overrides the file's combat ability gain chance (tests).</summary>
+    public double? CombatAbilityChance { get; set; }
+
+    /// <summary>The owner's skill changes (server/content/skill-overrides.json, copied next to the server binary).</summary>
+    public string? SkillOverridesPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "skill-overrides.json");
+
+    /// <summary>Health and energy regeneration rules (server/content/regen.json, copied next to the server binary).</summary>
+    public string? RegenPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "regen.json");
+
+    /// <summary>Monster model sizes by appearance (server/content/mob-scales.json, copied next to the server binary).</summary>
+    public string? MobScalesPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "mob-scales.json");
+
     /// <summary>The platinum item shop catalogue (server/content/item-shop.json, copied next to the server binary).</summary>
     public string? ItemShopPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "item-shop.json");
 
     /// <summary>The passive tree (server/content/passive-tree.json, copied next to the server binary).</summary>
     public string? PassiveTreePath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "passive-tree.json");
+
+    /// <summary>
+    /// The passive ("progression") tree, our own addition. Off by default (<c>--passive-tree</c> turns it on) while the
+    /// base game systems are brought in line with the official data: its bonuses would skew every number being checked.
+    /// Players' chosen nodes stay saved while it is off.
+    /// </summary>
+    public bool PassiveTreeEnabled { get; set; }
 
     public void Validate()
     {
@@ -134,6 +187,8 @@ public sealed class ServerOptions
                 case "--no-balance": o.BalancePath = null; break;
                 case "--gm": o.GmAccounts.Add(Next()); break;
                 case "--no-local-gm": o.LocalGm = false; break;
+                case "--passive-tree": o.PassiveTreeEnabled = true; break;
+                case "--client-port": o.ClientHttpPort = int.Parse(Next()); break;
                 default: throw new ArgumentException($"unknown option {args[i]}");
             }
         }

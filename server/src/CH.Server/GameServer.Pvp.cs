@@ -203,8 +203,7 @@ public sealed partial class GameServer
             return;
         }
         var stats = LiveStats(s);
-        var ranged = sheet.AttackRange > 3 ? Modifiers(s).RangedDamage : 0;
-        PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, (int)((sheet.WeaponDamage + stats.Attack / 3 + sheet.Level + ranged) * sheet.AttackDamageFactor), now);
+        PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, AutoAttackDamage(s), now);
         s.NextSwingAt = now + stats.AttackSpeed / 1000.0;
     }
 

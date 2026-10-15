@@ -66,6 +66,47 @@ public sealed record ItemInfo(
     /// <summary>BonusTypes: resists and flat Health/Energy/Attack/Defence/Concentration bonuses (names as in the client data).</summary>
     public IReadOnlyList<(string Type, int Amount)> Bonuses { get; init; } = [];
 
+    /// <summary>The pierce, slash and crush part of <see cref="Damage"/>: what Steady Aim and Frenzy boost by a percentage.</summary>
+    public int PhysicalDamage { get; init; }
+
+    /// <summary>Damage by type (0 pierce, 1 slash, 2 crush, 3 heat, 4 cold, 5 magic, 6 poison, 7 divine, 8 chaos, 9 true).</summary>
+    public IReadOnlyList<(int Type, int Amount)> DamageByType { get; init; } = [];
+
+    /// <summary>The client's DamageType names as the type numbers monsters' damage and resists use.</summary>
+    public static readonly IReadOnlyDictionary<string, int> DamageTypeIds = new Dictionary<string, int>
+    {
+        ["PiercingDamage"] = 0, ["SlashingDamage"] = 1, ["CrushingDamage"] = 2, ["HeatDamage"] = 3, ["ColdDamage"] = 4,
+        ["MagicDamage"] = 5, ["PoisonDamage"] = 6, ["DivineDamage"] = 7, ["ChaosDamage"] = 8, ["TrueDamage"] = 9,
+    };
+
+    private static readonly System.Text.RegularExpressions.Regex HasteText = new(
+        @"attack speed (?:is )?(?:increased |improved )?by (\d+)%|attack (\d+)% faster|speed of your attacks by (\d+)%|attack speed by (\d+)%",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    private static readonly System.Text.RegularExpressions.Regex AttackPercentText = new(
+        @"total Attack is increased by (\d+)%", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// Percent to total Attack the item's description promises ("your total Attack is increased by 15%": Spectral Ring
+    /// of the Reaper). The client data has no field for it.
+    /// </summary>
+    public int AttackPercent =>
+        Slot is not EquipSlot.Unequipable && AttackPercentText.Match(Description) is { Success: true } m ? int.Parse(m.Groups[1].Value) : 0;
+
+    /// <summary>
+    /// Attack speed bonus the item's description promises ("Boosts attack speed by 30%", "attack 20% faster"): Ring of
+    /// Haste, Spectral Ring of the Reaper, the Eldritch/Runic Quivers of Savagery, haste gloves and daggers. The client
+    /// data has no field for it. Items say these don't stack with each other, so the character sheet takes the highest.
+    /// </summary>
+    public int HastePercent
+    {
+        get
+        {
+            if (Slot is EquipSlot.Unequipable || HasteText.Match(Description) is not { Success: true } m) return 0;
+            return int.Parse(m.Groups.Values.Skip(1).First(g => g.Success).Value);
+        }
+    }
+
     /// <summary>RequirementTypes: LevelRequirement, Strength/Dexterity/Focus/VitalityRequirement, GenderRequirement.</summary>
     public IReadOnlyList<(string Type, int Amount)> Requirements { get; init; } = [];
 
@@ -117,10 +158,49 @@ public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRan
     /// <summary>Radius in metres (the client's tooltip &lt;AOE&gt;): enemy skills hit everything around the target; group skills reach party members around the caster.</summary>
     public float AreaOfEffect { get; init; }
 
+    /// <summary>What evades the skill: 0 physical, 1 spell, 2 movement, 3 wounding, 4 weakening, 5 mental; −1 nothing.</summary>
+    public int AvoidanceType { get; init; } = -1;
+
+    /// <summary>Attribute the skill (and its status effect) scales with: 0 strength, 1 dexterity, 2 focus, 3 vitality, −1 none.</summary>
+    public int PrimaryStat { get; init; } = -1;
+
+    /// <summary>What the attribute is divided by before its square root is taken (Sharp Shot: dexterity ÷ 6).</summary>
+    public float PrimaryStatDivisor { get; init; }
+
+    /// <summary>Item subtypes the skill needs in the weapon or offhand slot (SkillWeaponRequirements); empty → any weapon.</summary>
+    public IReadOnlyList<string> WeaponRequirements { get; init; } = [];
+
+    /// <summary>
+    /// The client's weapon-type enum (SkillWeaponRequirements) as ItemTemplate subtypes, matched against the same skills'
+    /// requirements by name in Master's Grimoire (Double Shot [11] = Bow, Shield Bash [12] = Shield, Double Attack's list
+    /// = every melee weapon or none). 0 is "no weapon".
+    /// </summary>
+    public static readonly IReadOnlyDictionary<int, string> WeaponTypes = new Dictionary<int, string>
+    {
+        [0] = "None", [1] = "Sword", [2] = "Axe", [3] = "Blunt", [8] = "Staff", [9] = "Dagger", [10] = "Wand", [11] = "Bow",
+        [12] = "Shield", [13] = "SwordTwoHanded", [14] = "AxeTwoHanded", [15] = "BluntTwoHanded", [19] = "Spear", [20] = "Totem",
+        [23] = "HandToHand", [29] = "NoveltyLute", [31] = "NoveltyFlute", [54] = "FishingRod",
+    };
+
     public SkillLevelInfo Level(int level) => Levels.Count == 0 ? new SkillLevelInfo(0, 0, 0, 5, 0) : Levels[Math.Clamp(level, 0, Levels.Count - 1)];
 
+    /// <summary>The skill's PvP version of a rank, for hits on players (the rank as usual when it has none).</summary>
+    public SkillLevelInfo PvpLevel(int level) => PvpLevels.Count == 0 ? Level(level) : PvpLevels[Math.Clamp(level, 0, PvpLevels.Count - 1)];
+
+    /// <summary>PvP ranks (SkillTemplate.PvpLevels): many skills hit players for less than monsters.</summary>
+    public IReadOnlyList<SkillLevelInfo> PvpLevels { get; init; } = [];
+
+    /// <summary>
+    /// Master's Grimoire's formula for a skill's amount (damage, heal or buff strength): ⌈base + initial × (1 +
+    /// √(ability ÷ 100) + √(attribute ÷ divisor))⌉. Ability is 0 for skills without one; <paramref name="statRatio"/> is
+    /// <see cref="CharacterSheet.StatRatio"/>. Heals have negative numbers in the data, so their sizes are used.
+    /// </summary>
+    public static double Amount(SkillLevelInfo level, float ability, double statRatio) =>
+        Math.Ceiling(Math.Abs(level.BaseDamage) + Math.Abs(level.InitialDamage) * (1 + Math.Sqrt(Math.Max(0, ability) / 100.0) + Math.Sqrt(Math.Max(0, statRatio))));
+
     /// <summary>Highest rank a character of this level may train (CSkillTemplateManager.GetMaxLevel).</summary>
-    public int MaxRank(int playerLevel) => Levels.Where(l => l.MinLevel <= playerLevel).Select(l => l.TemplateLevel).DefaultIfEmpty(0).Max();
+    public int MaxRank(int playerLevel) => Math.Min(SkillLevels.TrainableRanks - 1,
+        Levels.Where(l => l.MinLevel <= playerLevel).Select(l => l.TemplateLevel).DefaultIfEmpty(0).Max());
 }
 
 public sealed record ConversationInfo(int Id, string Filename);
@@ -138,6 +218,12 @@ public sealed record StatusEffectLevel(float Amount, float BaseAmount, float Dur
 /// <summary>A status effect template. <see cref="Type"/> is the client's EffectType enum value.</summary>
 public sealed record StatusEffectInfo(int Id, string Name, int Type, IReadOnlyList<StatusEffectLevel> Levels)
 {
+    /// <summary>Seconds between damage-over-time ticks (Master's Grimoire's status list; null → the server's 3 s).</summary>
+    public float? TickSeconds { get; init; }
+
+    /// <summary>Damage type of damage over time (0 pierce … 9 true), for resists; null → not resisted.</summary>
+    public int? DamageType { get; init; }
+
     public StatusEffectLevel? Level(int index) => Levels.Count == 0 ? null : Levels[Math.Clamp(index, 0, Levels.Count - 1)];
 }
 
@@ -171,6 +257,9 @@ public sealed record SpawnPoint(int Id, string Name, float X, float Y, float Z, 
 /// </summary>
 public sealed class Balance
 {
+    /// <summary>Equipment sets and armour auras (Game/SetBonuses.cs); set by the server after loading.</summary>
+    public SetBonusCatalog SetBonuses { get; set; } = SetBonusCatalog.Empty;
+
     public static readonly Balance Empty = new(new(), new(), new(), new(), new(), 0);
 
     private Balance(Dictionary<int, ItemInfo> items, Dictionary<int, SkillInfo> skills, Dictionary<int, MobInfo> mobs,
@@ -191,6 +280,68 @@ public sealed class Balance
 
     public IReadOnlyDictionary<int, ItemInfo> Items { get; }
     public IReadOnlyDictionary<int, SkillInfo> Skills { get; }
+
+    private Dictionary<int, IReadOnlyList<(int Skill, int Percent)>>? _recast;
+
+    private static readonly System.Text.RegularExpressions.Regex RecastText = new(
+        @"(?:recast(?: time)?|the) of (?:your )?(?<skill>[A-Z][A-Za-z' ]+?)(?: skills?)? by (?<pct>\d+)%|Reduces the (?<skill>[A-Z][A-Za-z' ]+?) by (?<pct>\d+)%");
+
+    /// <summary>
+    /// Cooldown cuts an item's description promises ("Reduces the recast time of Rapid Shot by 20%", "decreases the
+    /// recast of your Rupture skill by 15%", "…of Energy Shield and Energy Boost by 25%"), matched to skills by name.
+    /// The client data has no field for them.
+    /// </summary>
+    public IReadOnlyList<(int Skill, int Percent)> RecastReductions(ItemInfo item)
+    {
+        if (_recast is null)
+        {
+            string Key(string name) => new(name.Where(char.IsLetter).Select(char.ToLowerInvariant).ToArray());
+            var byName = new Dictionary<string, int>();
+            foreach (var skill in Skills.Values.OrderBy(s => s.Id)) byName.TryAdd(Key(skill.Name), skill.Id);
+            var map = new Dictionary<int, IReadOnlyList<(int, int)>>();
+            foreach (var i in Items.Values)
+            {
+                if (i.Slot is EquipSlot.Unequipable || RecastText.Match(i.Description) is not { Success: true } m) continue;
+                var pct = int.Parse(m.Groups["pct"].Value);
+                var skills = m.Groups["skill"].Value.Split(" and ", StringSplitOptions.TrimEntries)
+                    .Select(n => byName.TryGetValue(Key(n), out var id) ? id : -1).Where(id => id > 0).Select(id => (id, pct)).ToList();
+                if (skills.Count > 0) map[i.Id] = skills;
+            }
+            _recast = map;
+        }
+        return _recast.TryGetValue(item.Id, out var list) ? list : [];
+    }
+
+    /// <summary>Ability names by id (the client's Abilities: 6 Bow, 8 Ranged Combat, 19 Fortitude…).</summary>
+    public IReadOnlyDictionary<int, string> AbilityNames { get; init; } = new Dictionary<int, string>();
+
+    /// <summary>Swaps in a changed status effect (tick and type from the Grimoire import, the owner's overrides).</summary>
+    public void ReplaceStatusEffect(StatusEffectInfo effect) => ((Dictionary<int, StatusEffectInfo>)StatusEffects)[effect.Id] = effect;
+
+    /// <summary>
+    /// Adds each status effect's tick time and damage type from status-effects.json (scripts/import-grimoire.py,
+    /// beside the balance JSON). Returns how many effects it covered.
+    /// </summary>
+    public int LoadStatusDetails(string? path)
+    {
+        if (path is null || !File.Exists(path)) return 0;
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
+        var count = 0;
+        foreach (var e in doc.RootElement.GetProperty("statusEffects").EnumerateObject())
+        {
+            if (!int.TryParse(e.Name, out var id) || !StatusEffects.TryGetValue(id, out var info)) continue;
+            ReplaceStatusEffect(info with
+            {
+                TickSeconds = e.Value.TryGetProperty("tick", out var t) ? t.GetSingle() : info.TickSeconds,
+                DamageType = e.Value.TryGetProperty("type", out var d) ? d.GetInt32() : info.DamageType,
+            });
+            count++;
+        }
+        return count;
+    }
+
+    /// <summary>Swaps in a changed skill (server/content/skill-overrides.json, Game/SkillOverrides.cs).</summary>
+    public void ReplaceSkill(SkillInfo skill) => ((Dictionary<int, SkillInfo>)Skills)[skill.Id] = skill;
 
     /// <summary>Cooking recipes (CraftingTemplates): recipe id → name.</summary>
     public IReadOnlyDictionary<int, string> Recipes { get; private init; } = new Dictionary<int, string>();
@@ -232,6 +383,9 @@ public sealed class Balance
                 Int(e, "Usable") == 1, Int(e, "Stackable") == 1, Str(e, "SkillLinkID"), SkillLinkId(e), Int(e, "SkillLinkLevel"), Str(e, "Description"))
             {
                 Bonuses = Pairs(e, "BonusTypes", "BonusType"),
+                PhysicalDamage = Pairs(e, "DamageTypes", "DamageType").Where(d => d.Item1 is "PiercingDamage" or "SlashingDamage" or "CrushingDamage").Sum(d => d.Item2),
+                DamageByType = Pairs(e, "DamageTypes", "DamageType").Where(d => ItemInfo.DamageTypeIds.ContainsKey(d.Item1))
+                    .Select(d => (ItemInfo.DamageTypeIds[d.Item1], d.Item2)).ToList(),
                 Requirements = Pairs(e, "RequirementTypes", "RequirementType"),
                 StatBonuses = Pairs(e, "PrimaryStatBonuses", "PrimaryStatType"),
                 AbilityBonuses = IdPairs(e, "AbilityBonuses", "AbilityType"),
@@ -259,10 +413,23 @@ public sealed class Balance
                 ? lv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"), Int(l, "TemplateLevel"), Int(l, "MinLevel"))
                     { ChargingProtection = l.TryGetProperty("ChargingProtection", out var cp) && cp.ValueKind == JsonValueKind.Number ? cp.GetInt32() : 100 }).ToList()
                 : [];
+            var pvpLevels = e.TryGetProperty("PvpLevels", out var plv) && plv.ValueKind == JsonValueKind.Array
+                ? plv.EnumerateArray().Select(l => new SkillLevelInfo(Float(l, "InitialDamage"), Float(l, "BaseDamage"), Float(l, "CastingTime"), Float(l, "RechargeTime"), Int(l, "EnergyCost"), Int(l, "TemplateLevel"), Int(l, "MinLevel"))
+                    { ChargingProtection = l.TryGetProperty("ChargingProtection", out var pcp) && pcp.ValueKind == JsonValueKind.Number ? pcp.GetInt32() : 100 }).ToList()
+                : [];
             if (SkillLevels.IsPlayerSkill(Int(e, "AbilityId"), levels.Count)) levels = SkillLevels.Extend(levels);
+            if (SkillLevels.IsPlayerSkill(Int(e, "AbilityId"), pvpLevels.Count)) pvpLevels = SkillLevels.Extend(pvpLevels);
             skills[id] = new SkillInfo(id, Str(e, "Name"), Int(e, "AbilityId"), Float(e, "CastRange"), Bool(e, "IncludesWeaponAttack"), Str(e, "CastTarget"), Int(e, "StatusEffectId"), levels)
             {
                 AreaOfEffect = Float(e, "AreaOfEffect"),
+                PvpLevels = pvpLevels,
+                AvoidanceType = e.TryGetProperty("AvoidanceType", out var avoid) && avoid.ValueKind == JsonValueKind.Number ? avoid.GetInt32() : -1,
+                PrimaryStat = Int(e, "PrimaryStatModifier"),
+                PrimaryStatDivisor = Float(e, "PrimaryStatDivisor"),
+                WeaponRequirements = e.TryGetProperty("SkillWeaponRequirements", out var req) && req.ValueKind == JsonValueKind.Array
+                    ? req.EnumerateArray().Where(r => r.ValueKind == JsonValueKind.Number)
+                        .Select(r => SkillInfo.WeaponTypes.GetValueOrDefault(r.GetInt32())).OfType<string>().ToList()
+                    : [],
             };
         }
 
@@ -342,7 +509,11 @@ public sealed class Balance
                 Int(e, "Min"), Int(e, "Max"));
 
         var version = root.TryGetProperty("Version", out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : 0;
-        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects) { Recipes = recipes, RecipeTemplates = recipeTemplates, Factions = factions };
+        var abilityNames = Entries(root, "Abilities").Select(x => x.Item2)
+            .Where(e => e.TryGetProperty("Id", out var aid) && aid.ValueKind == JsonValueKind.Number)
+            .GroupBy(e => e.GetProperty("Id").GetInt32()).ToDictionary(g => g.Key, g => Str(g.First(), "Name"));
+        return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects)
+            { Recipes = recipes, RecipeTemplates = recipeTemplates, Factions = factions, AbilityNames = abilityNames };
     }
 
     /// <summary>Whether an item is an openable container (see <see cref="ChestCatalog"/>).</summary>

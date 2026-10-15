@@ -2,6 +2,8 @@
 
 A small tree in the style of Path of Exile, our own addition to the private server.
 
+**Off by default (2026-10-14).** The server only loads the tree when started with `--passive-tree`. It stays off while the base systems are matched to the official data, because its bonuses would skew those numbers. While it's off, no node gives anything, `.tree` says the tree is turned off, and players' chosen nodes stay saved for later.
+
 | Part | Where |
 |---|---|
 | Rules and bonuses (server) | `server/src/CH.Server/Game/PassiveTree.cs`, `GameServer.Tree.cs` |

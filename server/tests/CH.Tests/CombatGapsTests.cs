@@ -134,7 +134,8 @@ public sealed class CombatGapsTests : IDisposable
     public async Task Fighting_raises_abilities()
     {
         if (!File.Exists(BalancePath)) return;
-        await using var host = await ServerHost.StartAsync(new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath }, NullLoggerFactory.Instance);
+        // Every landed auto-attack trains (the real rate is 1%, server/content/ability-gain.json).
+        await using var host = await ServerHost.StartAsync(new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath, CombatAbilityChance = 1 }, NullLoggerFactory.Instance);
         var (warrior, _) = Join(host, "fighter", "Fiach", @class: 1);
         using var _w = warrior;
         Say(warrior, ".level 40");
@@ -144,7 +145,8 @@ public sealed class CombatGapsTests : IDisposable
         var update = Await(warrior, Opcode.AbilityUpdate, m => new Box<(int, int)>((m.ReadVariableInt32(), m.ReadVariableInt32())), seconds: 30);
         Assert.NotNull(update);
         Assert.Equal(2, update!.Value.Item2); // up from level 1
-        Assert.Contains(update.Value.Item1, new[] { 0, GameServer.MeleeCombat, GameServer.Fortitude, GameServer.Reflex, GameServer.CriticalStrike, GameServer.HandToHand });
+        // Auto-attacks train the weapon's ability (or Critical Strike on a crit); Melee Combat comes from skills.
+        Assert.Contains(update.Value.Item1, new[] { 0, 1, 2, GameServer.CriticalStrike, GameServer.HandToHand });
     }
 
     [Fact]

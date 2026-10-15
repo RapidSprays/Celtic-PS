@@ -68,7 +68,7 @@ public sealed class PassiveTreeTests : IAsyncDisposable
     public async Task Passives_change_stats_skills_and_cooldowns_and_survive_a_restart()
     {
         if (!File.Exists(BalancePath)) return;
-        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath };
+        var options = new ServerOptions { HttpPort = 0, GamePort = 0, DataDirectory = _dir, BalancePath = BalancePath, PassiveTreeEnabled = true };
         uint id;
         await using (var host = await ServerHost.StartAsync(options, NullLoggerFactory.Instance))
         {

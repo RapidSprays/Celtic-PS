@@ -31,7 +31,9 @@ public sealed partial class GameServer
         ".gearset [level] - equip the best gear your class can wear at that level (old gear goes to your backpack)",
         ".wear <item name or id> - give and equip an item",
         ".mount [name] | .mount off - ride a mount (random if no name), or get off",
-        ".heal | .learn <skill id> | .gold <amount> - add (or with -, remove) gold | .platinum <amount> - the same for platinum",
+        ".resetskills - refund all your skill points | .resetstats - refund all your attribute points",
+        ".ability - list your abilities | .ability <name or id> <level | +n | -n> - set one (e.g. .ability bow 2000)",
+        ".learn <skill name or id> | .unlearn <skill id> | .heal | .gold <amount> - add (or with -, remove) gold | .platinum <amount> - the same for platinum",
         ".respawn - respawn every mob in the zone",
         ".zones - list zones | .goto <zone id or name> [leystone] - travel there",
         ".leystones - discover every leystone (for map fast travel)",
@@ -94,6 +96,34 @@ public sealed partial class GameServer
             Send(p, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
     }
 
+    /// <summary>
+    /// Sender of a System-channel chat line that the client also shows as an on-screen alert: CGame's chat handler raises
+    /// CController's Alert popup for System messages whose sender is "10".
+    /// </summary>
+    private const string SystemAlertSender = "10";
+
+    /// <summary>
+    /// A skill for .learn/.unlearn: an id or a name ("lure of ice"). A "Learn X" skill or a skill book's id (both 1041
+    /// for Lure of Ice) means the skill X itself, since those are only how the game teaches it. .unlearn takes the id
+    /// exactly, so a wrongly learned "Learn X" can be removed.
+    /// </summary>
+    private SkillInfo? ResolveSkill(string query, bool exact = false)
+    {
+        static string Key(string n) => new(n.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+        SkillInfo? Taught(SkillInfo learn) =>
+            _balance.Skills.Values.FirstOrDefault(k => !k.Name.StartsWith("Learn", StringComparison.OrdinalIgnoreCase)
+                                                      && Key(k.Name) == Key(learn.Name["Learn".Length..]));
+        if (int.TryParse(query, out var id))
+        {
+            if (_balance.Skills.TryGetValue(id, out var byId))
+                return !exact && byId.Name.StartsWith("Learn ", StringComparison.OrdinalIgnoreCase) && Taught(byId) is { } real ? real : byId;
+            return _balance.Items.TryGetValue(id, out var book) ? _balance.SkillTaughtBy(book) : null;
+        }
+        var candidates = _balance.Skills.Values.Where(k => !k.Name.StartsWith("Learn", StringComparison.OrdinalIgnoreCase)).OrderBy(k => k.Id).ToList();
+        return candidates.FirstOrDefault(k => Key(k.Name) == Key(query))
+               ?? candidates.FirstOrDefault(k => k.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>A private system line for one player (SimpleMessageForThePlayer, 13026).</summary>
     private void Tell(Session s, string text)
     {
@@ -115,7 +145,7 @@ public sealed partial class GameServer
         var verb = parts[0].ToLowerInvariant();
         if (!s.IsGm && !PlayerCommands.Contains(verb))
         {
-            Tell(s, "That command is for GMs. Commands: .help, .who, .where, .zones, .tree");
+            Tell(s, "That command is for GMs. Commands: .help, .who, .where, .zones" + (_tree.IsLoaded ? ", .tree" : ""));
             return;
         }
         _log.LogInformation("{Role} {Name}: .{Command}", s.IsGm ? "GM" : "Player", s.Name, command);
@@ -123,7 +153,8 @@ public sealed partial class GameServer
         switch (verb)
         {
             case "help":
-                Tell(s, s.IsGm ? Help : PlayerHelp);
+                Tell(s, _tree.IsLoaded ? s.IsGm ? Help : PlayerHelp
+                    : string.Join("\n", (s.IsGm ? Help : PlayerHelp).Split('\n').Where(l => !l.StartsWith(".tree", StringComparison.Ordinal))));
                 break;
 
             case "who":
@@ -473,19 +504,42 @@ public sealed partial class GameServer
                 break;
             }
 
-            case "learn":
+            case "resetskills":
             {
-                var skillId = int.Parse(args[0], CultureInfo.InvariantCulture);
-                if (!_balance.Skills.TryGetValue(skillId, out var skill))
+                var skills = _store.ListSkills(s.Character!.Id);
+                foreach (var (skillId, _) in skills) _store.SetSkillLevel(s.Character.Id, skillId, 0);
+                RefreshSheet(s);
+                SendProgress(s);
+                Tell(s, $"Refunded your skill points: {s.Sheet!.SkillPoints} to spend. Your {skills.Count} skills are back to rank 1.");
+                break;
+            }
+
+            case "resetstats":
+                _store.SaveAttributes(s.Character!.Id, -1, -1, -1, -1);
+                RefreshSheet(s);
+                SendProgress(s);
+                Tell(s, $"Refunded your attribute points: {s.Sheet!.AttributePoints} to spend.");
+                break;
+
+            case "ability":
+            case "abilities":
+                AbilityCommand(s, args);
+                break;
+
+            case "learn":
+            case "unlearn":
+            {
+                if (args.Length == 0 || ResolveSkill(string.Join(' ', args), exact: verb == "unlearn") is not { } skill)
                 {
-                    Tell(s, $"No skill {skillId}.");
+                    Tell(s, args.Length == 0 ? $"Usage: .{verb} <skill name or id>" : $"No skill {string.Join(' ', args)}.");
                     break;
                 }
-                _store.LearnSkill(s.Character!.Id, skillId);
+                if (verb == "learn") _store.LearnSkill(s.Character!.Id, skill.Id);
+                else _store.ForgetSkill(s.Character!.Id, skill.Id);
                 var sheet = RefreshSheet(s);
-                Send(s, Opcode.SkillListUpdate, new SkillListUpdate(0, sheet.SkillEntries()).Write);
+                Send(s, Opcode.SkillListUpdate, new SkillListUpdate(sheet.SkillPoints, sheet.SkillEntries()).Write);
                 SendLiveStats(s);
-                Tell(s, $"Learned {skill.Name}.");
+                Tell(s, $"{(verb == "learn" ? "Learned" : "Removed")} {skill.Name} ({skill.Id}).");
                 break;
             }
 

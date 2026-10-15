@@ -170,6 +170,8 @@ public sealed class MultiplayerTests : IDisposable
         var id = friend.CreateCharacter("Cara").CharacterId;
         friend.StartGame(id, "Cara");
         friend.FinishZoning();
+        // The first login of the day hands out the daily calendar reward as a chat line; skip it.
+        Assert.StartsWith("Daily reward", friend.Expect(Opcode.SimpleMessageForThePlayer).ReadString());
 
         Say(friend, ChatChannel.Local, ".level 50");
         Assert.Contains("for GMs", friend.Expect(Opcode.SimpleMessageForThePlayer).ReadString());

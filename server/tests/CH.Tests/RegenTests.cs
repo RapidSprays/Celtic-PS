@@ -128,10 +128,10 @@ public sealed class RegenTests : IAsyncDisposable
         client.Send(Opcode.UseSkillOnNPC, new UseSkill(TargetType.Mob, wolf, Lidgren.Network.NetTime.Now, 1).Write);
         client.Expect(Opcode.SkillUpdate, TimeSpan.FromSeconds(5));
 
-        // The energy after the cast, then the next regen tick (3 s, still in combat): +1 base +20 from the amulet.
+        // The energy after the cast, then the next regen tick (5 s, still in combat): +2 base +20 from the amulet.
         int? NextEnergy()
         {
-            var m = client.Expect(Opcode.StatsUpdate, TimeSpan.FromSeconds(5));
+            var m = client.Expect(Opcode.StatsUpdate, TimeSpan.FromSeconds(8));
             if (m.ReadByte() != 0) return null; // a full stats block
             int? energy = null;
             for (int i = 0, n = m.ReadVariableInt32(); i < n; i++)
@@ -146,7 +146,7 @@ public sealed class RegenTests : IAsyncDisposable
         while ((afterCast = NextEnergy()) is null) { }
         int? ticked;
         while ((ticked = NextEnergy()) is null) { }
-        Assert.Equal(afterCast + 21, ticked);
+        Assert.Equal(afterCast + 22, ticked);
     }
 
     [Fact]

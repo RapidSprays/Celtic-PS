@@ -1,0 +1,14 @@
+{
+  "_comment": "Model size the server sends for monsters, by MobAppearanceTemplate id (MobTemplates' TemplateId). Anything not listed is sent at 1. Golem appearances are built 100x too big (BaseHeight 250, where other monsters are 1-5): the official server sent them at 0.01, which puts an Ironrock Golem's name just above its head as on the live game. Restart the server after editing.",
+  "appearances": {
+    "50322": { "name": "Ice Golem", "scale": 0.01 },
+    "50323": { "name": "Magma Golem", "scale": 0.01 },
+    "50324": { "name": "Rock Golem", "scale": 0.01 },
+    "50325": { "name": "Stone Golem", "scale": 0.01 },
+    "50326": { "name": "Obsidian Golem", "scale": 0.01 },
+    "50417": { "name": "Cash Golem", "scale": 0.01 },
+    "50418": { "name": "Gem Golem", "scale": 0.01 },
+    "50419": { "name": "XP Golem", "scale": 0.01 },
+    "101054": { "name": "Winter2014 Ice Golem", "scale": 0.01 }
+  }
+}

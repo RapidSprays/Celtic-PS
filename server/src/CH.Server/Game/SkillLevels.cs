@@ -1,15 +1,19 @@
 namespace CH.Server.Game;
 
 /// <summary>
-/// Owner's rule: no rank caps on player skills, so skill points are the only limit. A player skill (one with an ability
-/// and more than one rank) gets its level table extended to <see cref="Ranks"/> ranks, and every rank's minimum
-/// character level is cleared. The client mod does the same to its own templates (CHPrivateMods.SkillRanks, patch
-/// P11), because the client indexes Levels[rank] without a bounds check. Both sides must use this exact rule.
+/// Skill ranks. Training stops at <see cref="TrainableRanks"/> (the owner's rule, 2026-10-14: at most 50 skill points in
+/// one skill). Gear rank bonuses (Exalted Dragonlord armour +8, Ring of Sharp Shot +15…) go on top, so a player skill
+/// (one with an ability and more than one rank) has its level table extended to <see cref="Ranks"/> ranks, and every
+/// rank's minimum character level is cleared. The client mod does the same to its own templates (CHPrivateMods.SkillRanks,
+/// patch P11), because the client indexes Levels[rank] without a bounds check. Both sides must use this exact rule.
 /// </summary>
 public static class SkillLevels
 {
-    /// <summary>250 ranks covers every skill point a level-250 character has, plus gear rank bonuses (up to +10).</summary>
+    /// <summary>Table length: room for a fully trained skill plus every gear rank bonus.</summary>
     public const int Ranks = 260;
+
+    /// <summary>The highest rank skill points can buy (rank 50 is index 49).</summary>
+    public const int TrainableRanks = 50;
 
     public static bool IsPlayerSkill(int abilityId, int levelCount) => abilityId >= 0 && levelCount > 1;
 

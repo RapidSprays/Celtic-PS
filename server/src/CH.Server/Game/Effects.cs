@@ -35,7 +35,10 @@ public sealed class ActiveEffect
     /// <summary>The caster's level in the skill's ability (the client's effect formula scales with it).</summary>
     public float AbilityLevel { get; init; } = CasterAbilityLevel;
 
-    public int Amount => Level?.ModifiedAmount(AbilityLevel) ?? 0;
+    public int Amount => Level?.ModifiedAmount(AbilityLevel, (float)StatRatio) ?? 0;
+
+    /// <summary>The caster's attribute ÷ the skill's divisor when it was cast (<see cref="CharacterSheet.StatRatio"/>); 0 for none.</summary>
+    public double StatRatio { get; init; }
 
     /// <summary>Hide uses the raw level amount as the highest mob level it hides from (CPlayableCharacter.IsHiddenFrom).</summary>
     public float RawAmount => Level?.Amount ?? 0;
@@ -60,7 +63,21 @@ public sealed record EffectModifiers
     public int EnergyRegen { get; init; }
     public int AttackSpeedPercent { get; init; }
     public int RunSpeedPercent { get; init; }
-    public int RangedDamage { get; init; }
+    /// <summary>Steady Aim: attack while using a ranged weapon.</summary>
+    public int RangedAttack { get; init; }
+
+    /// <summary>Steady Aim: percent added to physical weapon damage with a ranged weapon (its amount ÷ 5, as Master's Grimoire has it).</summary>
+    public double RangedDamagePct { get; init; }
+
+    /// <summary>Frenzy: percent added to physical weapon damage (its amount ÷ 10, as Master's Grimoire has it).</summary>
+    public double PhysicalDamagePct { get; init; }
+
+    /// <summary>Ice/Fire Attunement: damage added to Ice Shards and Ice Blast, or Fire Bolt and Firestorm.</summary>
+    public int IceSkillBoost { get; init; }
+    public int FireSkillBoost { get; init; }
+
+    /// <summary>Extra damage on every auto-attack (ChangeDamageType buffs: Reapers Touch "an additional 100 poison damage per attack").</summary>
+    public int ExtraAttackDamage { get; init; }
     public int DamageShield { get; init; }
     public int CamouflagePercent { get; init; }
     public float HiddenUpToLevel { get; init; }
@@ -79,7 +96,9 @@ public sealed record EffectModifiers
                 EffectType.DefencePercent => m with { Defence = m.Defence + baseDefence * a / 100 },
                 EffectType.ChangeAttack => m with { Attack = m.Attack + a },
                 EffectType.AttackPercent => m with { Attack = m.Attack + baseAttack * a / 100 },
-                EffectType.IncAttackDecArmour => m with { Attack = m.Attack + a, Armour = m.Armour - a },
+                // Frenzy: attack, and (amount ÷ 10)% of physical weapon damage (Master's Grimoire). Despite the enum's name
+                // it costs no armour in the game.
+                EffectType.IncAttackDecArmour => m with { Attack = m.Attack + a, PhysicalDamagePct = m.PhysicalDamagePct + a / 10.0 },
                 EffectType.ChangeMaxHealth => m with { MaxHealth = m.MaxHealth + a },
                 EffectType.MaxHealthPercent => m with { MaxHealth = m.MaxHealth + baseMaxHealth * a / 100 },
                 EffectType.ChangeMaxEnergy => m with { MaxEnergy = m.MaxEnergy + a },
@@ -91,7 +110,11 @@ public sealed record EffectModifiers
                 EffectType.HealthAndEnergyRegen => m with { HealthRegen = m.HealthRegen + a, EnergyRegen = m.EnergyRegen + a },
                 EffectType.ChangeAttackSpeed => m with { AttackSpeedPercent = m.AttackSpeedPercent + a },
                 EffectType.ChangeRunSpeed or EffectType.ChangeRunSpeedLevelBased => m with { RunSpeedPercent = m.RunSpeedPercent + a },
-                EffectType.BuffRangeAttackAndDamage => m with { RangedDamage = m.RangedDamage + a },
+                EffectType.BuffRangeAttackAndDamage => m with { RangedAttack = m.RangedAttack + a, RangedDamagePct = m.RangedDamagePct + a / 5.0 },
+                // Sharpen Weapons, Poison Weapon, Reapers Touch: flat damage on every auto-attack.
+                EffectType.ChangeDamageType => m with { ExtraAttackDamage = m.ExtraAttackDamage + a },
+                EffectType.IceSkillBoost => m with { IceSkillBoost = m.IceSkillBoost + a },
+                EffectType.FireSkillBoost => m with { FireSkillBoost = m.FireSkillBoost + a },
                 EffectType.DamageShield => m with { DamageShield = m.DamageShield + Math.Max(1, a) },
                 EffectType.Camouflage or EffectType.Camouflage2 => m with { CamouflagePercent = Math.Min(90, m.CamouflagePercent + a) },
                 EffectType.BuffXpGain => m with { XpBoostPercent = m.XpBoostPercent + a },

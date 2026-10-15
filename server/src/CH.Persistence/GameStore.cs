@@ -620,6 +620,10 @@ public sealed class GameStore : IDisposable
         return list;
     }
 
+    /// <summary>Removes one skill from a character (GM .unlearn).</summary>
+    public void ForgetSkill(long characterId, int skillId) =>
+        Exec("DELETE FROM skills WHERE character_id = $c AND skill_id = $s", null, ("$c", characterId), ("$s", skillId));
+
     public bool LearnSkill(long characterId, int skillId)
     {
         using var cmd = Command(

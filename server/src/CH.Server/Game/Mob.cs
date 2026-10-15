@@ -19,16 +19,17 @@ public sealed class Mob
     public const float ChaseSpeed = 4.5f;
     public const float LeashDistance = 45f;
 
-    public required uint ServerId { get; init; }
-    public required MobInfo Template { get; init; }
-    public required int Level { get; init; }
+    /// <summary>The id the client knows the mob by. A spawn point that rerolls its monster gets a new one (GameServer.World).</summary>
+    public required uint ServerId { get; set; }
+    public required MobInfo Template { get; set; }
+    public required int Level { get; set; }
     public required float HomeX { get; init; }
     public required float HomeY { get; init; }
     public required float HomeZ { get; init; }
     public float Direction { get; set; }
     public required int Opinion { get; init; }
     public int ConversationId { get; init; } = -1;
-    public float AggroRange { get; init; }
+    public float AggroRange { get; set; }
     public int RespawnSeconds { get; init; } = 45;
     public float RoamRadius { get; init; }
     public long? SpawnRecordId { get; init; }
@@ -38,7 +39,23 @@ public sealed class Mob
     /// <summary>Fishing spots are gathering mobs (MobTemplate Type 1, opinion −15): fished with a rod, never killed in combat.</summary>
     public bool IsFishingSpot => Template.Type == 1;
     public bool RareSpot { get; init; }
-    public int? FixedMaxHealth { get; init; }
+    public int? FixedMaxHealth { get; set; }
+
+    /// <summary>When each of its skills can be cast again (skill id → server time).</summary>
+    public Dictionary<int, double> SkillReadyAt { get; } = new();
+
+    /// <summary>Official attack, defence and damage (null → the MobStats formulas).</summary>
+    public MobCombat? Combat { get; set; }
+
+    /// <summary>The client's "Chaos Aura" status (2136): "Its attacks deal additional Chaos Damage, but it is vulnerable to Divine Damage".</summary>
+    public const int ChaosAuraEffect = 2136;
+
+    /// <summary>
+    /// Monsters of The Morrigan carry Chaos Aura. Nothing in the data applies it, so it goes by its description: every
+    /// monster whose official attacks deal Chaos damage (Goretusk, Bladewing, Redbane, Aggragoth, Mordris…).
+    /// Only these take Divine Strike.
+    /// </summary>
+    public bool HasChaosAura => Combat is { } c && c.Damage.Any(d => d.Type == 8);
     public int MaxHealth => FixedMaxHealth ?? MobStats.MaxHealth(Level, Template.Power);
     public int Health { get; set; }
 
@@ -54,6 +71,12 @@ public sealed class Mob
     public double RespawnAt { get; set; }
     public bool Removed { get; set; }
     public Dictionary<object, int> Damage { get; } = new();
+
+    /// <summary>
+    /// Threat per player (Master's Grimoire's aggro): damage × 1.5 × level factor, plus each skill's own aggro value,
+    /// heals and buffs on someone it's fighting included. It fights whoever is highest (GameServer.World).
+    /// </summary>
+    public Dictionary<object, double> Threat { get; } = new();
 
     /// <summary>Who tagged the mob (first to hit it): they and their party get the kill (GameServer.Combat locks).</summary>
     public object? Owner { get; set; }
@@ -98,6 +121,35 @@ public sealed class Mob
         LegStart = LegEta = now;
     }
 
+    /// <summary>
+    /// What this spawn point can produce, with weights (an official spawn point's template mix). Each respawn picks one
+    /// afresh (<see cref="Reroll"/>), so a wolf's spot may come back as a different wolf, or now and then a rare one.
+    /// Empty → always the same monster.
+    /// </summary>
+    public IReadOnlyList<MobVariant> Variants { get; init; } = [];
+
+    /// <summary>Picks this spawn's next monster from <see cref="Variants"/> by weight.</summary>
+    public void Reroll(Random rng)
+    {
+        if (Variants.Count < 2) return;
+        var roll = rng.NextDouble() * Variants.Sum(v => v.Weight);
+        var pick = Variants[^1];
+        foreach (var v in Variants)
+        {
+            roll -= v.Weight;
+            if (roll < 0)
+            {
+                pick = v;
+                break;
+            }
+        }
+        Template = pick.Template;
+        Level = pick.Level;
+        FixedMaxHealth = pick.Health;
+        Combat = pick.Combat;
+        AggroRange = MobStats.AggroRange(pick.Template.Power);
+    }
+
     public void Reset(double now)
     {
         Health = MaxHealth;
@@ -106,6 +158,7 @@ public sealed class Mob
         AttackAnnounced = false;
         Removed = false;
         Damage.Clear();
+        Threat.Clear();
         Effects.Clear();
         FromX = ToX = HomeX;
         FromZ = ToZ = HomeZ;
@@ -121,6 +174,9 @@ public sealed class Mob
 }
 
 /// <summary>Mob numbers by level and star power (1-6). <b>Approximated</b>: the client ships no mob levels, HP or damage.</summary>
+/// <summary>One monster a spawn point can produce, with its level, health (null → formula) and weight.</summary>
+public sealed record MobVariant(MobInfo Template, int Level, int? Health, double Weight, MobCombat? Combat = null);
+
 public static class MobStats
 {
     public static int MaxHealth(int level, int power) => (int)(20 + 15 * Math.Max(1, level) * Math.Pow(Math.Max(1, power), 1.3));
@@ -133,5 +189,58 @@ public static class MobStats
 
     public static float AggroRange(int power) => power >= 2 ? 8f : 0f;
 
+    /// <summary>Attack for monsters without official numbers (approximated), weighed against the player's defence.</summary>
+    public static int Attack(int level, int power) => (int)((10 + 5 * Math.Max(1, level)) * (1 + 0.25 * (Math.Max(1, power) - 1)));
+
+    /// <summary>
+    /// Share of a hit a resist lets through (Master's Grimoire's formula): 1 − R / (R + 6 + 3 × attacker level). High-level
+    /// attackers punch through the same resist more easily.
+    /// </summary>
+    public static double ResistFactor(int resist, int attackerLevel) => resist <= 0 ? 1 : 1 - resist / (resist + 6.0 + 3 * Math.Max(1, attackerLevel));
+
     public static double AttackInterval(MobInfo template) => (template.AttackSpeed > 0 ? template.AttackSpeed : 2500) / 1000.0;
+}
+
+/// <summary>A monster's official combat numbers: hit chance is attack against the target's defence; damage is per type.</summary>
+public sealed record MobCombat(int Level, int Health, int Attack, int Defence, IReadOnlyList<(int Type, int Amount)> Damage)
+{
+    /// <summary>Resist per damage type: a flat amount (through <see cref="MobStats.ResistFactor"/>) and the share let through (0 = immune).</summary>
+    public IReadOnlyDictionary<int, (int Flat, double Share)> Resists { get; init; } = new Dictionary<int, (int, double)>();
+
+    /// <summary>The part of <paramref name="amount"/> of a damage type that gets through, against an attacker of <paramref name="attackerLevel"/>.</summary>
+    public double AfterResist(int type, double amount, int attackerLevel) =>
+        Resists.TryGetValue(type, out var r) ? amount * MobStats.ResistFactor(r.Flat, attackerLevel) * r.Share : amount;
+}
+
+/// <summary>
+/// Each monster's official level, health, attack, defence and damage, from Master's Grimoire (scripts/import-grimoire.py
+/// writes mob-stats.json beside the balance JSON). Monsters without an entry keep the <see cref="MobStats"/> formulas.
+/// </summary>
+public sealed class OfficialMobStats
+{
+    private readonly Dictionary<int, MobCombat> _mobs;
+
+    private OfficialMobStats(Dictionary<int, MobCombat> mobs) => _mobs = mobs;
+
+    public static OfficialMobStats Empty { get; } = new([]);
+
+    public int Count => _mobs.Count;
+
+    public static OfficialMobStats Load(string? path)
+    {
+        if (path is null || !File.Exists(path)) return Empty;
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path));
+        int Int(System.Text.Json.JsonElement e, string name) => e.TryGetProperty(name, out var v) ? v.GetInt32() : 0;
+        return new OfficialMobStats(doc.RootElement.GetProperty("mobs").EnumerateObject().ToDictionary(
+            e => int.Parse(e.Name),
+            e => new MobCombat(Int(e.Value, "level"), Int(e.Value, "health"), Int(e.Value, "attack"), Int(e.Value, "defence"),
+                e.Value.TryGetProperty("damage", out var d) ? d.EnumerateArray().Select(x => (x[0].GetInt32(), x[1].GetInt32())).ToList() : [])
+            {
+                Resists = e.Value.TryGetProperty("resists", out var r)
+                    ? r.EnumerateArray().ToDictionary(x => x[0].GetInt32(), x => (x[1].GetInt32(), x[2].GetDouble()))
+                    : new Dictionary<int, (int, double)>(),
+            }));
+    }
+
+    public bool TryGet(int template, out MobCombat combat) => _mobs.TryGetValue(template, out combat!);
 }

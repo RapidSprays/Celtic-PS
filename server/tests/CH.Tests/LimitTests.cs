@@ -20,20 +20,61 @@ public sealed class LimitTests
         Assert.All(extended, l => Assert.Equal(0, l.MinLevel));
         Assert.Equal(Enumerable.Range(0, SkillLevels.Ranks), extended.Select(l => l.TemplateLevel));
         Assert.Equal((18f, 14f), (extended[3].InitialDamage, extended[3].BaseDamage));
-        Assert.Equal((15f + 3 * 257, 10f + 4 * 257), (extended[^1].InitialDamage, extended[^1].BaseDamage));
-        Assert.Equal((5, 8f, 1f), (extended[^1].EnergyCost, extended[^1].RechargeTime, extended[^1].CastingTime));
         Assert.Equal(extended, SkillLevels.Extend(levels)); // deterministic: the client mod must produce the same table
     }
 
     [Fact]
-    public void Player_skills_have_long_ungated_tables_and_mob_skills_are_untouched()
+    public void Player_skills_train_to_fifty_ungated_with_room_for_gear_ranks_and_mob_skills_are_untouched()
     {
         if (!File.Exists(BalancePath)) return;
         var pummel = Data.Value.Skills[1];
-        Assert.Equal(SkillLevels.Ranks, pummel.Levels.Count);
-        Assert.Equal(SkillLevels.Ranks - 1, pummel.MaxRank(1));
-        Assert.True(pummel.Levels[200].InitialDamage > pummel.Levels[49].InitialDamage);
+        Assert.Equal(SkillLevels.Ranks, pummel.Levels.Count); // gear ranks go past 50
+        Assert.Equal(SkillLevels.TrainableRanks - 1, pummel.MaxRank(1)); // training: every rank to 50 open at level 1
         Assert.Equal(6, Data.Value.Skills[2080].Levels.Count); // Cleave, a mob skill (no ability)
+    }
+
+    [Fact]
+    public void Skill_overrides_scale_set_ranks_and_skip_disabled_entries()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var balance = Balance.Load(BalancePath);
+        var before = balance.Skills[13].Levels; // Sharp Shot
+        var path = Path.Combine(Path.GetTempPath(), $"skill-overrides-{Guid.NewGuid():N}.json");
+        File.WriteAllText(path, """
+            { "13": { "damageMultiplier": 2, "ranks": { "1": { "base": 99 } }, "cooldown": 4 }, "_52": { "damageMultiplier": 9 },
+              "214": { "dotMultiplier": 2, "dotRanks": { "50": { "base": 30 } }, "dotTick": 4 } }
+            """);
+        try
+        {
+            Assert.Equal(2, SkillOverrides.Apply(balance, path)); // Sharp Shot and Rupture; "_52" is off
+            var after = balance.Skills[13].Levels;
+            Assert.Equal((before[0].InitialDamage * 2, 99f, 4f), (after[0].InitialDamage, after[0].BaseDamage, after[0].RechargeTime));
+            Assert.Equal(before[10].BaseDamage * 2, after[10].BaseDamage);
+            Assert.Equal(Data.Value.Skills[52].Levels[0].BaseDamage, balance.Skills[52].Levels[0].BaseDamage); // "_" entries are off
+            var bleed = balance.StatusEffects[balance.Skills[214].StatusEffectId]; // Rupture's damage over time
+            var original = Data.Value.StatusEffects[bleed.Id];
+            Assert.Equal(original.Levels[0].Amount * 2, bleed.Levels[0].Amount);
+            Assert.Equal((30f, 4f), (bleed.Levels[49].BaseAmount, bleed.TickSeconds));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Cooldown_items_are_read_from_their_descriptions()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var b = Data.Value;
+        (int, int) Cut(string item) => b.RecastReductions(b.Items.Values.First(i => i.Name == item)).Single();
+        int Skill(string name) => b.Skills.Values.Where(s => s.Name == name).Min(s => s.Id);
+        Assert.Equal((Skill("Longshot"), 3), Cut("Minor Emberdrake Charm of Long Shot")); // "Long Shot" is the skill Longshot
+        Assert.Equal((Skill("Rapid Shot"), 20), Cut("Sprout Ring of Hasted Might"));
+        Assert.Equal((Skill("Fire Bolt"), 20), Cut("Dark Skull of Fire Bolt"));
+        Assert.Equal((Skill("Double Attack"), 15), Cut("Mighty Bloodleaf Ring of Double Attack"));
+        Assert.Equal((Skill("Rupture"), 20), Cut("Royal Necral Band of Rupture")); // wrist slot
+        Assert.Equal(2, b.RecastReductions(b.Items.Values.First(i => i.Name == "Darksworn Wand of Earth")).Count); // Energy Shield and Energy Boost
     }
 
     [Fact]

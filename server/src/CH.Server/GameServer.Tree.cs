@@ -29,7 +29,7 @@ public sealed partial class GameServer
     {
         if (!_tree.IsLoaded)
         {
-            Tell(s, "The passive tree isn't available on this server.");
+            Tell(s, "The progression tree is turned off on this server.");
             return;
         }
         var c = s.Character!;

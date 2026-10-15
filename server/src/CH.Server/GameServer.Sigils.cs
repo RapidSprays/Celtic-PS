@@ -37,7 +37,8 @@ public sealed partial class GameServer
 
     /// <summary>
     /// The client's permanent "Health/Energy Regen Boost Amulet" effects (62/63), at the level nearest the gear's total
-    /// regen, so regen gear shows as a buff. Display only: the tick applies the exact amounts.
+    /// regen, so regen gear shows as a buff, plus each completed set's aura. Display only: the tick and the character sheet
+    /// apply the real amounts.
     /// </summary>
     private void UpdateGearRegenEffects(Session s)
     {
@@ -47,6 +48,8 @@ public sealed partial class GameServer
         if (gear.Energy + gear.EnergyOutOfCombat > 0) wanted.Add((Sigils.GearEnergyRegenEffect, gear.Energy + gear.EnergyOutOfCombat));
         var levels = wanted.Select(w => (w.Effect, Level: _balance.StatusEffects.TryGetValue(w.Effect, out var info) && info.Levels.Count > 0
             ? Enumerable.Range(0, info.Levels.Count).MinBy(i => Math.Abs(info.Levels[i].Amount - w.Amount)) : 0)).ToList();
+        // Set bonuses: the set's own aura effect ("Exalted Aura"), so it shows under the health bar with its description.
+        levels.AddRange((s.Sheet?.AuraEffects ?? []).Distinct().Select(effect => (effect, 0)));
         var current = s.Effects.Where(e => e.DisplayOnly).Select(e => (e.Info.Id, e.LevelIndex)).OrderBy(x => x).ToList();
         if (current.SequenceEqual(levels.OrderBy(x => x))) return;
         s.Effects.RemoveAll(e => e.DisplayOnly);
