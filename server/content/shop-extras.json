@@ -1,12 +1,469 @@
 {
- "_comment": "Our own additions to merchant stock, at fixed prices (docs/economy-notes.md). shops: the shop ids one vendor opens (one per class).",
+ "_comment": "Our own additions to merchant stock, at fixed prices (docs/economy-notes.md). shops: the shop ids one vendor opens (one per class). replace: true makes the listed items a shop's whole stock. An item without a price uses the usual price formula.",
  "extras": [
   {
    "vendor": "[Skill Merchant] Glamora the Warrior (Highshore Village, Lir's Reach)",
-   "shops": [5, 1031, 1036, 1041, 1046, 1051, 1056],
+   "shops": [
+    5,
+    1031,
+    1036,
+    1041,
+    1046,
+    1051,
+    1056
+   ],
    "items": [
-    {"id": 34781, "name": "Sigils of Health Crate", "price": 100000},
-    {"id": 34782, "name": "Sigils of Energy Crate", "price": 100000}
+    {
+     "id": 34781,
+     "name": "Sigils of Health Crate",
+     "price": 100000
+    },
+    {
+     "id": 34782,
+     "name": "Sigils of Energy Crate",
+     "price": 100000
+    }
+   ]
+  },
+  {
+   "vendor": "The Scavenger (Otherworld): Offhand Weapons, as on live 2026-10-16",
+   "shops": [
+    7000
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 20806,
+     "name": "Acolyte's Grimoire"
+    },
+    {
+     "id": 20807,
+     "name": "Sage's Grimoire",
+     "price": 150000
+    },
+    {
+     "id": 20808,
+     "name": "Master's Grimoire",  
+     "price": 200000
+    },
+    {
+     "id": 20818,
+     "name": "Bronze Blade of Fire",
+     "price": 125000
+    },
+    {
+     "id": 20819,
+     "name": "Silver Blade of Fire",
+     "price": 175000
+    },
+    {
+     "id": 20820,
+     "name": "Golden Blade of Fire",
+     "price": 250000
+    },
+    {
+     "id": 20821,
+     "name": "Bronze Blade of Ice"
+    },
+    {
+     "id": 20822,
+     "name": "Silver Blade of Ice"
+    },
+    {
+     "id": 20823,
+     "name": "Golden Blade of Ice"
+    },
+    {
+     "id": 20857,
+     "name": "Bronze Quiver of Fire"
+    },
+    {
+     "id": 20858,
+     "name": "Silver Quiver of Fire"
+    },
+    {
+     "id": 20859,
+     "name": "Golden Quiver of Fire"
+    }
+   ]
+  },
+  {
+   "vendor": "The Scavenger (Otherworld): Shields and Armour, as on live 2026-10-16",
+   "shops": [
+    7310
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 20833,
+     "name": "Bronze Helm of Prowess"
+    },
+    {
+     "id": 20834,
+     "name": "Silver Helm of Prowess"
+    },
+    {
+     "id": 20835,
+     "name": "Golden Helm of Prowess"
+    },
+    {
+     "id": 20870,
+     "name": "Bronze Helm of Intensity"
+    },
+    {
+     "id": 20871,
+     "name": "Silver Helm of Intensity"
+    },
+    {
+     "id": 20872,
+     "name": "Golden Helm of Intensity"
+    },
+    {
+     "id": 20873,
+     "name": "Bronze Helm of Severity"
+    },
+    {
+     "id": 20874,
+     "name": "Silver Helm of Severity"
+    },
+    {
+     "id": 20875,
+     "name": "Golden Helm of Severity"
+    },
+    {
+     "id": 20836,
+     "name": "Bronze Helm of Regeneration"
+    },
+    {
+     "id": 20837,
+     "name": "Silver Helm of Regeneration"
+    },
+    {
+     "id": 20838,
+     "name": "Golden Helm of Regeneration"
+    },
+    {
+     "id": 20842,
+     "name": "Bronze Crown of Wizardry"
+    },
+    {
+     "id": 20843,
+     "name": "Silver Crown of Wizardry"
+    },
+    {
+     "id": 20844,
+     "name": "Golden Crown of Wizardry"
+    },
+    {
+     "id": 20845,
+     "name": "Bronze Crown of Energisation"
+    },
+    {
+     "id": 20846,
+     "name": "Silver Crown of Energisation"
+    },
+    {
+     "id": 20847,
+     "name": "Golden Crown of Energisation"
+    },
+    {
+     "id": 20812,
+     "name": "Shield of the Mountain"
+    },
+    {
+     "id": 20813,
+     "name": "Courtly Shield of the Mountain"
+    },
+    {
+     "id": 20814,
+     "name": "Royal Shield of the Mountain"
+    },
+    {
+     "id": 20815,
+     "name": "Shield of the Wind"
+    },
+    {
+     "id": 20816,
+     "name": "Courtly Shield of the Wind"
+    },
+    {
+     "id": 20817,
+     "name": "Royal Shield of the Wind"
+    }
+   ]
+  },
+  {
+   "vendor": "The Scavenger (Otherworld): Jewellery (nothing listed yet)",
+   "shops": [
+    7311
+   ],
+   "replace": true,
+   "items": []
+  },
+  {
+   "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Offhand Weapons",
+   "shops": [
+    10017
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 22253,
+     "name": "Focus of the Seer"
+    },
+    {
+     "id": 22256,
+     "name": "Idol of Illusion"
+    },
+    {
+     "id": 22262,
+     "name": "Arcane Quiver of Beasts"
+    },
+    {
+     "id": 34987,
+     "name": "Fiery Quiver of Beasts"
+    },
+    {
+     "id": 34989,
+     "name": "Freezing Quiver of Beasts"
+    },
+    {
+     "id": 22265,
+     "name": "Arcane Axe of Triumph"
+    },
+    {
+     "id": 34979,
+     "name": "Fiery Axe of Triumph"
+    },
+    {
+     "id": 34981,
+     "name": "Freezing Axe of Triumph"
+    },
+    {
+     "id": 22268,
+     "name": "Dagger of Slaying"
+    },
+    {
+     "id": 34983,
+     "name": "Fiery Dagger of Haste"
+    },
+    {
+     "id": 34985,
+     "name": "Freezing Dagger of Haste"
+    }
+   ]
+  },
+  {
+   "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Shields and Armour",
+   "shops": [
+    10023
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 22259,
+     "name": "Shield of the Rampart"
+    },
+    {
+     "id": 22295,
+     "name": "Arcane Helm of the Veteran"
+    },
+    {
+     "id": 34975,
+     "name": "Fiery Helm of the Veteran"
+    },
+    {
+     "id": 34977,
+     "name": "Freezing Helm of the Veteran"
+    },
+    {
+     "id": 22292,
+     "name": "Crown of the Warlock"
+    },
+    {
+     "id": 34991,
+     "name": "Crown of the Master"
+    },
+    {
+     "id": 34993,
+     "name": "Helm of the Giant"
+    }
+   ]
+  },
+  {
+   "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Jewellery",
+   "shops": [
+    10024
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 22271,
+     "name": "Talisman of the Earth"
+    },
+    {
+     "id": 22274,
+     "name": "Bracer of Cloaking"
+    },
+    {
+     "id": 22277,
+     "name": "Bracer of Constitution"
+    },
+    {
+     "id": 22280,
+     "name": "Ring of Battle"
+    },
+    {
+     "id": 22283,
+     "name": "Ring of Cunning"
+    },
+    {
+     "id": 22286,
+     "name": "Ring of Vigour"
+    },
+    {
+     "id": 22289,
+     "name": "Ring of Reflex"
+    },
+    {
+     "id": 34971,
+     "name": "Amulet of Slaying"
+    }
+   ]
+  },
+  {
+   "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Offhand Weapons",
+   "shops": [
+    10000
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 22254,
+     "name": "Focus of the Mystic"
+    },
+    {
+     "id": 22257,
+     "name": "Idol of Sorcery"
+    },
+    {
+     "id": 22263,
+     "name": "Arcane Quiver of the Wild"
+    },
+    {
+     "id": 34988,
+     "name": "Fiery Quiver of the Wild"
+    },
+    {
+     "id": 34990,
+     "name": "Freezing Quiver of the Wild"
+    },
+    {
+     "id": 22266,
+     "name": "Arcane Axe of Conquest"
+    },
+    {
+     "id": 34980,
+     "name": "Fiery Axe of Conquest"
+    },
+    {
+     "id": 34982,
+     "name": "Freezing Axe of Conquest"
+    },
+    {
+     "id": 22269,
+     "name": "Dagger of Bounty"
+    },
+    {
+     "id": 34984,
+     "name": "Fiery Dagger of Celerity"
+    },
+    {
+     "id": 34986,
+     "name": "Freezing Dagger of Celerity"
+    }
+   ]
+  },
+  {
+   "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Shields and Armour",
+   "shops": [
+    10021
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 22260,
+     "name": "Shield of the Bastion"
+    },
+    {
+     "id": 22296,
+     "name": "Arcane Helm of the Champion"
+    },
+    {
+     "id": 34976,
+     "name": "Fiery Helm of the Champion"
+    },
+    {
+     "id": 34978,
+     "name": "Freezing Helm of the Champion"
+    },
+    {
+     "id": 22293,
+     "name": "Crown of the Sorcerer"
+    },
+    {
+     "id": 34992,
+     "name": "Crown of the Grandmaster"
+    },
+    {
+     "id": 34994,
+     "name": "Helm of the Titan"
+    }
+   ]
+  },
+  {
+   "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Jewellery",
+   "shops": [
+    10022
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 22272,
+     "name": "Talisman of the Stars"
+    },
+    {
+     "id": 22275,
+     "name": "Bracer of Shrouding"
+    },
+    {
+     "id": 22278,
+     "name": "Bracer of Endurance"
+    },
+    {
+     "id": 22281,
+     "name": "Ring of War"
+    },
+    {
+     "id": 22284,
+     "name": "Ring of Artifice"
+    },
+    {
+     "id": 22287,
+     "name": "Ring of Might"
+    },
+    {
+     "id": 22290,
+     "name": "Ring of Force"
+    },
+    {
+     "id": 34972,
+     "name": "Amulet of Annihilation"
+    },
+    {
+     "id": 34970,
+     "name": "Bracelet of Souls"
+    }
    ]
   }
  ]

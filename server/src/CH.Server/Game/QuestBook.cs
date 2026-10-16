@@ -77,6 +77,30 @@ public sealed class QuestBook
 
     public static QuestBook Empty { get; } = new(new Dictionary<int, QuestInfo>(), []);
 
+    /// <summary>
+    /// This book with the owner's extra NPCs added and placed NPCs adjusted (server/content/npc-extras.json: "npcs" and
+    /// "adjust", the latter by mob template: direction, x, y, z).
+    /// </summary>
+    public QuestBook WithExtraNpcs(string? path)
+    {
+        if (path is null || !File.Exists(path)) return this;
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
+        var extras = doc.RootElement.GetProperty("npcs").EnumerateArray().Select((n, i) => new NpcPlacement(
+            ExtraSpawnIds + i, n.GetProperty("template").GetInt32(), n.GetProperty("conversation").GetInt32(), n.GetProperty("zone").GetInt32(),
+            n.GetProperty("x").GetSingle(), n.GetProperty("y").GetSingle(), n.GetProperty("z").GetSingle(), n.GetProperty("direction").GetSingle()));
+        var adjust = doc.RootElement.TryGetProperty("adjust", out var a)
+            ? a.EnumerateArray().ToDictionary(x => x.GetProperty("template").GetInt32(), x => x.Clone())
+            : new Dictionary<int, JsonElement>();
+        float Or(JsonElement e, string name, float value) => e.TryGetProperty(name, out var v) ? v.GetSingle() : value;
+        var moved = Npcs.Select(n => adjust.TryGetValue(n.Template, out var e)
+            ? n with { X = Or(e, "x", n.X), Y = Or(e, "y", n.Y), Z = Or(e, "z", n.Z), Direction = Or(e, "direction", n.Direction) }
+            : n);
+        return new QuestBook(Quests, moved.Concat(extras).ToList());
+    }
+
+    /// <summary>Spawn ids for extra NPCs: well clear of the official ones.</summary>
+    private const int ExtraSpawnIds = 9_000_000;
+
     public static QuestBook Load(string? path)
     {
         if (path is null || !File.Exists(path)) return Empty;

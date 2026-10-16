@@ -73,4 +73,33 @@ public sealed class GrimoireCombatTests
         Assert.Equal(2.25, bonus.Multiplier(10, 10, 6), 6);
         Assert.Equal(1.0, bonus.Multiplier(10, 10, 0), 6);   // power 0 counts as 1 star
     }
+
+    [Fact]
+    public void Group_loot_gives_everyone_a_drop_before_anyone_gets_two()
+    {
+        var rng = new Random(7);
+        for (var run = 0; run < 200; run++)
+        {
+            // 5 drops (All-Knowing Eye style) for 2 players: 3 and 2, never 4 and 1.
+            var counts = LootDeal.Deal(["warrior", "ranger"], [1, 2, 3, 4, 5], rng).GroupBy(d => d.Owner).Select(g => g.Count()).Order().ToList();
+            Assert.Equal([2, 3], counts);
+            // 2 drops for 3 players: two different players get one each.
+            Assert.Equal(2, LootDeal.Deal(["a", "b", "c"], [1, 2], rng).Select(d => d.Owner).Distinct().Count());
+        }
+        // The 3rd of 3 drops between 2 players goes to either of them.
+        var thirds = Enumerable.Range(0, 400).Select(_ => LootDeal.Deal(["a", "b"], [1, 2, 3], rng).GroupBy(d => d.Owner).First(g => g.Count() == 2).Key).ToHashSet();
+        Assert.Equal(2, thirds.Count);
+    }
+
+    [Fact]
+    public void Damage_to_lower_monsters_follows_the_owners_level_table()
+    {
+        Assert.Equal(1.0, CH.Server.GameServer.LevelFactor(200, 150), 6);   // 50 above: full damage
+        Assert.Equal(0.95, CH.Server.GameServer.LevelFactor(200, 149), 6);  // 51 above
+        Assert.Equal(0.95, CH.Server.GameServer.LevelFactor(200, 130), 6);  // 70 above
+        Assert.Equal(0.90, CH.Server.GameServer.LevelFactor(200, 129), 6);  // 71 above
+        Assert.Equal(0.90, CH.Server.GameServer.LevelFactor(200, 100), 6);  // 100 above
+        Assert.Equal(0.85, CH.Server.GameServer.LevelFactor(230, 10), 6);   // 220 above: the cap
+        Assert.Equal(0.80, CH.Server.GameServer.LevelFactor(100, 105), 6);  // a monster 5 above: 4% a level (unchanged)
+    }
 }

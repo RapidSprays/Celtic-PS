@@ -33,11 +33,28 @@ public sealed class ShopCatalog
 
     public IReadOnlyDictionary<int, ShopInfo> Shops { get; }
 
-    public ShopCatalog(Balance balance, IReadOnlyDictionary<int, ShopInfo> shops, IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>>? extras = null)
+    public ShopCatalog(Balance balance, IReadOnlyDictionary<int, ShopInfo> shops, IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>>? extras = null,
+        IReadOnlySet<int>? replaced = null)
     {
         _balance = balance;
         Shops = shops;
         _extras = extras ?? new Dictionary<int, IReadOnlyDictionary<int, int>>();
+        _replaced = replaced ?? new HashSet<int>();
+    }
+
+    /// <summary>Shops whose whole stock is their shop-extras.json list ("replace": true), nothing generated.</summary>
+    private readonly IReadOnlySet<int> _replaced;
+
+    /// <summary>The shops shop-extras.json marks "replace": true.</summary>
+    public static IReadOnlySet<int> LoadReplaced(string? path)
+    {
+        var replaced = new HashSet<int>();
+        if (path is null || !File.Exists(path)) return replaced;
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
+        foreach (var group in doc.RootElement.GetProperty("extras").EnumerateArray())
+            if (group.TryGetProperty("replace", out var r) && r.GetBoolean())
+                foreach (var shop in group.GetProperty("shops").EnumerateArray()) replaced.Add(shop.GetInt32());
+        return replaced;
     }
 
     /// <summary>
@@ -54,14 +71,15 @@ public sealed class ShopCatalog
                 foreach (var item in group.GetProperty("items").EnumerateArray())
                 {
                     if (!extras.TryGetValue(shop, out var prices)) extras[shop] = prices = new();
-                    prices[item.GetProperty("id").GetInt32()] = item.GetProperty("price").GetInt32();
+                    // No price: the usual formula (stored as 0).
+                    prices[item.GetProperty("id").GetInt32()] = item.TryGetProperty("price", out var p) && p.ValueKind == JsonValueKind.Number ? p.GetInt32() : 0;
                 }
         return extras.ToDictionary(kv => kv.Key, kv => (IReadOnlyDictionary<int, int>)kv.Value);
     }
 
     /// <summary>The price in this shop: a fixed extra price if it has one, otherwise <see cref="BuyPrice(ItemInfo)"/>.</summary>
     public int BuyPrice(int shopId, ItemInfo item) =>
-        _extras.TryGetValue(shopId, out var prices) && prices.TryGetValue(item.Id, out var price) ? price : BuyPrice(item);
+        _extras.TryGetValue(shopId, out var prices) && prices.TryGetValue(item.Id, out var price) && price > 0 ? price : BuyPrice(item);
 
     public static IReadOnlyDictionary<int, ShopInfo> Load(string? worldPath)
     {
@@ -106,6 +124,8 @@ public sealed class ShopCatalog
     public IReadOnlyList<int> Stock(int shopId)
     {
         if (_stock.TryGetValue(shopId, out var cached)) return cached;
+        if (_replaced.Contains(shopId))
+            return _stock[shopId] = (_extras.GetValueOrDefault(shopId)?.Keys.Where(_balance.Items.ContainsKey) ?? []).ToList();
         var shop = Shops.GetValueOrDefault(shopId) ?? new ShopInfo(shopId, "general", [], null, "");
         var (lo, hi) = shop.Zone is { } z && Bands.TryGetValue(z, out var band) ? band : (1, 40);
         var classes = shop.Classes;

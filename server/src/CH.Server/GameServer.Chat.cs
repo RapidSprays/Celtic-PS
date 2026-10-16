@@ -96,11 +96,6 @@ public sealed partial class GameServer
             Send(p, Opcode.GeneralChat, new ChatMessage(channel, s.Name, text).WriteToClient);
     }
 
-    /// <summary>
-    /// Sender of a System-channel chat line that the client also shows as an on-screen alert: CGame's chat handler raises
-    /// CController's Alert popup for System messages whose sender is "10".
-    /// </summary>
-    private const string SystemAlertSender = "10";
 
     /// <summary>
     /// A skill for .learn/.unlearn: an id or a name ("lure of ice"). A "Learn X" skill or a skill book's id (both 1041
@@ -537,7 +532,7 @@ public sealed partial class GameServer
                 if (verb == "learn") _store.LearnSkill(s.Character!.Id, skill.Id);
                 else _store.ForgetSkill(s.Character!.Id, skill.Id);
                 var sheet = RefreshSheet(s);
-                Send(s, Opcode.SkillListUpdate, new SkillListUpdate(sheet.SkillPoints, sheet.SkillEntries()).Write);
+                Send(s, Opcode.SkillListUpdate, new SkillListUpdate(sheet.SkillPoints, SkillEntries(s, sheet)).Write);
                 SendLiveStats(s);
                 Tell(s, $"{(verb == "learn" ? "Learned" : "Removed")} {skill.Name} ({skill.Id}).");
                 break;

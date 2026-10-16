@@ -17,7 +17,7 @@ public sealed class Mob
 {
     public const float RoamSpeed = 1.5f;
     public const float ChaseSpeed = 4.5f;
-    public const float LeashDistance = 45f;
+    public const float LeashDistance = 22.5f; // owner's rule (2026-10-15): half the old 45 m
 
     /// <summary>The id the client knows the mob by. A spawn point that rerolls its monster gets a new one (GameServer.World).</summary>
     public required uint ServerId { get; set; }
@@ -68,7 +68,6 @@ public sealed class Mob
     public double NextAttackAt { get; set; }
 
     /// <summary>When an elite or boss may next use its special attack (GameServer.Combat).</summary>
-    public double NextSpecialAt { get; set; }
     public double NextThinkAt { get; set; }
     public double RemoveAt { get; set; }
     public double RespawnAt { get; set; }

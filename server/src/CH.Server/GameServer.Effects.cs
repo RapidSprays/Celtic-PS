@@ -157,7 +157,7 @@ public sealed partial class GameServer
 
     /// <summary>Applies a skill's status effect to the caster (self and friendly buffs). Re-casting refreshes it.</summary>
     private void ApplyEffect(Session s, SkillInfo skill, int skillLevel, double now, float abilityLevel = ActiveEffect.CasterAbilityLevel, double statRatio = 0,
-        Mob? caster = null)
+        object? caster = null)
     {
         if (!_balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var info) || info.Level(skillLevel) is not { } level) return;
         s.Effects.RemoveAll(e => e.Info.Id == info.Id);
@@ -184,6 +184,19 @@ public sealed partial class GameServer
     /// <summary>Expires effects and runs damage/heal over time. Called from the player tick.</summary>
     private void TickEffects(Zone zone, Session s, double now)
     {
+        // Damage over time another player's skill left on this one (PvP): the player hit path, so resists, duels (they stop
+        // at 1 health) and PvP deaths work as for any hit; each tick can train the caster's Critical Skills.
+        foreach (var dot in s.Effects.Where(e => e.Type == EffectType.Dot && e.Caster is Session && now >= e.NextTickAt && now < e.ExpiresAt).ToList())
+        {
+            dot.NextTickAt = now + TickOf(dot.Info);
+            var caster = (Session)dot.Caster!;
+            if (!caster.InZone || caster.Position.Zone != s.Position.Zone) continue;
+            double tick = Math.Max(1, Math.Abs(dot.Amount));
+            if (dot.Info.DamageType is { } dotType) tick *= MobStats.ResistFactor(PlayerResist(s, dotType, Modifiers(s)), caster.Sheet!.Level);
+            PlayerHitsPlayer(zone, caster, s, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
+            TrainAbility(caster, CriticalSkills, _dotCriticalChance * Modifiers(caster).AbilityGainMultiplier);
+            if (s.Dead) return;
+        }
         // Damage over time a monster's skill left on the player (bleeds, poisons, burns).
         foreach (var dot in s.Effects.Where(e => e.Type == EffectType.Dot && e.Caster is Mob && now >= e.NextTickAt && now < e.ExpiresAt).ToList())
         {
@@ -288,6 +301,8 @@ public sealed partial class GameServer
                 double tick = Math.Max(1, dot.Amount);
                 if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level, ResistChange(mob.Effects, type));
                 PlayerHits(zone, caster, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
+                // Owner's rule (2026-10-15): every damage-over-time tick from a player's skill can train Critical Skills.
+                TrainAbility(caster, CriticalSkills, _dotCriticalChance * Modifiers(caster).AbilityGainMultiplier);
             }
         }
     }

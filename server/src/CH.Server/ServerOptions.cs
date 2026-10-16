@@ -124,6 +124,9 @@ public sealed class ServerOptions
     /// <summary>Our own fixed-price merchant stock (server/content/shop-extras.json, copied next to the server binary).</summary>
     public string? ShopExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "shop-extras.json");
 
+    /// <summary>NPCs the world data doesn't place (server/content/npc-extras.json).</summary>
+    public string? NpcExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "npc-extras.json");
+
     /// <summary>The living calendar's daily track (server/content/calendar.json, copied next to the server binary).</summary>
     public string? CalendarPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "calendar.json");
 
@@ -147,6 +150,9 @@ public sealed class ServerOptions
 
     /// <summary>Where <see cref="ClassKitsPath"/> starts; the tests clear it so they use the built-in kits, not the owner's.</summary>
     public static string? DefaultClassKitsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "class-kits.json");
+
+    /// <summary>Monsters that drop another monster's official loot (server/content/loot-links.json).</summary>
+    public string? LootLinksPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "loot-links.json");
 
     /// <summary>Extra kill XP for monsters above your level and by stars (server/content/xp-bonus.json).</summary>
     public string? XpBonusPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "xp-bonus.json");

@@ -12,10 +12,6 @@ public sealed partial class GameServer
 {
     private const int LockOpen = 1, LockLocked = 2, LockOwned = 3;
 
-    /// <summary>Monster special attacks: 3-star monsters and up, approximated (real monster skills are server-only).</summary>
-    private const int SpecialAttackMinPower = 3;
-    private const double SpecialAttackChance = 0.3, SpecialAttackCooldown = 12, SpecialAttackMultiplier = 2.0;
-
     private static bool SameParty(Session a, Session b) => ReferenceEquals(a, b) || (a.Party is { } p && ReferenceEquals(p, b.Party));
 
     private static bool OwnsOrShares(Session s, Mob mob) => mob.Owner is Session o && SameParty(o, s);

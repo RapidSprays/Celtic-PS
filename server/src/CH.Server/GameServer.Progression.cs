@@ -57,7 +57,7 @@ public sealed partial class GameServer
             Tell(s, problem);
         }
         // -1: no "new skill learned" popup for a rank-up (ProcessBuySkillReplyMessage).
-        Send(s, Opcode.BuySkillReply, b => InventoryReplies.WriteBuySkill(b, sheet.SkillPoints, -1, sheet.SkillEntries()));
+        Send(s, Opcode.BuySkillReply, b => InventoryReplies.WriteBuySkill(b, sheet.SkillPoints, -1, SkillEntries(s, sheet)));
         SendLiveStats(s);
     }
 
@@ -104,7 +104,7 @@ public sealed partial class GameServer
             b.WriteVariableInt32(sheet.Dexterity);
         });
         SendLiveStats(s);
-        Send(s, Opcode.SkillListUpdate, new SkillListUpdate(sheet.SkillPoints, sheet.SkillEntries()).Write);
+        Send(s, Opcode.SkillListUpdate, new SkillListUpdate(sheet.SkillPoints, SkillEntries(s, sheet)).Write);
         SendSkillToggles(s);
     }
 }

@@ -32,7 +32,7 @@ public sealed class StarterKitTests : IAsyncDisposable
         var start = client.StartGame(created.CharacterId, "Conall");
         Assert.Equal(CommandStatus.Accepted, start.Status);
         Assert.Equal([1, 47, 2, 3], start.Skills.Select(k => k.SkillId));
-        Assert.All(start.Skills, k => Assert.Equal((0, SkillLevels.Ranks - 1), (k.Level, k.MaxLevel))); // whole table sent; buying stops at 50
+        Assert.All(start.Skills, k => Assert.Equal((0, SkillLevels.TrainableRanks - 1), (k.Level, k.MaxLevel))); // the training cap, as on live
         Assert.Equal(10000, start.Equipment[0].TemplateId); // Tempered Small Sword
         Assert.Equal(10005, start.Equipment[5].TemplateId); // Training Buckler
         Assert.Equal(10000, start.Character.Equipment[0]);   // appearance uses template ids

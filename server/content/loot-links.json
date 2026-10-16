@@ -1,0 +1,29 @@
+{
+  "_comment": "Monsters with no official loot drop no items, only gold (owner's rule, 2026-10-15). A link here gives a monster another monster's official loot: \"monster id\": {\"from\": monster id}. Names are only for reading. Restart the server after editing.",
+  "links": {
+    "71968": {
+      "from": 71871,
+      "name": "Bloodguard <- Bloodguard Slayer (ritual items, rarely)"
+    },
+    "71353": {
+      "from": 71351,
+      "name": "Dragoncult Sorceror <- Dragoncult Sorceror Moon Mask"
+    },
+    "71356": {
+      "from": 71351,
+      "name": "Dragoncult Sorceror <- Dragoncult Sorceror Moon Mask"
+    },
+    "71359": {
+      "from": 71351,
+      "name": "Dragoncult Sorceror <- Dragoncult Sorceror Moon Mask"
+    },
+    "71362": {
+      "from": 71351,
+      "name": "Dragoncult Sorceror <- Dragoncult Sorceror Moon Mask"
+    },
+    "71365": {
+      "from": 71351,
+      "name": "Dragoncult Sorceror <- Dragoncult Sorceror Moon Mask"
+    }
+  }
+}

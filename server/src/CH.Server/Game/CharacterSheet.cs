@@ -189,15 +189,30 @@ public sealed class CharacterSheet
     /// <summary>Gear avoidance (AvoidanceBonuses) against one avoidance type (0 physical … 5 mental).</summary>
     public int Avoidance(int avoidanceType) => Gear.SelectMany(g => g.AvoidanceBonuses).Where(a => a.Id == avoidanceType).Sum(a => a.Amount);
 
-    /// <summary>
-    /// Gear SkillBonuses up to this are extra ranks (Ring of Double Shot +1…+10, Exalted Dragonlord armour +8, Aetheric
-    /// rings +15); larger ones are flat damage ("increases the damage from your Sharp Shot skill by up to 1013").
-    /// </summary>
+    /// <summary>Gear SkillBonuses above this are always flat damage (or healing); smaller ones are ranks unless the item says otherwise.</summary>
     public const int MaxRankBonus = 50;
 
-    /// <summary>Flat damage gear adds to a skill (the large SkillBonuses).</summary>
+    /// <summary>Item texts that make a small bonus flat damage or healing rather than ranks.</summary>
+    private static readonly System.Text.RegularExpressions.Regex DamageBonusText = new(
+        @"damage (of|from|dealt by) (your|the wearer)|additional \d+ damage|boosts the (damage|potency)|increases the (damage|power) of",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// Whether an item's bonus to a skill is flat damage (healing, for heals) rather than extra ranks. An item with two
+    /// bonuses to the same skill gives the smaller as ranks and the larger as damage (Godly Aetheric Ring of Sharp Shot:
+    /// +15 ranks, +1013 damage). A single bonus is damage when it's over 50 or the item says so ("boosts the damage of your
+    /// Sharp Shot skill by 10", the Carrowmore bracelets' "increases the power of"); otherwise ranks (the Dragon rings' +1…+10).
+    /// </summary>
+    public static bool IsDamageBonus(ItemInfo item, (int Id, int Amount) bonus)
+    {
+        var same = item.SkillBonuses.Where(b => b.Id == bonus.Id).ToList();
+        if (same.Count >= 2) return Math.Abs(bonus.Amount) == same.Max(b => Math.Abs(b.Amount));
+        return Math.Abs(bonus.Amount) > MaxRankBonus || DamageBonusText.IsMatch(item.Description);
+    }
+
+    /// <summary>Flat damage (or healing, as a size) gear adds to a skill.</summary>
     public int SkillBonusDamage(int skillId) =>
-        Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == skillId && Math.Abs(b.Amount) > MaxRankBonus).Sum(b => b.Amount);
+        Gear.SelectMany(g => g.SkillBonuses.Where(b => b.Id == skillId && IsDamageBonus(g, b))).Sum(b => Math.Abs(b.Amount));
 
     /// <summary>Damage of everything worn, by type (see <see cref="ItemInfo.DamageTypeIds"/>).</summary>
     public IReadOnlyDictionary<int, int> DamageByType => Gear.SelectMany(g => g.DamageByType)
@@ -213,7 +228,7 @@ public sealed class CharacterSheet
     /// ranks. The client indexes Levels[compiled], so stay inside the (extended) table.
     /// </summary>
     public int EffectiveRank(int skillId, int trained) => Math.Clamp(
-        trained + Gear.SelectMany(g => g.SkillBonuses).Where(b => b.Id == skillId && Math.Abs(b.Amount) <= MaxRankBonus).Sum(b => b.Amount)
+        trained + Gear.SelectMany(g => g.SkillBonuses.Where(b => b.Id == skillId && !IsDamageBonus(g, b))).Sum(b => b.Amount)
             + Tree.For(_balance.SkillTags(skillId)).Ranks,
         0, Math.Max(0, (_balance.Skills.GetValueOrDefault(skillId)?.Levels.Count ?? 1) - 1));
 
@@ -333,13 +348,15 @@ public sealed class CharacterSheet
     public int MaxRank(int skillId) => _balance.Skills.TryGetValue(skillId, out var skill) && skill.Levels.Count > 0 ? skill.MaxRank(Level) : SkillMaxLevelAtStart;
 
     /// <summary>
-    /// The skill list for the client. Its maximum is the whole (extended) table, not the training cap: the client shows a
-    /// gear-boosted rank ("+8") only up to that maximum, so a 50 there hid every gear bonus on a trained skill. Buying
-    /// ranks still stops at 50 (<see cref="MaxRank"/>, checked by BuySkill).
+    /// The skill list for the client. Its maximum is the training cap, as on live: the skill page shows the rank with gear
+    /// first, then the trained rank against the cap, "50/50 (35/50)" for Sharp Shot trained to 35 with a Godly Sharpshot
+    /// Ring's +15 (live 2026-10-16: "50/40 (34/40)"). The gear rank itself comes in the stats (EffectiveRank) and may pass
+    /// the cap.
     /// </summary>
-    public IReadOnlyList<SkillEntry> SkillEntries() =>
-        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, TableMaxRank(s.SkillId), 0f))
-            .Concat(EquipSkillRanks.Select(e => new SkillEntry(e.SkillId, e.Level, 0, 0f)))
+    /// <summary>The skill list, with each skill's seconds of cooldown left (the client rebuilds its skills from it, so 0 would clear the bar's cooldown sweeps).</summary>
+    public IReadOnlyList<SkillEntry> SkillEntries(Func<int, float>? cooldownLeft = null) =>
+        Skills.Select(s => new SkillEntry(s.SkillId, s.Level, MaxRank(s.SkillId), cooldownLeft?.Invoke(s.SkillId) ?? 0f))
+            .Concat(EquipSkillRanks.Select(e => new SkillEntry(e.SkillId, e.Level, -1, cooldownLeft?.Invoke(e.SkillId) ?? 0f))) // pet and mount skills: "5 /0", as on live
             .ToList();
 
     public CharacterSummary Summary(int worldId)

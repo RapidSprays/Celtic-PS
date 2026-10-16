@@ -192,7 +192,7 @@ public sealed class CombatTests : IAsyncDisposable
         Assert.Equal((19, 95), (stats.SkillPoints, stats.AttributePoints)); // 5 attribute points a level
         var skills = ReadSkillList(client.Expect(Opcode.SkillListUpdate), out var skillPoints);
         Assert.Equal(19, skillPoints);
-        Assert.Equal(SkillLevels.Ranks - 1, skills.Single(k => k.SkillId == 1).MaxLevel); // the client gets the whole table (gear ranks); buying stops at 50
+        Assert.Equal(SkillLevels.TrainableRanks - 1, skills.Single(k => k.SkillId == 1).MaxLevel); // the training cap, as live shows "50/40 (34/40)"
 
         // +5 strength, +3 vitality: more damage and health (Strength doesn't add attack), 87 points left.
         client.Send(Opcode.AttributesUpdate, b => { b.WriteVariableUInt32(5); b.WriteVariableUInt32(0); b.WriteVariableUInt32(0); b.WriteVariableUInt32(3); b.WriteVariableUInt32(87); });

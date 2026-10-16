@@ -22,11 +22,9 @@
     "energy": 5
   },
   "214": {
-    "name": "Rupture (owner, 2026-10-15: bleed ticks every second for 5 seconds at 80% of an original tick each, 8 s cooldown)",
-    "cooldown": 8,
+    "name": "Rupture (owner, 2026-10-16: bleed ticks at full strength as on live, 23.23 + 11.85 x (1 + sqrt(Strength/10) + sqrt(Melee Combat/100)) at rank 50, every second for 10 seconds (10.5 so the tick at 10 s lands before it ends: 10 ticks); the game's own 14 s cooldown)",
     "dotTick": 1,
-    "dotDuration": 5,
-    "dotMultiplier": 0.8
+    "dotDuration": 10.5
   },
   "_223": {
     "name": "Bless (all skill evasions; rank 50 gives ceil(base + amount x (1 + sqrt(Nature Magic / 100) + sqrt(stat / divisor)))). Remove the _ to use",

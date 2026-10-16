@@ -120,10 +120,48 @@ public sealed class LimitTests
         var pierce = Data.Value.Skills[8470];
         Assert.Equal(3852, SkillInfo.Amount(pierce.Level(Data.Value.EquipSkillRank(65965)), 2000, 0));
         Assert.Equal(7535, SkillInfo.Amount(pierce.Level(Data.Value.EquipSkillRank(73044)), 2300, 0));
+        // 27-rank families: pets size by size, mounts colour by colour (live: a Ferocious Brown War Wolf's Howl is rank 5).
+        Assert.Equal(4, Data.Value.EquipSkillRank(60150));  // Ferocious Brown War Wolf → Howl rank 5
+        Assert.Equal(6, Data.Value.EquipSkillRank(60152));  // Tame Red War Wolf → rank 7 (Howl 44)
+        Assert.Equal(26, Data.Value.EquipSkillRank(73011)); // Spirit War Wolf III → rank 27
+        Assert.Equal(0, Data.Value.EquipSkillRank(58665));  // Tiny Brown Mastiff → Canine Bite rank 1
+        Assert.Equal(4, Data.Value.EquipSkillRank(58666));  // Small Brown Mastiff → rank 5 (the TEST Eagles don't count)
+        Assert.Equal(26, Data.Value.EquipSkillRank(73058)); // Spirit Mastiff III → rank 27
         // Natural Focus heals (live): Tiny Brown Hare (rank 1) at 10 Rabbit Taming 14, Giant Golden Hare (rank 24) at 2,000: 1,149.
         var focus = Data.Value.Skills[7879];
         Assert.Equal((0, 23), (Data.Value.EquipSkillRank(58689), Data.Value.EquipSkillRank(58712)));
         Assert.Equal(14, SkillInfo.Amount(focus.Level(Data.Value.EquipSkillRank(58689)), 10, 0));
         Assert.Equal(1149, SkillInfo.Amount(focus.Level(Data.Value.EquipSkillRank(58712)), 2000, 0));
+    }
+
+    [Fact]
+    public void The_scavenger_sells_exactly_his_live_stock()
+    {
+        if (!File.Exists(BalancePath)) return;
+        var extras = Path.Combine(AppContext.BaseDirectory, "content", "shop-extras.json");
+        var shops = new ShopCatalog(Data.Value, new Dictionary<int, ShopInfo>(), ShopCatalog.LoadExtras(extras), ShopCatalog.LoadReplaced(extras));
+        Assert.Equal(12, shops.Stock(7000).Count);  // Offhand Weapons: grimoires, blades, quivers
+        Assert.Equal(24, shops.Stock(7310).Count);  // Shields and Armour: helms, crowns, shields
+        Assert.Contains(20808, shops.Stock(7000));  // Master's Grimoire
+        Assert.Contains(20835, shops.Stock(7310));  // Golden Helm of Prowess
+        Assert.Empty(shops.Stock(7311));            // Jewellery: nothing listed yet
+        var placed = QuestBook.Empty.WithExtraNpcs(Path.Combine(AppContext.BaseDirectory, "content", "npc-extras.json")).Npcs;
+        Assert.Contains(placed, n => n.Template == 177 && n.Zone == 7 && n.Conversation == 181);
+        var world = QuestBook.Load(Path.Combine(Path.GetDirectoryName(BalancePath)!, "world.json"))
+            .WithExtraNpcs(Path.Combine(AppContext.BaseDirectory, "content", "npc-extras.json"));
+        if (world.Npcs.FirstOrDefault(n => n.Template == 287) is { } ealdwin) Assert.Equal(330f, ealdwin.Direction); // turned round
+    }
+
+    [Fact]
+    public void Gear_skill_bonuses_are_ranks_or_damage_as_the_item_says()
+    {
+        if (!File.Exists(BalancePath)) return;
+        bool Damage(int item, int amount) => CharacterSheet.IsDamageBonus(Data.Value.Items[item], (13, amount)); // Sharp Shot
+        Assert.False(Damage(56236, 15));   // Godly Aetheric Ring: +15 ranks…
+        Assert.True(Damage(56236, 1013));  // …and +1013 damage
+        Assert.False(Damage(21367, 10));   // Godly Dragon Ring: +10 ranks
+        Assert.True(Damage(50434, 10));    // Minor Zealot's Ring: "boosts the damage … by 10"
+        Assert.True(Damage(34228, 40));    // Minor Bracelet: "increases the power of"
+        Assert.True(Damage(35605, 300));   // Godly Sunfire Charm: an additional 300 damage
     }
 }

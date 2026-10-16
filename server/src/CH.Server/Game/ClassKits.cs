@@ -27,13 +27,13 @@ public sealed record ClassKit(
 
     private const int AdventurersBoots = 10006;
     // Before General: static fields are set up in the order they're written.
-    public static readonly int[] Taming = [24, 25, 27, 28, 33, 34, 35, 40, 41, 44, 45, 47, 48, 50, 51];
+    public static readonly int[] Taming = [24, 25, 27, 33, 34, 35, 40, 41, 44, 45, 47, 48, 50, 51];
     public static readonly int[] Riding = [36, 37, 42, 43, 46, 49, 52];
 
     /// <summary>
     /// Abilities every class has: Physical Fitness, First Aid, the five defensive ones, Critical Strike and Critical
     /// Skills (owner's rule, 2026-10-15), then (owner's rule, 2026-10-14)
-    /// every pet taming and mount riding ability: Dog 24, Rabbit 25, Bear 27, Spirit 28, Wolf 33, Spider 34, Boar 35,
+    /// every pet taming and mount riding ability (no Spirit Taming, owner's rule 2026-10-15: spirit pets use their family's): Dog 24, Rabbit 25, Bear 27, Wolf 33, Spider 34, Boar 35,
     /// Dragon 40, Chicken 41, Eagle 44, Phoenix 45, Pig 47, Seedling 48, Reindeer 50 and Imp 51 Taming; Wolf 36, Bear 37,
     /// Horse 42, Elk 43, Tiger 46, Hellsteed 49 and Nightmare Steed 52 Riding.
     /// </summary>

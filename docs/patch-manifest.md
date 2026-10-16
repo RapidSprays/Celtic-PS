@@ -27,6 +27,8 @@ How the patcher protects the inputs:
 | P7 | `InAppPurchaseManager..ctor`: `UnityPurchasing.Initialize(...)` | removed | 1 | The store never initializes, so no purchases. The manager object still exists, which avoids null references. |
 | P8 | `globalgamemanagers` (UnityConnectSettings) | 7 Unity service URLs (analytics config and events, crash, performance, dashboard) → same-length `http://127.0.0.1:<port>/u/…` | 7 | Unity engine telemetry starts natively before any script. Same-length rewrite, so no re-serialization is needed. |
 
+| P16 | `CSkillTemplateManager.GetDescription` (6 arguments): every return | text passed through `CHPrivateMods.SkillDamageText.Show(text, game, skillId)` inside try/catch | 1 | Skill tooltips show the skill's own damage and the total with gear in brackets, "4668 (7198)" (owner's request, 2026-10-16). Added to the Windows client of 2026-10-14 on its own with a one-off tool (backup `Assembly-CSharp.dll.before-P16`); later kits apply it with the rest. |
+
 Patch IDs P3 and P6 from the draft were folded into P2 and P6a/P6b.
 
 **Not patched:**

@@ -95,7 +95,17 @@ public sealed class AssemblyPatcher
             after: ins => ins.OpCode == OpCodes.Callvirt && ins.Operand is MethodReference { Name: "AddListener" }
                 && ins.Previous?.Previous?.Operand is MethodReference handler && _names.MacName(handler) == "OnFreePlatButtonPressed");
 
+        // P16: skill descriptions show the skill's own damage and the total with gear in brackets, "4668 (7198)".
+        InjectSkillDamageText("P16");
+
         // Inserting instructions can push short-form branches out of range; re-pick branch sizes for every edited method.
+        foreach (var method in _edited) method.Body.OptimizeMacros();
+    }
+
+    /// <summary>Applies only P16, to a client patched before it existed (CH.Patcher add-skill-damage-text).</summary>
+    public void ApplySkillDamageTextOnly()
+    {
+        InjectSkillDamageText("P16");
         foreach (var method in _edited) method.Body.OptimizeMacros();
     }
 
@@ -298,6 +308,73 @@ public sealed class AssemblyPatcher
             }
         }
         Record(id, $"{typeName}.{methodName}: calls CHPrivateMods.{modType}.{modMethod}", sites, expected: 1);
+    }
+
+    /// <summary>
+    /// P16: every return of CSkillTemplateManager.GetDescription (game, level, casting time, colour, unity format, skill
+    /// id) passes its text through CHPrivateMods.SkillDamageText.Show(text, game, skillId). Each <c>ret</c> becomes a
+    /// store to a new local and a jump to one shared tail: try { local = helper(local, game, id) } catch { } return local.
+    /// The original ret instruction is reused as the store, so branches that targeted it stay valid.
+    /// </summary>
+    private void InjectSkillDamageText(string id)
+    {
+        var type = _names.FindType(_module, "CSkillTemplateManager");
+        var targets = type?.Methods.Where(m => _names.MacName(m) == "GetDescription" && m.Parameters.Count == 6 && m.HasBody
+            && m.ReturnType.MetadataType == MetadataType.String).ToList() ?? [];
+        const string helperName = "CHPrivate_SkillDamageText";
+        var sites = 0;
+        if (targets.Count == 1 && type!.Methods.All(m => m.Name != helperName))
+        {
+            var target = targets[0];
+            if (_module.AssemblyReferences.All(r => r.Name != ModsAssembly))
+                _module.AssemblyReferences.Add(new AssemblyNameReference(ModsAssembly, new Version(1, 0, 0, 0)));
+            var modType = new TypeReference("CHPrivateMods", "SkillDamageText", _module, _module.AssemblyReferences.First(r => r.Name == ModsAssembly));
+            var show = new MethodReference("Show", _module.TypeSystem.String, modType) { HasThis = false };
+            show.Parameters.Add(new ParameterDefinition(_module.TypeSystem.String));
+            show.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Object));
+            show.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Int32));
+
+            var helper = new MethodDefinition(helperName, MethodAttributes.Private | MethodAttributes.Static | MethodAttributes.HideBySig, _module.TypeSystem.String);
+            helper.Parameters.Add(new ParameterDefinition("text", ParameterAttributes.None, _module.TypeSystem.String));
+            helper.Parameters.Add(new ParameterDefinition("game", ParameterAttributes.None, _module.TypeSystem.Object));
+            helper.Parameters.Add(new ParameterDefinition("skill", ParameterAttributes.None, _module.TypeSystem.Int32));
+            var h = helper.Body.GetILProcessor();
+            h.Emit(OpCodes.Ldarg_0);
+            h.Emit(OpCodes.Ldarg_1);
+            h.Emit(OpCodes.Ldarg_2);
+            h.Emit(OpCodes.Call, show);
+            h.Emit(OpCodes.Ret);
+            type.Methods.Add(helper);
+
+            var il = BeginEdit(target);
+            var text = new VariableDefinition(_module.TypeSystem.String);
+            target.Body.Variables.Add(text);
+            target.Body.InitLocals = true;
+            var rets = target.Body.Instructions.Where(i => i.OpCode == OpCodes.Ret).ToList();
+            var tryStart = il.Create(OpCodes.Ldloc, text);
+            var end = il.Create(OpCodes.Ldloc, text);
+            var catchStart = il.Create(OpCodes.Pop);
+            var tail = new[]
+            {
+                tryStart, il.Create(OpCodes.Ldarg, target.Parameters[0]), il.Create(OpCodes.Ldarg, target.Parameters[5]),
+                il.Create(OpCodes.Call, helper), il.Create(OpCodes.Stloc, text), il.Create(OpCodes.Leave, end),
+                catchStart, il.Create(OpCodes.Leave, end), end, il.Create(OpCodes.Ret),
+            };
+            foreach (var ret in rets)
+            {
+                ret.OpCode = OpCodes.Stloc;
+                ret.Operand = text;
+                il.InsertAfter(ret, il.Create(OpCodes.Br, tryStart));
+            }
+            foreach (var ins in tail) il.Append(ins);
+            target.Body.ExceptionHandlers.Add(new ExceptionHandler(ExceptionHandlerType.Catch)
+            {
+                TryStart = tryStart, TryEnd = catchStart, HandlerStart = catchStart, HandlerEnd = end,
+                CatchType = new TypeReference("System", "Exception", _module, _module.TypeSystem.CoreLibrary),
+            });
+            sites = rets.Count > 0 ? 1 : 0;
+        }
+        Record(id, "CSkillTemplateManager.GetDescription: damage shown as \"own (with gear)\" (CHPrivateMods.SkillDamageText.Show)", sites, expected: 1);
     }
 
     private void Neutralize(MethodDefinition method, Instruction call, MethodReference callee)

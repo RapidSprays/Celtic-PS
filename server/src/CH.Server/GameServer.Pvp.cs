@@ -212,21 +212,23 @@ public sealed partial class GameServer
     /// against monsters (armour for pierce, slash and crush; wards and lures count); here it takes the same roll (two-thirds
     /// to full) and ×2 crits. Defence decides misses.
     /// </summary>
-    private void PlayerHitsPlayer(Zone zone, Session s, Session target, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
+    private bool PlayerHitsPlayer(Zone zone, Session s, Session target, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
     {
         var duel = target.Duel is { Started: true } d && ReferenceEquals(d.Other(target), s) ? d : null;
-        if (duel is null && !ZoneHostile(s, target)) return;
+        if (duel is null && !ZoneHostile(s, target)) return false;
         s.LastCombatAt = target.LastCombatAt = now;
         BreakStealth(s);
         BreakStealth(target);
         var m = Modifiers(target);
         var miss = allowMiss && !target.Sheet!.Tree.Has(PassiveTree.IronHide)
             && Random.Shared.NextDouble() < Math.Min(0.5, 0.08 + m.Defence / 400.0 + target.Sheet.EvadeChance);
-        var critical = !miss && Random.Shared.NextDouble() < s.Sheet!.CritChance;
+        var critical = !miss && (kind is not AttackKind.StatusEffect || IsDotTick(skillId)) // DoT ticks crit too (owner's rule), reflects don't
+            && Random.Shared.NextDouble() < s.Sheet!.CritChance;
         var damage = 0;
         if (!miss)
         {
             damage = Math.Max(1, (int)Math.Round(baseDamage * DamageRoll(s, kind) * (critical ? s.Sheet.CritMultiplier : 1)));
+            if (critical) SystemLine(s, CritLine(s, kind, skillId, damage));
             damage = AbsorbWithShields(target, damage); // what's left after energy shields
         }
         LifeTap(s, damage);
@@ -239,13 +241,14 @@ public sealed partial class GameServer
         var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, target.CharacterId, kind, skillId, damage, target.Health, reaction, ++_damageId, critical);
         SendPlayerDamage(zone, target, entry);
         if (damage > 0) _store.AddStat(s.Character!.Id, kind == AttackKind.Attack ? "melee_hit" : "skills_hit", damage);
-        if (!lethal) return;
+        if (!lethal) return critical;
         if (duel is not null)
         {
             EndDuel(duel, s, DuelEnd.Victory);
-            return;
+            return critical;
         }
         PlayerDies(zone, target, now);
         PvpKill(zone, s, target);
+        return critical;
     }
 }

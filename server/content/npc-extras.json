@@ -1,0 +1,22 @@
+{
+  "_comment": "NPCs the world data doesn't place (owner's additions). Each needs its mob template, conversation, zone, position and facing; stand on the spot in game and type .where to get them. They're kept through Grimoire imports. Restart the server after editing. adjust: changes to NPCs the world data places, by mob template (direction, x, y, z).",
+  "npcs": [
+    {
+      "name": "The Scavenger (Otherworld, from live 2026-10-16)",
+      "template": 177,
+      "conversation": 181,
+      "zone": 7,
+      "x": -623.3,
+      "y": 0.5,
+      "z": 143.8,
+      "direction": 22
+    }
+  ],
+  "adjust": [
+    {
+      "name": "[Luxury Item Trader] Lord Ealdwin (zone 10): turned 180 degrees, as on live",
+      "template": 287,
+      "direction": 330
+    }
+  ]
+}

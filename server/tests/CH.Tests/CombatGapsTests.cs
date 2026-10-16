@@ -93,6 +93,20 @@ public sealed class CombatGapsTests : IDisposable
         druid.Expect(Opcode.PartyMessage);
         Cast(druid, NaturesBreath, TargetType.Self, druidId);
         Assert.NotNull(Await(warrior, Opcode.CombatDamageMessage, m => HealFromDruid(m) ? "healed" : null));
+
+        // Defensive Formation (a group buff) from the warrior: the druid gets the effect, icon and all.
+        Say(warrior, ".learn 227");
+        Cast(warrior, 227, TargetType.Self, warriorId);
+        var formation = Data.Value.Skills[227].StatusEffectId;
+        Assert.NotNull(Await(druid, Opcode.StatusEffectUpdate, m =>
+        {
+            for (int i = 0, n = m.ReadVariableInt32(); i < n; i++)
+            {
+                var id = m.ReadVariableInt32(); m.ReadVariableInt32(); m.ReadVariableInt32(); m.ReadFloat(); m.ReadFloat();
+                if (id == formation) return "found";
+            }
+            return null;
+        }));
     }
 
     [Fact]
@@ -150,11 +164,9 @@ public sealed class CombatGapsTests : IDisposable
     }
 
     [Fact]
-    public void Elite_monsters_get_a_themed_special_attack_and_skill_ranks_carry_charge_protection()
+    public void Skill_ranks_carry_area_and_charge_protection()
     {
         if (!File.Exists(BalancePath)) return;
-        var emberdrake = Data.Value.Mobs.Values.First(m => m.Name == "Greater Emberdrake");
-        Assert.Contains("Breath", Data.Value.MobSkill(emberdrake)!.Name);
         Assert.Equal(6, Data.Value.Skills[(int)Firestorm].AreaOfEffect);
         Assert.InRange(Data.Value.Skills[(int)NaturesTouch].Levels[0].ChargingProtection, 0, 100);
     }

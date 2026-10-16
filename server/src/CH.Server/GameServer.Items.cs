@@ -98,7 +98,7 @@ public sealed partial class GameServer
         var updated = RefreshSheet(s);
         Send(s, Opcode.EquipItemReply, b => InventoryReplies.WriteEquipment(b, CommandStatus.Accepted, "", updated.EquipmentSlots(), updated.BackpackSlots(), alwaysIncludeLists: false));
         SendLiveStats(s);
-        Send(s, Opcode.SkillListUpdate, new SkillListUpdate(updated.SkillPoints, updated.SkillEntries()).Write);
+        Send(s, Opcode.SkillListUpdate, new SkillListUpdate(updated.SkillPoints, SkillEntries(s, updated)).Write);
         SendOwnAppearance(s);
         UpdatePetEffects(s); // a pet equipped, swapped or put away (also re-sends the skill toggles)
     }
@@ -206,7 +206,7 @@ public sealed partial class GameServer
             _store.SetItemQuantity(item.Id, item.Quantity - 1);
             var learned = RefreshSheet(s);
             Send(s, Opcode.UseItemReply, b => InventoryReplies.WriteUseItem(b, CommandStatus.Accepted, "", 0f, learned.InventoryWithMoney()));
-            Send(s, Opcode.BuySkillReply, b => InventoryReplies.WriteBuySkill(b, 0, info.Id, learned.SkillEntries()));
+            Send(s, Opcode.BuySkillReply, b => InventoryReplies.WriteBuySkill(b, 0, info.Id, SkillEntries(s, learned)));
             _log.LogInformation("{Name} learned {Skill} ({Id})", s.Character.Name, skill.Name, skill.Id);
             return;
         }

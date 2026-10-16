@@ -325,6 +325,24 @@ public sealed partial class GameServer
     /// Kill XP (and quest credit) for party members near the killer: each gets the full amount (<b>approximated</b>; the live split is
     /// unknown). Loot and coins stay with the killer.
     /// </summary>
+    /// <summary>
+    /// Who gets each of a kill's drops (owner's rule, 2026-10-16). Alone, the killer gets them all. In a party, the killer
+    /// and every member in the zone, alive and within <see cref="PartyShareRange"/>, take turns in a random order: the
+    /// shuffled drops go round them one at a time, so everyone gets one before anyone gets a second, and the extras land
+    /// on random members.
+    /// </summary>
+    private List<(Session Owner, int Item, int Quantity)> DealLoot(Session killer, IReadOnlyList<(int Item, int Quantity)> drops)
+    {
+        var group = new List<Session> { killer };
+        if (killer.Party is { } party)
+        {
+            var (zoneId, x, _, z, _) = killer.Position;
+            group.AddRange(party.Members.Where(m => !ReferenceEquals(m, killer) && m.InZone && !m.Dead && m.Position.Zone == zoneId
+                && Dist2D(m.Position.X, m.Position.Z, x, z) <= PartyShareRange));
+        }
+        return LootDeal.Deal(group, drops, Random.Shared).Select(d => (d.Owner, d.Drop.Item, d.Drop.Quantity)).ToList();
+    }
+
     private void SharePartyXp(Session killer, int xp, Mob mob)
     {
         if (killer.Party is not { } party) return;

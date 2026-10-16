@@ -47,6 +47,9 @@ public sealed partial class GameServer
     /// <summary>Critical Strike and Critical Skills have their own chance (owner's rule, 2026-10-15: 20%).</summary>
     private double _criticalAbilityChance = 0.20;
 
+    /// <summary>Critical Skills' chance per damage-over-time tick from a player's skill (owner's rule, 2026-10-15: 5%).</summary>
+    private double _dotCriticalChance = 0.05;
+
     private static double LoadAbilityChance(string? path, string key, double fallback)
     {
         if (path is null || !File.Exists(path)) return fallback;

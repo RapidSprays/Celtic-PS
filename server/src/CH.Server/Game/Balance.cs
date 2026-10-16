@@ -524,16 +524,27 @@ public sealed class Balance
     private Dictionary<int, int>? _equipSkillRanks;
 
     /// <summary>
-    /// The rank of the skill a pet or mount gives: each family (every item giving the same skill) ordered by required
-    /// level, then item id, gives ranks 1, 2, 3… in turn (as an index). Tiny Hexbound Imp → Hexbound Pierce rank 1 (46),
-    /// Small (level 40) → rank 2 (126), confirmed on live (2026-10-15); every family has as many ranks as items.
+    /// The rank (as an index) of the skill a pet or mount gives. Each family (the items giving the same skill, without
+    /// the TEST and Template dev items) is ordered by required level, then item id. Families of 9 give ranks 1-9 in that
+    /// order (Tiny Hexbound Imp → Hexbound Pierce rank 1 = 46, Small → rank 2 = 126, Giant → rank 6 = 704, confirmed on
+    /// live). Families of 27 are 6 sizes × 4 colours plus Spirit I-III: pets rank size by size (Tiny Brown, Tan, Black,
+    /// Silver = 1-4, Small = 5-8…), mounts colour by colour (Tame…Primal Brown = 1-6, then Red, Black, Silver), as their
+    /// skills' rank tables show (Howl: 40, 80, 160, 320, 480, 640, then 44…; a Ferocious Brown War Wolf's Howl is rank 5 on
+    /// live, 2026-10-16). Spirit I-III are ranks 25-27.
     /// </summary>
     public int EquipSkillRank(int itemId)
     {
-        _equipSkillRanks ??= Items.Values.Where(i => i.EquipSkillId > 0 && i.Slot is EquipSlot.Companion or EquipSlot.Mount)
+        _equipSkillRanks ??= Items.Values
+            .Where(i => i.EquipSkillId > 0 && i.Slot is EquipSlot.Companion or EquipSlot.Mount
+                        && !i.Name.StartsWith("TEST ", StringComparison.Ordinal) && !i.Name.StartsWith("Template ", StringComparison.Ordinal))
             .GroupBy(i => i.EquipSkillId)
-            .SelectMany(g => g.OrderBy(i => i.LevelRequirement).ThenBy(i => i.Id).Select((i, rank) => (i.Id, rank)))
-            .ToDictionary(x => x.Id, x => x.rank);
+            .SelectMany(g =>
+            {
+                var family = g.OrderBy(i => i.LevelRequirement).ThenBy(i => i.Id).ToList();
+                var mount = family[0].Slot == EquipSlot.Mount;
+                return family.Select((item, n) => (item.Id, Rank: family.Count == 27 && mount && n < 24 ? n % 4 * 6 + n / 4 : n));
+            })
+            .ToDictionary(x => x.Id, x => x.Rank);
         return _equipSkillRanks.GetValueOrDefault(itemId);
     }
 
@@ -556,33 +567,6 @@ public sealed class Balance
         if (LearnTarget(book) is not { } wanted) return null;
         var key = NameKey(wanted);
         return Skills.Values.FirstOrDefault(s => !s.Name.StartsWith("Learn", StringComparison.OrdinalIgnoreCase) && NameKey(s.Name) == key);
-    }
-
-    private Dictionary<int, SkillInfo?>? _mobSkills;
-    private List<(SkillInfo Skill, HashSet<string> Words)>? _monsterSkillWords;
-    private static readonly HashSet<string> CommonWords = ["the", "of", "a", "boss", "mob", "lesser", "greater", "elder", "young", "old", "giant", "attack", "skill", "strike"];
-
-    private static HashSet<string> Words(string text) =>
-        System.Text.RegularExpressions.Regex.Matches(text.ToLowerInvariant(), "[a-z]{3,}").Select(m => m.Value).Where(w => !CommonWords.Contains(w)).ToHashSet();
-
-    /// <summary>
-    /// The special attack a monster shows: a damaging monster skill (no ability, cast on an enemy) whose name shares words
-    /// with the monster's name or race ("Emberdrake" → "Emberdrake Breath"). Which skills monsters really use is
-    /// server-only data, so this is <b>approximated</b>; null when nothing matches.
-    /// </summary>
-    public SkillInfo? MobSkill(MobInfo mob)
-    {
-        _mobSkills ??= new();
-        if (_mobSkills.TryGetValue(mob.Id, out var known)) return known;
-        _monsterSkillWords ??= Skills.Values
-            .Where(s => s.AbilityId < 0 && s.CastTarget == "Enemy" && s.Levels.Count > 0 && Math.Abs(s.Levels[0].InitialDamage) + Math.Abs(s.Levels[0].BaseDamage) > 0
-                        && !s.Name.Contains("Telegraph", StringComparison.OrdinalIgnoreCase) && !s.Name.StartsWith("Learn", StringComparison.Ordinal))
-            .Select(s => (s, Words(s.Name))).ToList();
-        var mobWords = Words(mob.Name + " " + mob.Race);
-        var best = _monsterSkillWords.Select(x => (x.Skill, Score: x.Words.Count(mobWords.Contains))).Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score).ThenBy(x => x.Skill.Id).Select(x => x.Skill).FirstOrDefault();
-        _mobSkills[mob.Id] = best;
-        return best;
     }
 
     private static readonly IReadOnlySet<string> NoTags = new HashSet<string>();

@@ -39,6 +39,12 @@ public sealed partial class GameServer : IDisposable
 
     private const int MaxFailedLogins = 5;
 
+    /// <summary>
+    /// The frame log's connection id: the client's network port, which differs for each game window on one PC (Lidgren's
+    /// unique identifier was the same for all of them, so two clients' frames couldn't be told apart).
+    /// </summary>
+    private static long ConnectionTag(Session s) => s.Connection.RemoteEndPoint?.Port ?? s.Connection.RemoteUniqueIdentifier;
+
     public GameServer(ServerOptions options, GameStore store, FrameLog frames, Balance balance, ILogger log)
     {
         _options = options;
@@ -65,16 +71,18 @@ public sealed partial class GameServer : IDisposable
                 if (balance.StatusEffects.TryGetValue(id, out var elixir))
                     balance.ReplaceStatusEffect(elixir with { Levels = elixir.Levels.Select(l => l with { Duration = (float)ElixirRules.Current.DurationSeconds }).ToList() });
         _xpBonus = XpBonus.Load(options.XpBonusPath);
+        _lootLinks = LoadLootLinks(options.LootLinksPath);
         _aggroOnSight = options.AggroOnSight ?? LoadAggroOnSight(options.AggroPath);
         _skillAggro = LoadSkillAggro(options.SkillAggroPath);
         _combatAbilityChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "combatChance", 0.01);
         _criticalAbilityChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "criticalChance", 0.20);
+        _dotCriticalChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "dotCriticalChance", 0.05);
         _balance.SetBonuses = SetBonusCatalog.Load(options.ItemSetsPath, options.SetAurasPath);
         balance.LoadStatusDetails(options.StatusEffectsPath); // before the overrides, which may change a tick
         if (SkillOverrides.Apply(balance, options.SkillOverridesPath) is > 0 and var overridden)
             log.LogInformation("Skill overrides: {Count} skills changed (server/content/skill-overrides.json)", overridden);
-        _quests = QuestBook.Load(options.WorldPath);
-        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath));
+        _quests = QuestBook.Load(options.WorldPath).WithExtraNpcs(options.NpcExtrasPath);
+        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath), ShopCatalog.LoadReplaced(options.ShopExtrasPath));
         _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
         _tree = PassiveTree.Load(options.PassiveTreeEnabled ? options.PassiveTreePath : null);
         _itemShop = LoadItemShop(options.ItemShopPath);
@@ -212,7 +220,7 @@ public sealed partial class GameServer : IDisposable
     {
         var raw = msg.Data.AsSpan(0, msg.LengthBytes).ToArray();
         var header = Envelope.ReadClientHeader(msg, s.SessionId != 0);
-        _frames.Inbound(s.Connection.RemoteUniqueIdentifier, header.Opcode, raw);
+        _frames.Inbound(ConnectionTag(s), header.Opcode, raw);
         if (header.SessionId is { } sid && sid != s.SessionId)
         {
             _log.LogWarning("Session id mismatch on {Opcode}: got {Got}, expected {Expected}", header.Opcode, sid, s.SessionId);
@@ -666,7 +674,7 @@ public sealed partial class GameServer : IDisposable
     {
         var msg = Envelope.CreateServerMessage(_server, opcode, sessionId ?? s.SessionId);
         write(msg);
-        _frames.Outbound(s.Connection.RemoteUniqueIdentifier, opcode, msg.Data.AsSpan(0, msg.LengthBytes).ToArray());
+        _frames.Outbound(ConnectionTag(s), opcode, msg.Data.AsSpan(0, msg.LengthBytes).ToArray());
         _server.SendMessage(msg, s.Connection, delivery);
     }
 
