@@ -44,15 +44,23 @@ public sealed partial class GameServer
     /// </summary>
     private double _combatAbilityChance = 0.01;
 
-    private static double LoadCombatAbilityChance(string? path)
+    /// <summary>Critical Strike and Critical Skills have their own chance (owner's rule, 2026-10-15: 20%).</summary>
+    private double _criticalAbilityChance = 0.20;
+
+    private static double LoadAbilityChance(string? path, string key, double fallback)
     {
-        if (path is null || !File.Exists(path)) return 0.01;
+        if (path is null || !File.Exists(path)) return fallback;
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path));
-        return doc.RootElement.TryGetProperty("combatChance", out var c) ? c.GetDouble() : 0.01;
+        return doc.RootElement.TryGetProperty(key, out var c) ? c.GetDouble() : fallback;
     }
 
-    /// <summary>Combat training: a flat <see cref="_combatAbilityChance"/> per action, up to the cap.</summary>
-    private void TrainCombatAbility(Session s, int abilityId) => TrainAbility(s, abilityId, _combatAbilityChance);
+    /// <summary>
+    /// Combat training: a flat chance per action, up to the cap: <see cref="_criticalAbilityChance"/> for Critical Strike
+    /// and Critical Skills, <see cref="_combatAbilityChance"/> for the rest. Elixirs of Wisdom multiply it.
+    /// </summary>
+    private void TrainCombatAbility(Session s, int abilityId) =>
+        TrainAbility(s, abilityId, (abilityId is CriticalStrike or CriticalSkills ? _criticalAbilityChance : _combatAbilityChance)
+            * (s.Sheet is null ? 1 : Modifiers(s).AbilityGainMultiplier));
 
     /// <summary>
     /// Maybe raises an ability the character has, by one level, and tells the client. With <paramref name="flatChance"/>

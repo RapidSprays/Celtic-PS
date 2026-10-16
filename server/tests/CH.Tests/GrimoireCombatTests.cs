@@ -59,4 +59,18 @@ public sealed class GrimoireCombatTests
             Assert.Empty(kits[cls].StartingLevels);
         }
     }
+
+    [Fact]
+    public void Kill_xp_rises_for_monsters_above_you_and_for_stars()
+    {
+        var bonus = XpBonus.Load(Path.Combine(AppContext.BaseDirectory, "content", "xp-bonus.json"));
+        Assert.Equal(1.0, bonus.Multiplier(10, 10, 1), 6);   // same level, 1 star
+        Assert.Equal(1.10, bonus.Multiplier(4, 5, 1), 6);    // 1 level above
+        Assert.Equal(1.80, bonus.Multiplier(4, 9, 1), 6);    // 5 above
+        Assert.Equal(1.80, bonus.Multiplier(4, 20, 1), 6);   // more than 5 above: the 5-level bonus
+        Assert.Equal(1.0, bonus.Multiplier(20, 10, 1), 6);   // below you: no bonus (the 25% a level cut is separate)
+        Assert.Equal(1.25 * 1.75, bonus.Multiplier(10, 12, 4), 6); // 2 above, 4 stars
+        Assert.Equal(2.25, bonus.Multiplier(10, 10, 6), 6);
+        Assert.Equal(1.0, bonus.Multiplier(10, 10, 0), 6);   // power 0 counts as 1 star
+    }
 }

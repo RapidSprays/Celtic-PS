@@ -148,6 +148,12 @@ public sealed class ServerOptions
     /// <summary>Where <see cref="ClassKitsPath"/> starts; the tests clear it so they use the built-in kits, not the owner's.</summary>
     public static string? DefaultClassKitsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "class-kits.json");
 
+    /// <summary>Extra kill XP for monsters above your level and by stars (server/content/xp-bonus.json).</summary>
+    public string? XpBonusPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "xp-bonus.json");
+
+    /// <summary>What elixirs give (server/content/elixirs.json, from the live game).</summary>
+    public string? ElixirsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "elixirs.json");
+
     /// <summary>XP from each level to the next (server/content/xp-levels.json, the live game's table).</summary>
     public string? XpLevelsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "xp-levels.json");
 

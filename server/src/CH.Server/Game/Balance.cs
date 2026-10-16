@@ -195,8 +195,12 @@ public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRan
     /// √(ability ÷ 100) + √(attribute ÷ divisor))⌉. Ability is 0 for skills without one; <paramref name="statRatio"/> is
     /// <see cref="CharacterSheet.StatRatio"/>. Heals have negative numbers in the data, so their sizes are used.
     /// </summary>
+    /// <remarks>
+    /// Rounded to the nearest whole number, as live shows it (2026-10-15: a Giant Hexbound Imp at 2,000 Imp Taming hits
+    /// for at most 3,852 = 704 × (1 + √20) = 3,852.38; Spirit III at 2,300: 7,535 = 7,534.58). Master's Grimoire rounds up.
+    /// </remarks>
     public static double Amount(SkillLevelInfo level, float ability, double statRatio) =>
-        Math.Ceiling(Math.Abs(level.BaseDamage) + Math.Abs(level.InitialDamage) * (1 + Math.Sqrt(Math.Max(0, ability) / 100.0) + Math.Sqrt(Math.Max(0, statRatio))));
+        Math.Round(Math.Abs(level.BaseDamage) + Math.Abs(level.InitialDamage) * (1 + Math.Sqrt(Math.Max(0, ability) / 100.0) + Math.Sqrt(Math.Max(0, statRatio))), MidpointRounding.AwayFromZero);
 
     /// <summary>Highest rank a character of this level may train (CSkillTemplateManager.GetMaxLevel).</summary>
     public int MaxRank(int playerLevel) => Math.Min(SkillLevels.TrainableRanks - 1,
@@ -517,6 +521,22 @@ public sealed class Balance
     }
 
     /// <summary>Whether an item is an openable container (see <see cref="ChestCatalog"/>).</summary>
+    private Dictionary<int, int>? _equipSkillRanks;
+
+    /// <summary>
+    /// The rank of the skill a pet or mount gives: each family (every item giving the same skill) ordered by required
+    /// level, then item id, gives ranks 1, 2, 3… in turn (as an index). Tiny Hexbound Imp → Hexbound Pierce rank 1 (46),
+    /// Small (level 40) → rank 2 (126), confirmed on live (2026-10-15); every family has as many ranks as items.
+    /// </summary>
+    public int EquipSkillRank(int itemId)
+    {
+        _equipSkillRanks ??= Items.Values.Where(i => i.EquipSkillId > 0 && i.Slot is EquipSlot.Companion or EquipSlot.Mount)
+            .GroupBy(i => i.EquipSkillId)
+            .SelectMany(g => g.OrderBy(i => i.LevelRequirement).ThenBy(i => i.Id).Select((i, rank) => (i.Id, rank)))
+            .ToDictionary(x => x.Id, x => x.rank);
+        return _equipSkillRanks.GetValueOrDefault(itemId);
+    }
+
     public bool Chests(int itemId) => Items.TryGetValue(itemId, out var i) && i.Usable && ChestCatalog.ContainerLinks.Contains(i.SkillLinkId);
 
     /// <summary>

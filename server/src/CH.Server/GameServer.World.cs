@@ -42,6 +42,7 @@ public sealed partial class GameServer
     /// owner's rule: monsters only fight once attacked, or when a monster in the fight calls them for help.
     /// </summary>
     private readonly bool _aggroOnSight;
+    private readonly XpBonus _xpBonus;
 
     private static bool LoadAggroOnSight(string? path)
     {
@@ -1274,11 +1275,14 @@ public sealed partial class GameServer
         var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects
         var tree = s.Sheet!.Tree;
         // Official XP and gold (Master's Grimoire) for monsters that have them; the old formulas for the rest.
-        var baseXp = mob.Combat is { Xp: > 0 } rewards ? rewards.XpFor(s.Sheet.Level) : MobStats.Xp(mob.Level, mob.Template.Power);
+        // Official XP gets the owner's bonus for monsters above your level and for stars (server/content/xp-bonus.json).
+        var baseXp = mob.Combat is { Xp: > 0 } rewards
+            ? (int)Math.Round(rewards.XpFor(s.Sheet.Level) * _xpBonus.Multiplier(s.Sheet.Level, mob.Level, mob.Template.Power))
+            : MobStats.Xp(mob.Level, mob.Template.Power);
         var baseCoins = mob.Combat is { } combat
             ? Random.Shared.Next(Math.Min(combat.Gold.Min, combat.Gold.Max), Math.Max(combat.Gold.Min, combat.Gold.Max) + 1)
             : MobStats.Coins(mob.Level, mob.Template.Power);
-        var xp = baseXp * (100 + Math.Max(0, boosts.XpBoostPercent) + (int)tree["xpPct"]) / 100;
+        var xp = (int)Math.Round(baseXp * boosts.XpMultiplier * (100 + Math.Max(0, boosts.XpBoostPercent) + tree["xpPct"]) / 100); // Elixir of Knowledge: x2 / x4 / x5
         var coins = baseCoins * (100 + Math.Max(0, boosts.GoldBoostPercent) + (int)tree["goldPct"]) / 100;
         var loot = new List<(int, int)>();
         var official = _officialLoot.Has(mob.Template.Id);
@@ -1355,8 +1359,10 @@ public sealed partial class GameServer
         s.Dead = true;
         s.AttackTarget = null;
         s.Casts.Clear();
-        s.Effects.RemoveAll(e => !Pets.AllPetEffects.Contains(e.Info.Id) && !Pets.MountEffects.Contains(e.Info.Id)); // death ends buffs, not the pet's meal or the ride
-        DismountOnDeath(s);
+        // Death ends buffs, not the pet's meal, the ride or (owner's rule) elixirs. Owner's rule (2026-10-15): you stay on
+        // your mount when you die, with all its bonuses; there's no Dismounted effect (live moves the mount to your bags).
+        s.Effects.RemoveAll(e => !Pets.AllPetEffects.Contains(e.Info.Id) && !Pets.MountEffects.Contains(e.Info.Id)
+            && !(ElixirRules.Current.KeepOnDeath && ElixirRules.Current.IsElixir(e.Info.Id)));
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s)).ToList()) LoseTarget(zone, mob, s, now);
         SendEffects(s);
         SendSkillToggles(s);

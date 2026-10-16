@@ -1,0 +1,264 @@
+{
+  "_comment": [
+    "What elixirs give (owner, from the live game, 2026-10-15). Restart the server after editing.",
+    "tiers: flat + percent of your own stat for attack, defence, armour, maxHealth, maxEnergy (percent of your attack, defence...), healthRegen and energyRegen (flat + percent of max health/energy, every regen tick); haste and runSpeed are percents; xp and abilityGain multiply (4 = four times).",
+    "haste replaces haste from gear (it doesn't stack with it), and never takes a weapon faster than minAttackDelay milliseconds a swing.",
+    "normal: the flat parts are the game data's; the percents are a guess (half of super) until checked on live.",
+    "elixirs: the elixir status effects (ids from the game data), what each gives, and which tier each of its levels is. Elixirs don't stack: per stat the strongest active one counts.",
+    "heroic (owner, from live): attack and defence 100 + 30%, regen 10 + 3% of max, haste 60%, run speed 80%, xp and ability gains x5. Armour (100 + 30%) and max health/energy (200 + 30%) follow the same pattern but aren't confirmed yet.",
+    "durationSeconds: how long every elixir lasts (owner: 30 minutes; the game data says 15). keepOnDeath: elixirs stay on when you die."
+  ],
+  "durationSeconds": 1800,
+  "keepOnDeath": true,
+  "minAttackDelay": 1100,
+  "tiers": {
+    "normal": {
+      "attack": {
+        "flat": 50,
+        "percent": 10
+      },
+      "defence": {
+        "flat": 50,
+        "percent": 10
+      },
+      "armour": {
+        "flat": 50,
+        "percent": 10
+      },
+      "maxHealth": {
+        "flat": 100,
+        "percent": 10
+      },
+      "maxEnergy": {
+        "flat": 100,
+        "percent": 10
+      },
+      "healthRegen": {
+        "flat": 5,
+        "percent": 1
+      },
+      "energyRegen": {
+        "flat": 5,
+        "percent": 1
+      },
+      "haste": 25,
+      "runSpeed": 30,
+      "xp": 2,
+      "abilityGain": 2
+    },
+    "super": {
+      "attack": {
+        "flat": 100,
+        "percent": 20
+      },
+      "defence": {
+        "flat": 100,
+        "percent": 20
+      },
+      "armour": {
+        "flat": 100,
+        "percent": 20
+      },
+      "maxHealth": {
+        "flat": 200,
+        "percent": 20
+      },
+      "maxEnergy": {
+        "flat": 200,
+        "percent": 20
+      },
+      "healthRegen": {
+        "flat": 10,
+        "percent": 2
+      },
+      "energyRegen": {
+        "flat": 10,
+        "percent": 2
+      },
+      "haste": 50,
+      "runSpeed": 60,
+      "xp": 4,
+      "abilityGain": 4
+    },
+    "heroic": {
+      "attack": {
+        "flat": 100,
+        "percent": 30
+      },
+      "defence": {
+        "flat": 100,
+        "percent": 30
+      },
+      "armour": {
+        "flat": 100,
+        "percent": 30
+      },
+      "maxHealth": {
+        "flat": 200,
+        "percent": 30
+      },
+      "maxEnergy": {
+        "flat": 200,
+        "percent": 30
+      },
+      "healthRegen": {
+        "flat": 10,
+        "percent": 3
+      },
+      "energyRegen": {
+        "flat": 10,
+        "percent": 3
+      },
+      "haste": 60,
+      "runSpeed": 80,
+      "xp": 5,
+      "abilityGain": 5
+    }
+  },
+  "elixirs": {
+    "44": {
+      "name": "Elixir of Attack",
+      "gives": [
+        "attack"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "36": {
+      "name": "Elixir of Defence",
+      "gives": [
+        "defence"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "38": {
+      "name": "Elixir of Armour",
+      "gives": [
+        "armour"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "40": {
+      "name": "Elixir of Maximum Health",
+      "gives": [
+        "maxHealth"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "42": {
+      "name": "Elixir of Maximum Energy",
+      "gives": [
+        "maxEnergy"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "46": {
+      "name": "Elixir of Haste",
+      "gives": [
+        "haste"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "48": {
+      "name": "Elixir of Travelling",
+      "gives": [
+        "runSpeed"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "50": {
+      "name": "Elixir of Knowledge",
+      "gives": [
+        "xp"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic",
+        "heroic"
+      ]
+    },
+    "64": {
+      "name": "Elixir of Wisdom",
+      "gives": [
+        "abilityGain"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic",
+        "heroic"
+      ]
+    },
+    "52": {
+      "name": "Elixir of Regeneration",
+      "gives": [
+        "healthRegen"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "54": {
+      "name": "Elixir of Energisation",
+      "gives": [
+        "energyRegen"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    },
+    "56": {
+      "name": "Combination Elixir",
+      "gives": [
+        "attack",
+        "defence",
+        "armour",
+        "maxHealth",
+        "maxEnergy",
+        "healthRegen",
+        "energyRegen",
+        "haste",
+        "runSpeed",
+        "xp",
+        "abilityGain"
+      ],
+      "tiers": [
+        "normal",
+        "super",
+        "heroic"
+      ]
+    }
+  }
+}

@@ -44,7 +44,7 @@ public sealed partial class GameServer
             ArmourValue = Math.Max(0, stats.ArmourValue + m.Armour),
             Defence = Math.Max(0, stats.Defence + m.Defence),
             Attack = Math.Max(0, stats.Attack + m.Attack + (sheet.AttackRange > 3 ? m.RangedAttack : 0)), // Steady Aim: ranged only
-            AttackSpeed = AttackSpeedWith(stats.AttackSpeed, m.AttackSpeedPercent + sheet.AttackSpeedPercent),
+            AttackSpeed = AttackSpeedWithElixir(stats.AttackSpeed, m, sheet),
             // The stats page's Damage is the whole weapon hit, as on live (1,822 for a 190 pierce + 200 heat halberd at
             // 650 Strength; Frenzy raises it). The client also adds it to weapon skills' tooltips.
             WeaponDamage = Math.Max(1, (int)(WeaponHit(s, m, null) + m.ExtraAttackDamage)),
@@ -106,6 +106,18 @@ public sealed partial class GameServer
     /// </summary>
     private static int PlayerResist(Session s, int type, EffectModifiers m) => type == 9 ? 0
         : Math.Max(0, s.Sheet!.Resist(type) + (type <= 2 ? Math.Max(0, s.Sheet.Armour + m.Armour) : 0) + ResistChange(s.Effects, type));
+
+    /// <summary>
+    /// Attack delay with buffs and haste. An elixir's haste (owner, from live) replaces gear haste instead of adding to it,
+    /// and never takes the weapon below the elixir's minimum delay (1,100 ms), unless it was already faster without it.
+    /// </summary>
+    private static int AttackSpeedWithElixir(int weaponSpeed, EffectModifiers m, CharacterSheet sheet)
+    {
+        var without = AttackSpeedWith(weaponSpeed, m.AttackSpeedPercent + sheet.AttackSpeedPercent);
+        if (m.ElixirHaste <= 0) return without;
+        var with = AttackSpeedWith(weaponSpeed, m.AttackSpeedPercent + sheet.AttackSpeedPercent - sheet.GearHastePercent + m.ElixirHaste);
+        return Math.Max(with, Math.Min(without, ElixirRules.Current.MinAttackDelay));
+    }
 
     // Owner's rule: no ceilings on attack or run speed. Only slows keep their floors (half attack speed, 20% run speed).
     public static int AttackSpeedWith(int milliseconds, int percent) => Math.Max(1, milliseconds * 100 / (100 + Math.Max(-50, percent)));

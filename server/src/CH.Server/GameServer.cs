@@ -59,9 +59,16 @@ public sealed partial class GameServer : IDisposable
         _scripts = MobScriptBook.Load(options.MobScriptsPath);
         _regen = RegenRules.Load(options.RegenPath);
         Progression.LoadXpTable(options.XpLevelsPath);
+        ElixirRules.Current = ElixirRules.Load(options.ElixirsPath);
+        if (ElixirRules.Current.DurationSeconds > 0) // owner: every elixir lasts 30 minutes (the game data says 15)
+            foreach (var id in ElixirRules.Current.EffectIds)
+                if (balance.StatusEffects.TryGetValue(id, out var elixir))
+                    balance.ReplaceStatusEffect(elixir with { Levels = elixir.Levels.Select(l => l with { Duration = (float)ElixirRules.Current.DurationSeconds }).ToList() });
+        _xpBonus = XpBonus.Load(options.XpBonusPath);
         _aggroOnSight = options.AggroOnSight ?? LoadAggroOnSight(options.AggroPath);
         _skillAggro = LoadSkillAggro(options.SkillAggroPath);
-        _combatAbilityChance = options.CombatAbilityChance ?? LoadCombatAbilityChance(options.AbilityGainPath);
+        _combatAbilityChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "combatChance", 0.01);
+        _criticalAbilityChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "criticalChance", 0.20);
         _balance.SetBonuses = SetBonusCatalog.Load(options.ItemSetsPath, options.SetAurasPath);
         balance.LoadStatusDetails(options.StatusEffectsPath); // before the overrides, which may change a tick
         if (SkillOverrides.Apply(balance, options.SkillOverridesPath) is > 0 and var overridden)

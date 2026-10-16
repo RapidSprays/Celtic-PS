@@ -89,4 +89,41 @@ public sealed class LimitTests
         Assert.Equal(50f, GameServer.RunSpeedWith(5f, 900));
         Assert.Equal(1f, GameServer.RunSpeedWith(5f, -95));
     }
+
+    [Fact]
+    public void Super_elixirs_give_flat_plus_percent_and_do_not_stack()
+    {
+        if (!File.Exists(BalancePath)) return;
+        ElixirRules.Current = ElixirRules.Load(Path.Combine(AppContext.BaseDirectory, "content", "elixirs.json"));
+        var combination = Data.Value.StatusEffects[56]; // Combination Elixir; level index 1 = super
+        var attackElixir = Data.Value.StatusEffects[44];
+        ActiveEffect On(StatusEffectInfo info, int level) => new() { Info = info, LevelIndex = level, ExpiresAt = double.MaxValue };
+        var m = EffectModifiers.From([On(combination, 1), On(attackElixir, 1)], 7825, 1139, 895, 2650, 2296); // max health, max energy, armour, defence, attack
+        Assert.Equal((int)System.Math.Round(100 + 2296 * 0.2), m.Attack);  // once, not twice
+        Assert.Equal((int)System.Math.Round(100 + 2650 * 0.2), m.Defence);
+        Assert.Equal((int)System.Math.Round(200 + 7825 * 0.2), m.MaxHealth);
+        Assert.Equal((int)System.Math.Round(10 + 7825 * 0.02), m.HealthRegen);
+        Assert.Equal((50, 60, 4.0, 4.0), (m.ElixirHaste, m.RunSpeedPercent, m.XpMultiplier, m.AbilityGainMultiplier));
+        Assert.Equal(2850 * 100 / 150, GameServer.AttackSpeedWith(2850, m.ElixirHaste)); // 50% haste on a 2.85 s halberd: 1.9 s
+    }
+
+    [Fact]
+    public void Pet_skills_rank_up_with_the_pets_size()
+    {
+        if (!File.Exists(BalancePath)) return;
+        // Hexbound Pierce: Tiny imp rank 1 (46 initial), Small (level 40) rank 2 (126), confirmed on live; Spirit III rank 9.
+        Assert.Equal(0, Data.Value.EquipSkillRank(65960));
+        Assert.Equal(1, Data.Value.EquipSkillRank(65961));
+        Assert.Equal(8, Data.Value.EquipSkillRank(73044));
+        Assert.Equal(126f, Data.Value.Skills[8470].Level(Data.Value.EquipSkillRank(65961)).InitialDamage);
+        // Live max hits before resists (2026-10-15): Giant imp (rank 6) at 2,000 Imp Taming, Spirit III (rank 9) at 2,300.
+        var pierce = Data.Value.Skills[8470];
+        Assert.Equal(3852, SkillInfo.Amount(pierce.Level(Data.Value.EquipSkillRank(65965)), 2000, 0));
+        Assert.Equal(7535, SkillInfo.Amount(pierce.Level(Data.Value.EquipSkillRank(73044)), 2300, 0));
+        // Natural Focus heals (live): Tiny Brown Hare (rank 1) at 10 Rabbit Taming 14, Giant Golden Hare (rank 24) at 2,000: 1,149.
+        var focus = Data.Value.Skills[7879];
+        Assert.Equal((0, 23), (Data.Value.EquipSkillRank(58689), Data.Value.EquipSkillRank(58712)));
+        Assert.Equal(14, SkillInfo.Amount(focus.Level(Data.Value.EquipSkillRank(58689)), 10, 0));
+        Assert.Equal(1149, SkillInfo.Amount(focus.Level(Data.Value.EquipSkillRank(58712)), 2000, 0));
+    }
 }

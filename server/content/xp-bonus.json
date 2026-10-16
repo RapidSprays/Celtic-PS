@@ -1,0 +1,5 @@
+{
+  "_comment": "Owner's rules (2026-10-15): extra kill XP on top of each monster's official XP. Kill XP = base XP x levelsAbove x stars. levelsAbove: how many levels the monster is above you (more than the highest listed use the highest). stars: the monster's star rating (its power in the game data; 0 counts as 1). A monster below your level still loses 25% per level, as in the Grimoire, before these apply. Restart the server after editing.",
+  "levelsAbove": { "1": 1.10, "2": 1.25, "3": 1.40, "4": 1.65, "5": 1.80 },
+  "stars": { "1": 1.00, "2": 1.25, "3": 1.50, "4": 1.75, "5": 2.00, "6": 2.25 }
+}

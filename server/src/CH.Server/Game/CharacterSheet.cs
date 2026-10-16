@@ -250,11 +250,18 @@ public sealed class CharacterSheet
 
 
     /// <summary>Skills granted by equipped items (EquipSkillID), usable while worn, not trainable.</summary>
-    public IReadOnlyList<int> EquipSkills => Gear.Where(g => g.EquipSkillId > 0 && _balance.Skills.ContainsKey(g.EquipSkillId))
-        .Select(g => g.EquipSkillId).Distinct().Where(id => Skills.All(k => k.SkillId != id)).ToList();
+    public IReadOnlyList<int> EquipSkills => EquipSkillRanks.Select(e => e.SkillId).ToList();
+
+    /// <summary>
+    /// Skills from equipment with the rank the item gives (<see cref="Balance.EquipSkillRank"/>: a Small Hexbound Imp's
+    /// Hexbound Pierce is rank 2), the highest when two items give the same skill.
+    /// </summary>
+    public IReadOnlyList<(int SkillId, int Level)> EquipSkillRanks => Gear.Where(g => g.EquipSkillId > 0 && _balance.Skills.ContainsKey(g.EquipSkillId))
+        .GroupBy(g => g.EquipSkillId).Where(g => Skills.All(k => k.SkillId != g.Key))
+        .Select(g => (g.Key, g.Max(i => _balance.EquipSkillRank(i.Id)))).ToList();
 
     /// <summary>Learned skills plus equipment skills, as (id, rank).</summary>
-    public IReadOnlyList<(int SkillId, int Level)> UsableSkills => Skills.Concat(EquipSkills.Select(id => (id, 0))).ToList();
+    public IReadOnlyList<(int SkillId, int Level)> UsableSkills => Skills.Concat(EquipSkillRanks).ToList();
     public int MaxHealth { get; }
     public int MaxEnergy { get; }
     public int Health { get; }
@@ -332,7 +339,7 @@ public sealed class CharacterSheet
     /// </summary>
     public IReadOnlyList<SkillEntry> SkillEntries() =>
         Skills.Select(s => new SkillEntry(s.SkillId, s.Level, TableMaxRank(s.SkillId), 0f))
-            .Concat(EquipSkills.Select(id => new SkillEntry(id, 0, 0, 0f)))
+            .Concat(EquipSkillRanks.Select(e => new SkillEntry(e.SkillId, e.Level, 0, 0f)))
             .ToList();
 
     public CharacterSummary Summary(int worldId)

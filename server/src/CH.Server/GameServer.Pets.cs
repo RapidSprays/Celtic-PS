@@ -122,14 +122,6 @@ public sealed partial class GameServer
         return true;
     }
 
-    /// <summary>Dying on a mount leaves the player Dismounted for an hour (or until a whistle or the stablemaster).</summary>
-    private void DismountOnDeath(Session s)
-    {
-        if (s.Sheet?.Mount is null || Dismounted(s)) return;
-        if (NewEffect(Pets.DismountedEffect, 0, NetTime.Now + Pets.DismountedSeconds) is { } e) s.Effects.Add(e);
-        UpdateMountEffect(s); // the Mounted speed buff goes with the mount
-    }
-
     private bool Remount(Session s)
     {
         if (s.Effects.RemoveAll(e => e.Info.Id == Pets.DismountedEffect) == 0) return false;

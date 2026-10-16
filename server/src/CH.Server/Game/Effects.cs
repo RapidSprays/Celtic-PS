@@ -66,6 +66,13 @@ public sealed record EffectModifiers
     public int EnergyRegen { get; init; }
     public int AttackSpeedPercent { get; init; }
     public int RunSpeedPercent { get; init; }
+
+    /// <summary>An elixir's haste (percent): it replaces haste from gear rather than adding to it (0: none).</summary>
+    public int ElixirHaste { get; init; }
+
+    /// <summary>Elixirs of Knowledge and Wisdom (and the combination elixirs): kill XP and ability gain chances times this.</summary>
+    public double XpMultiplier { get; init; } = 1;
+    public double AbilityGainMultiplier { get; init; } = 1;
     /// <summary>Steady Aim: attack while using a ranged weapon.</summary>
     public int RangedAttack { get; init; }
 
@@ -88,8 +95,11 @@ public sealed record EffectModifiers
     public static EffectModifiers From(IEnumerable<ActiveEffect> effects, int baseMaxHealth, int baseMaxEnergy, int baseArmour, int baseDefence, int baseAttack)
     {
         var m = new EffectModifiers();
-        foreach (var e in effects)
+        var list = effects.ToList();
+        m = WithElixirs(m, list, baseMaxHealth, baseMaxEnergy, baseArmour, baseDefence, baseAttack);
+        foreach (var e in list)
         {
+            if (ElixirRules.Current.TryGet(e.Info.Id, e.LevelIndex, out _, out _)) continue; // applied above
             var a = e.Amount;
             m = e.Type switch
             {
@@ -135,6 +145,44 @@ public sealed record EffectModifiers
             };
         }
         return m;
+    }
+
+    /// <summary>
+    /// The elixirs' boosts (server/content/elixirs.json): for each stat the strongest active elixir, since elixirs don't
+    /// stack. Flat + percent of the character's own stat; regen per tick from maximum health and energy.
+    /// </summary>
+    private static EffectModifiers WithElixirs(EffectModifiers m, List<ActiveEffect> effects, int maxHealth, int maxEnergy, int armour, int defence, int attack)
+    {
+        var rules = ElixirRules.Current;
+        var best = new Dictionary<string, double>();
+        void Keep(string stat, double value) => best[stat] = Math.Max(best.GetValueOrDefault(stat), value);
+        foreach (var e in effects)
+        {
+            if (!rules.TryGet(e.Info.Id, e.LevelIndex, out var tier, out var gives)) continue;
+            foreach (var stat in gives)
+            {
+                double Of(int own) => rules.BoostOf(tier, stat) is var b ? b.Flat + own * b.Percent / 100 : 0;
+                switch (stat)
+                {
+                    case "attack": Keep(stat, Of(attack)); break;
+                    case "defence": Keep(stat, Of(defence)); break;
+                    case "armour": Keep(stat, Of(armour)); break;
+                    case "maxHealth" or "healthRegen": Keep(stat, Of(maxHealth)); break;
+                    case "maxEnergy" or "energyRegen": Keep(stat, Of(maxEnergy)); break;
+                    case "haste" or "runSpeed": Keep(stat, rules.ValueOf(tier, stat, 0)); break;
+                    case "xp" or "abilityGain": Keep(stat, rules.ValueOf(tier, stat, 1)); break;
+                }
+            }
+        }
+        int Get(string stat) => (int)Math.Round(best.GetValueOrDefault(stat));
+        return m with
+        {
+            Attack = m.Attack + Get("attack"), Defence = m.Defence + Get("defence"), Armour = m.Armour + Get("armour"),
+            MaxHealth = m.MaxHealth + Get("maxHealth"), MaxEnergy = m.MaxEnergy + Get("maxEnergy"),
+            HealthRegen = m.HealthRegen + Get("healthRegen"), EnergyRegen = m.EnergyRegen + Get("energyRegen"),
+            RunSpeedPercent = m.RunSpeedPercent + Get("runSpeed"), ElixirHaste = Get("haste"),
+            XpMultiplier = Math.Max(1, best.GetValueOrDefault("xp", 1)), AbilityGainMultiplier = Math.Max(1, best.GetValueOrDefault("abilityGain", 1)),
+        };
     }
 
     public static bool IsShield(EffectType t) => t is EffectType.EnergyShield or EffectType.EnergyShield2;
