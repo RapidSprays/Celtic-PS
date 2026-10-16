@@ -1,5 +1,5 @@
 {
-  "_comment": "Your own changes to skills, applied over the game data when the server starts (restart after editing). Key: skill id (the Grimoire's skill search shows ids). All fields are optional: damageMultiplier scales damage (or healing) at every rank; ranks sets exact numbers for single ranks, numbered as in game (1 = the first rank), with initial and base as in the skill formula ceil(base + initial x (1 + sqrt(ability / 100) + sqrt(stat / divisor))); cooldown (seconds), energy and castTime set every rank. name is only a label for you. The PvP version of a skill gets the same changes. Entries starting with _ are ignored, so remove the _ to switch an example on. Damage over time (Rupture's bleed, poisons, burns) is the skill's status effect, set with dotMultiplier (scales every rank's per-tick amount), dotRanks (exact amount and base for single ranks: per tick = ceil(base + amount x (1 + sqrt(ability / 100) + sqrt(stat / divisor)))), dotDuration (seconds) and dotTick (seconds between ticks; most tick every 5).",
+  "_comment": "Your own changes to skills, applied over the game data when the server starts (restart after editing). Key: skill id (the Grimoire's skill search shows ids). All fields are optional: damageMultiplier scales damage (or healing) at every rank; ranks sets exact numbers for single ranks, numbered as in game (1 = the first rank), with initial and base as in the skill formula ceil(base + initial x (1 + sqrt(ability / 100) + sqrt(stat / divisor))); cooldown (seconds), energy and castTime set every rank. name is only a label for you. The PvP version of a skill gets the same changes. Entries starting with _ are ignored, so remove the _ to switch an example on. Damage over time (Rupture's bleed, poisons, burns) is the skill's status effect, set with dotMultiplier (scales every rank's per-tick amount), dotRanks (exact amount and base for single ranks: per tick = ceil(base + amount x (1 + sqrt(ability / 100) + sqrt(stat / divisor)))), dotDuration (seconds) and dotTick (seconds between ticks; most tick every 5). The same status-effect fields also work under effect\u2026 names (effectMultiplier, effectRanks, effectDuration) for buffs and debuffs that aren't damage over time, e.g. how much skill evasion Bless gives.",
   "_13": {
     "name": "Sharp Shot",
     "damageMultiplier": 1.2
@@ -33,5 +33,16 @@
     },
     "dotTick": 5,
     "dotDuration": 15
+  },
+  "_223": {
+    "name": "Bless (all skill evasions; rank 50 gives ceil(base + amount x (1 + sqrt(Nature Magic / 100) + sqrt(stat / divisor)))). Remove the _ to use",
+    "effectMultiplier": 1.0,
+    "effectRanks": {
+      "50": {
+        "amount": 98.0,
+        "base": 250.0
+      }
+    },
+    "effectDuration": 180
   }
 }

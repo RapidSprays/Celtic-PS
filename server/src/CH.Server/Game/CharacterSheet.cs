@@ -504,12 +504,36 @@ public sealed class CharacterSheet
     public static string SerializeHud(IReadOnlyList<HudSet> sets) => JsonSerializer.Serialize(sets);
 }
 
-/// <summary>Levelling curve. <b>Approximated</b>: the client ships none.</summary>
+/// <summary>
+/// Levelling curve: XP from each level to the next, from the live game (server/content/xp-levels.json, provided by the
+/// owner, 2026-10-15; the client ships none). XP starts again from 0 after each level-up. Levels the file doesn't list
+/// use Master's Grimoire's formula (<see cref="OfficialXp"/>), which gives the same table.
+/// </summary>
 public static class Progression
 {
     public const int MaxLevel = 250;
     public const int AttributePointsPerLevel = 5; // owner's rule (2026-10-14)
     public const int SkillPointsPerLevel = 1;
 
-    public static int XpToNextLevel(int level) => (int)(100 * Math.Pow(Math.Max(1, level), 1.6));
+    private static int[] _xpTable = [];
+
+    public static int XpToNextLevel(int level) =>
+        level >= 1 && level < _xpTable.Length && _xpTable[level] > 0 ? _xpTable[level] : OfficialXp(Math.Max(1, level));
+
+    /// <summary>
+    /// The XP formula from Master's Grimoire's author: round((i + 4) × (60 + 20i) × (1 + i^(i/223) ÷ 12)) for level i.
+    /// It matches the live table for all 250 levels when the exponent is worked out at full precision.
+    /// </summary>
+    public static int OfficialXp(int level) => (int)Math.Round((level + 4) * (60.0 + 20 * level) * (1 + Math.Pow(level, level / 223.0) / 12));
+
+    /// <summary>Loads xp-levels.json ({"levels": {"1": 433, …}}); levels it doesn't list keep the approximation.</summary>
+    public static void LoadXpTable(string? path)
+    {
+        if (path is null || !File.Exists(path)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(path));
+        var levels = doc.RootElement.GetProperty("levels").EnumerateObject().ToDictionary(e => int.Parse(e.Name), e => e.Value.GetInt32());
+        var table = new int[Math.Max(MaxLevel, levels.Keys.DefaultIfEmpty(0).Max()) + 1];
+        foreach (var (level, xp) in levels) table[level] = xp;
+        _xpTable = table;
+    }
 }

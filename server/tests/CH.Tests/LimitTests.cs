@@ -42,11 +42,14 @@ public sealed class LimitTests
         var path = Path.Combine(Path.GetTempPath(), $"skill-overrides-{Guid.NewGuid():N}.json");
         File.WriteAllText(path, """
             { "13": { "damageMultiplier": 2, "ranks": { "1": { "base": 99 } }, "cooldown": 4 }, "_52": { "damageMultiplier": 9 },
-              "214": { "dotMultiplier": 2, "dotRanks": { "50": { "base": 30 } }, "dotTick": 4 } }
+              "214": { "dotMultiplier": 2, "dotRanks": { "50": { "base": 30 } }, "dotTick": 4 },
+              "223": { "effectRanks": { "50": { "amount": 150, "base": 400 } } } }
             """);
         try
         {
-            Assert.Equal(2, SkillOverrides.Apply(balance, path)); // Sharp Shot and Rupture; "_52" is off
+            Assert.Equal(3, SkillOverrides.Apply(balance, path)); // Sharp Shot, Rupture and Bless; "_52" is off
+            var bless = balance.StatusEffects[balance.Skills[223].StatusEffectId]; // all skill evasions
+            Assert.Equal((150f, 400f), (bless.Levels[49].Amount, bless.Levels[49].BaseAmount));
             var after = balance.Skills[13].Levels;
             Assert.Equal((before[0].InitialDamage * 2, 99f, 4f), (after[0].InitialDamage, after[0].BaseDamage, after[0].RechargeTime));
             Assert.Equal(before[10].BaseDamage * 2, after[10].BaseDamage);

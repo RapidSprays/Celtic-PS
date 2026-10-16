@@ -1,0 +1,4 @@
+{
+  "_comment": "Owner's rule (2026-10-15): with aggroOnSight false, monsters never attack players who walk past; they only fight once a player attacks them (or a monster in the fight calls them for help). Set it to true for the live game's behaviour, where 2-star and stronger monsters attack anyone within their aggro range. Restart the server after editing.",
+  "aggroOnSight": false
+}

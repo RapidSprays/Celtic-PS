@@ -1,0 +1,520 @@
+{
+  "_comment": [
+    "Each class's starting skills and abilities (owner-editable). Restart the server after editing.",
+    "skills: learnt by a new character when it first enters the world (ids from the skill list; names are only for reading).",
+    "abilities: the abilities the class has for good, shown on the abilities page and trained by use. Removing one also takes it from existing characters of that class.",
+    "level (optional, default 1): the level a NEW character starts that ability at. Existing characters keep theirs.",
+    "allClasses: abilities every class gets, on top of its own."
+  ],
+  "allClasses": {
+    "abilities": [
+      {
+        "id": 9,
+        "name": "Physical Fitness"
+      },
+      {
+        "id": 14,
+        "name": "First Aid"
+      },
+      {
+        "id": 19,
+        "name": "Fortitude"
+      },
+      {
+        "id": 20,
+        "name": "Warding"
+      },
+      {
+        "id": 21,
+        "name": "Reflex"
+      },
+      {
+        "id": 22,
+        "name": "Vigour"
+      },
+      {
+        "id": 23,
+        "name": "Willpower"
+      },
+      {
+        "id": 24,
+        "name": "Dog Taming"
+      },
+      {
+        "id": 25,
+        "name": "Rabbit Taming"
+      },
+      {
+        "id": 27,
+        "name": "Bear Taming"
+      },
+      {
+        "id": 28,
+        "name": "Spirit Taming"
+      },
+      {
+        "id": 33,
+        "name": "Wolf Taming"
+      },
+      {
+        "id": 34,
+        "name": "Spider Taming"
+      },
+      {
+        "id": 35,
+        "name": "Boar Taming"
+      },
+      {
+        "id": 40,
+        "name": "Dragon Taming"
+      },
+      {
+        "id": 41,
+        "name": "Chicken Taming"
+      },
+      {
+        "id": 44,
+        "name": "Eagle Taming"
+      },
+      {
+        "id": 45,
+        "name": "Phoenix Taming"
+      },
+      {
+        "id": 47,
+        "name": "Pig Taming"
+      },
+      {
+        "id": 48,
+        "name": "Seedling Taming"
+      },
+      {
+        "id": 50,
+        "name": "Reindeer Taming"
+      },
+      {
+        "id": 51,
+        "name": "Imp Taming"
+      },
+      {
+        "id": 36,
+        "name": "Wolf Riding"
+      },
+      {
+        "id": 37,
+        "name": "Bear Riding"
+      },
+      {
+        "id": 42,
+        "name": "Horse Riding"
+      },
+      {
+        "id": 43,
+        "name": "Elk Riding"
+      },
+      {
+        "id": 46,
+        "name": "Tiger Riding"
+      },
+      {
+        "id": 49,
+        "name": "Hellsteed Riding"
+      },
+      {
+        "id": 52,
+        "name": "Nighmare Steed Riding"
+      },
+      {
+        "id": 29,
+        "name": "Critical Strike"
+      },
+      {
+        "id": 30,
+        "name": "Critical Skills"
+      }
+    ]
+  },
+  "classes": {
+    "Warrior": {
+      "skills": [
+        {
+          "id": 1,
+          "name": "Pummel"
+        },
+        {
+          "id": 47,
+          "name": "Giant Swing"
+        },
+        {
+          "id": 2,
+          "name": "Protective Stance"
+        },
+        {
+          "id": 3,
+          "name": "Recuperate"
+        },
+        {
+          "id": 215,
+          "name": "Shatter"
+        },
+        {
+          "id": 214,
+          "name": "Rupture"
+        },
+        {
+          "id": 227,
+          "name": "Defensive Formation"
+        },
+        {
+          "id": 212,
+          "name": "Double Attack"
+        },
+        {
+          "id": 46,
+          "name": "Shield Bash"
+        },
+        {
+          "id": 45,
+          "name": "Frenzy"
+        },
+        {
+          "id": 33,
+          "name": "Taunt"
+        },
+        {
+          "id": 128,
+          "name": "Warcry"
+        }
+      ],
+      "abilities": [
+        {
+          "id": 0,
+          "name": "Sword",
+          "level": 1
+        },
+        {
+          "id": 7,
+          "name": "Melee Combat",
+          "level": 1
+        },
+        {
+          "id": 1,
+          "name": "Blunt",
+          "level": 1
+        },
+        {
+          "id": 2,
+          "name": "Axe",
+          "level": 1
+        },
+        {
+          "id": 15,
+          "name": "Spear",
+          "level": 1
+        }
+      ]
+    },
+    "Druid": {
+      "skills": [
+        {
+          "id": 38,
+          "name": "Lightning Strike"
+        },
+        {
+          "id": 8,
+          "name": "Strangling Vines"
+        },
+        {
+          "id": 5,
+          "name": "Natures Touch"
+        },
+        {
+          "id": 3,
+          "name": "Recuperate"
+        },
+        {
+          "id": 134,
+          "name": "Storm Touch"
+        },
+        {
+          "id": 224,
+          "name": "Stinging Swarm"
+        },
+        {
+          "id": 39,
+          "name": "Abundance"
+        },
+        {
+          "id": 37,
+          "name": "Natures Embrace"
+        },
+        {
+          "id": 124,
+          "name": "Natures Breath"
+        },
+        {
+          "id": 10,
+          "name": "Howling Wind"
+        },
+        {
+          "id": 148,
+          "name": "Ward of Fire"
+        },
+        {
+          "id": 149,
+          "name": "Ward of Ice"
+        },
+        {
+          "id": 150,
+          "name": "Ward of Magic"
+        },
+        {
+          "id": 151,
+          "name": "Ward of Soldiers"
+        },
+        {
+          "id": 152,
+          "name": "Ward of Assassins"
+        },
+        {
+          "id": 153,
+          "name": "Ward of Giants"
+        },
+        {
+          "id": 36,
+          "name": "Shield of Bark"
+        },
+        {
+          "id": 223,
+          "name": "Bless"
+        }
+      ],
+      "abilities": [
+        {
+          "id": 3,
+          "name": "Staff",
+          "level": 1
+        },
+        {
+          "id": 16,
+          "name": "Totem",
+          "level": 1
+        },
+        {
+          "id": 10,
+          "name": "Nature Magic",
+          "level": 1
+        }
+      ]
+    },
+    "Mage": {
+      "skills": [
+        {
+          "id": 11,
+          "name": "Fire Bolt"
+        },
+        {
+          "id": 42,
+          "name": "Ice Shards"
+        },
+        {
+          "id": 43,
+          "name": "Energy Shield"
+        },
+        {
+          "id": 55,
+          "name": "Meditate"
+        },
+        {
+          "id": 40,
+          "name": "Lure of Fire"
+        },
+        {
+          "id": 41,
+          "name": "Lure of Ice"
+        },
+        {
+          "id": 226,
+          "name": "Fire Attunement"
+        },
+        {
+          "id": 225,
+          "name": "Ice Attunement"
+        },
+        {
+          "id": 133,
+          "name": "Incinerate"
+        },
+        {
+          "id": 222,
+          "name": "Frostbite"
+        },
+        {
+          "id": 139,
+          "name": "Lure of Assassins"
+        },
+        {
+          "id": 140,
+          "name": "Lure of Giants"
+        },
+        {
+          "id": 137,
+          "name": "Lure of Magic"
+        },
+        {
+          "id": 126,
+          "name": "Firestorm"
+        },
+        {
+          "id": 221,
+          "name": "Ice Blast"
+        }
+      ],
+      "abilities": [
+        {
+          "id": 5,
+          "name": "Wand",
+          "level": 1
+        },
+        {
+          "id": 12,
+          "name": "Ice Magic",
+          "level": 1
+        },
+        {
+          "id": 13,
+          "name": "Fire Magic",
+          "level": 1
+        }
+      ]
+    },
+    "Ranger": {
+      "skills": [
+        {
+          "id": 13,
+          "name": "Sharp Shot"
+        },
+        {
+          "id": 52,
+          "name": "Barbed Shot"
+        },
+        {
+          "id": 14,
+          "name": "Steady Aim"
+        },
+        {
+          "id": 3,
+          "name": "Recuperate"
+        },
+        {
+          "id": 218,
+          "name": "Sharpen Weapons"
+        },
+        {
+          "id": 252,
+          "name": "Double Shot"
+        },
+        {
+          "id": 132,
+          "name": "Entangle"
+        },
+        {
+          "id": 130,
+          "name": "Defensive Spikes"
+        },
+        {
+          "id": 211,
+          "name": "Longshot"
+        }
+      ],
+      "abilities": [
+        {
+          "id": 6,
+          "name": "Bow",
+          "level": 1
+        },
+        {
+          "id": 15,
+          "name": "Spear",
+          "level": 1
+        },
+        {
+          "id": 18,
+          "name": "Hand to Hand",
+          "level": 1
+        },
+        {
+          "id": 8,
+          "name": "Ranged Combat",
+          "level": 1
+        }
+      ]
+    },
+    "Rogue": {
+      "skills": [
+        {
+          "id": 53,
+          "name": "Quick Strike"
+        },
+        {
+          "id": 18,
+          "name": "Rend"
+        },
+        {
+          "id": 16,
+          "name": "Sneaky Attack"
+        },
+        {
+          "id": 17,
+          "name": "Hide"
+        },
+        {
+          "id": 49,
+          "name": "Poison Weapon"
+        },
+        {
+          "id": 192,
+          "name": "Shadowstrike"
+        },
+        {
+          "id": 127,
+          "name": "Smoke Bomb"
+        },
+        {
+          "id": 220,
+          "name": "Expose Weakness"
+        },
+        {
+          "id": 219,
+          "name": "Riposte"
+        },
+        {
+          "id": 212,
+          "name": "Double Attack"
+        }
+      ],
+      "abilities": [
+        {
+          "id": 4,
+          "name": "Dagger",
+          "level": 1
+        },
+        {
+          "id": 15,
+          "name": "Spear",
+          "level": 1
+        },
+        {
+          "id": 18,
+          "name": "Hand to Hand",
+          "level": 1
+        },
+        {
+          "id": 11,
+          "name": "Cunning",
+          "level": 1
+        }
+      ]
+    }
+  }
+}

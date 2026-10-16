@@ -36,6 +36,19 @@ public sealed partial class GameServer
     private readonly Dictionary<int, int> _skillTypes;
     private readonly MobBrains _brains;
     private readonly RegenRules _regen;
+
+    /// <summary>
+    /// Whether idle monsters attack players who come within their aggro range (server/content/aggro.json). Off by the
+    /// owner's rule: monsters only fight once attacked, or when a monster in the fight calls them for help.
+    /// </summary>
+    private readonly bool _aggroOnSight;
+
+    private static bool LoadAggroOnSight(string? path)
+    {
+        if (path is null || !File.Exists(path)) return false;
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path));
+        return doc.RootElement.TryGetProperty("aggroOnSight", out var on) && on.GetBoolean();
+    }
     private readonly Dictionary<int, float[]> _skillAggro;
 
     /// <summary>Server ids for respawned monsters, above every other range (auto camps 30000+, NPC spawn ids, GM spawns, fishing).</summary>
@@ -92,7 +105,7 @@ public sealed partial class GameServer
         var (x, z) = m.PositionAt(now);
         var rad = m.Direction * MathF.PI / 180f;
         return new MobSpawn(m.ServerId, (uint)m.Template.Id, x, m.HomeY, z, MathF.Sin(rad), MathF.Cos(rad), m.Opinion,
-            Math.Max(0, m.Health), 0, m.ConversationId, m.IsNpc ? 0 : m.Level, m.AggroRange, _mobScales.GetValueOrDefault(m.Template.TemplateId, 1f));
+            Math.Max(0, m.Health), 0, m.ConversationId, m.IsNpc ? 0 : m.Level, _aggroOnSight ? m.AggroRange : 0, _mobScales.GetValueOrDefault(m.Template.TemplateId, 1f));
     }
 
     /// <summary>
@@ -226,7 +239,7 @@ public sealed partial class GameServer
         switch (mob.State)
         {
             case MobState.Idle:
-                if (mob.AggroRange > 0 && NearestVictim(zone, mob, mob.AggroRange, now) is { } victim)
+                if (_aggroOnSight && mob.AggroRange > 0 && NearestVictim(zone, mob, mob.AggroRange, now) is { } victim)
                 {
                     Engage(zone, mob, victim, now);
                     break;
@@ -606,7 +619,7 @@ public sealed partial class GameServer
     /// divisor))⌉ (Sharp Shot: ranged combat ability and dexterity ÷ 6), plus one weapon hit for skills that include it,
     /// plus Fire/Ice Attunement for their skills, times the passive tree's skill damage.
     /// </summary>
-    private int SkillDamage(Session s, PendingCast cast, EffectModifiers buffs, int targetLevel, bool againstPlayer, Mob? mob = null)
+    private int SkillDamage(Session s, PendingCast cast, EffectModifiers buffs, int targetLevel, bool againstPlayer, Mob? mob = null, Session? player = null)
     {
         var sheet = s.Sheet!;
         var level = againstPlayer ? cast.Skill.PvpLevel(cast.Level) : cast.Skill.Level(cast.Level);
@@ -621,7 +634,9 @@ public sealed partial class GameServer
         // Against a monster the skill's own damage type meets its resist (Master's Grimoire's skill list gives the type;
         // skills without one aren't resisted), and a weapon hit included in the skill is resisted type by type.
         if (mob?.Combat is { } combat && _skillTypes.TryGetValue(cast.Skill.Id, out var type)) amount = combat.AfterResist(type, amount, sheet.Level, ResistChange(mob.Effects, type));
-        if (cast.Skill.IncludesWeaponAttack) amount += WeaponHit(s, buffs, mob); // the auto-attack's weapon hit, Strength and weapon ability included
+        else if (player is not null && _skillTypes.TryGetValue(cast.Skill.Id, out var playerType))
+            amount *= MobStats.ResistFactor(PlayerResist(player, playerType, Modifiers(player)), sheet.Level); // PvP: the target's resist
+        if (cast.Skill.IncludesWeaponAttack) amount += WeaponHit(s, buffs, mob, player); // the auto-attack's weapon hit, Strength and weapon ability included
         return (int)(amount * sheet.SkillDamageFactor(cast.Skill.Id) * (againstPlayer ? 1 : LevelFactor(sheet.Level, targetLevel)));
     }
 
@@ -643,9 +658,39 @@ public sealed partial class GameServer
     /// </summary>
     private static bool MobEvadesSkill(Session s, Mob mob, SkillInfo skill)
     {
-        if (skill.AvoidanceType < 0 || mob.Combat is not { } c || !c.Evade.TryGetValue(skill.AvoidanceType, out var evade) || evade <= 0) return false;
-        var multiplier = (CharacterClass)s.Character!.Class is CharacterClass.Warrior or CharacterClass.Rogue ? 0.95 : 0.7;
-        var lands = Math.Abs(evade * multiplier / (evade + 50.0 * s.Sheet!.Level) - 1);
+        if (skill.AvoidanceType < 0 || mob.Combat is not { } c) return false;
+        var now = NetTime.Now;
+        var evade = c.Evade.GetValueOrDefault(skill.AvoidanceType)
+            + mob.Effects.Where(e => e.Type == EffectType.ChangeEvasions && e.ExpiresAt > now).Sum(e => e.Amount);
+        if (evade <= 0) return false;
+        var lands = Math.Abs(evade * SkillMissMultiplier(s) / (evade + 50.0 * s.Sheet!.Level) - 1);
+        return Random.Shared.NextDouble() >= lands;
+    }
+
+    /// <summary>Master's Grimoire's "Skill Miss Multiplier" for the caster's class: 0.95 Warrior and Rogue, 0.7 the others.</summary>
+    private static double SkillMissMultiplier(Session caster) =>
+        (CharacterClass)caster.Character!.Class is CharacterClass.Warrior or CharacterClass.Rogue ? 0.95 : 0.7;
+
+    /// <summary>
+    /// A player's evasion against a skill: the defensive ability for its avoidance type (Fortitude, Warding, Reflex,
+    /// Vigour, Willpower), gear avoidance, and evasion buffs (Bless). 0 for skills without an avoidance type.
+    /// </summary>
+    private static int PlayerEvasion(Session target, SkillInfo skill, EffectModifiers m)
+    {
+        var ability = EvasionAbility(skill.AvoidanceType);
+        return ability < 0 ? 0 : Math.Max(0, target.Sheet!.AbilityLevel(ability) + target.Sheet.Avoidance(skill.AvoidanceType) + m.Evasion);
+    }
+
+    /// <summary>
+    /// Whether a player evades another player's skill (Master's Grimoire, PvP): lands with |E × m ÷ (E + 50 × caster
+    /// level) − 1|, never under 70%, E being the target's evasion (<see cref="PlayerEvasion"/>) and m the caster's class
+    /// multiplier.
+    /// </summary>
+    private bool PlayerEvadesSkill(Session caster, Session target, SkillInfo skill)
+    {
+        var evasion = PlayerEvasion(target, skill, Modifiers(target));
+        if (evasion <= 0) return false;
+        var lands = Math.Max(0.7, Math.Abs(evasion * SkillMissMultiplier(caster) / (evasion + 50.0 * caster.Sheet!.Level) - 1));
         return Random.Shared.NextDouble() >= lands;
     }
 
@@ -693,7 +738,7 @@ public sealed partial class GameServer
     private int? DoubleHitDamage(Session s, PendingCast cast, int targetLevel)
     {
         if (cast.Skill.Id is not (DoubleAttackSkill or DoubleShotSkill)) return null;
-        double hit = AutoAttackDamage(s, cast.Target);
+        double hit = AutoAttackDamage(s, cast.Target, cast.PlayerTarget);
         var level = cast.Skill.Level(cast.Level);
         var cap = (int)Math.Round(Math.Abs(level.InitialDamage) + Math.Abs(level.BaseDamage));
         return (int)(hit * (targetLevel <= cap ? 2 : 1));
@@ -745,8 +790,17 @@ public sealed partial class GameServer
         var buffs = Modifiers(s);
         if (cast.PlayerTarget is { } enemy)
         {
-            var damage = DoubleHitDamage(s, cast, enemy.Sheet!.Level) ?? SkillDamage(s, cast, buffs, enemy.Sheet!.Level, againstPlayer: true);
-            if (Enemy(s, enemy.CharacterId) is not null) PlayerHitsPlayer(zone, s, enemy, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
+            var damage = DoubleHitDamage(s, cast, enemy.Sheet!.Level) ?? SkillDamage(s, cast, buffs, enemy.Sheet!.Level, againstPlayer: true, player: enemy);
+            if (Enemy(s, enemy.CharacterId) is not null)
+            {
+                // Another player's skill trains the defensive ability for its avoidance type, as monsters' skills do.
+                if (EvasionAbility(cast.Skill.AvoidanceType) is >= 0 and var guard) TrainCombatAbility(enemy, guard);
+                if (PlayerEvadesSkill(s, enemy, cast.Skill))
+                    SendPlayerDamage(zone, enemy, new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, enemy.CharacterId, AttackKind.Skill,
+                        cast.Skill.Id, 0, enemy.Health, Reaction.SkillAvoided, ++_damageId, false));
+                else
+                    PlayerHitsPlayer(zone, s, enemy, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
+            }
             return;
         }
         if (cast.Target is { } mob)
@@ -809,6 +863,7 @@ public sealed partial class GameServer
             }
         }
         var heals = level.InitialDamage < 0 || level.BaseDamage < 0;
+        var healed = false;
         foreach (var r in recipients)
         {
             HelpThreat(zone, s, r, cast.Skill, cast.Level);
@@ -820,7 +875,9 @@ public sealed partial class GameServer
             var entry = new DamageEntry(DamageDirection.PlayerToPlayer, s.CharacterId, r.CharacterId, AttackKind.Skill, cast.Skill.Id,
                 -heal, r.Health, Reaction.SkillHitPositive, ++_damageId, false);
             SendPlayerDamage(zone, r, entry);
+            healed = true;
         }
+        if (healed) TrainCombatAbility(s, CriticalSkills); // a heal on yourself or others can train Critical Skills, once a cast
     }
 
     /// <summary>At most this many monsters take an area skill (the target included).</summary>
@@ -864,7 +921,9 @@ public sealed partial class GameServer
         // An auto-attack that lands trains the weapon's ability (Bow, Sword…); Melee and Ranged Combat come from the skills
         // that list them.
         if (damage > 0 && kind == AttackKind.Attack) TrainCombatAbility(s, WeaponAbility(Weapon(s)));
-        if (critical) TrainCombatAbility(s, kind == AttackKind.Attack ? CriticalStrike : CriticalSkills);
+        // Owner's rule (2026-10-15): every auto-attack that lands can train Critical Strike and every skill hit Critical
+        // Skills, crit or not (misses, evades and damage-over-time ticks don't count).
+        if (damage > 0 && kind is AttackKind.Attack or AttackKind.Skill) TrainCombatAbility(s, kind == AttackKind.Attack ? CriticalStrike : CriticalSkills);
         mob.Damage[s] = mob.Damage.GetValueOrDefault(s) + damage;
         AddThreat(mob, s, damage * 1.5 * AggroFactor(s.Sheet!.Level, mob.Level));
         if (damage > 0 && kind is AttackKind.Attack or AttackKind.Skill) _store.AddStat(s.Character!.Id, kind == AttackKind.Attack ? "melee_hit" : "skills_hit", damage);
@@ -1051,7 +1110,7 @@ public sealed partial class GameServer
         var m = Modifiers(target);
         var defence = EvasionAbility(skill.AvoidanceType);
         if (defence >= 0) TrainCombatAbility(target, defence);
-        var evasion = defence < 0 ? 0 : Math.Max(0, sheet.AbilityLevel(defence)) + sheet.Avoidance(skill.AvoidanceType);
+        var evasion = PlayerEvasion(target, skill, m);
         var lands = evasion <= 0 ? 1 : Math.Abs(evasion * 0.7 / (evasion + 50.0 * mob.Level) - 1);
         if (Random.Shared.NextDouble() >= lands)
         {

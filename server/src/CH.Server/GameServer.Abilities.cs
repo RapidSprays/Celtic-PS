@@ -6,13 +6,13 @@ namespace CH.Server;
 /// <summary>
 /// Abilities level up through use (docs/decisions.md). The client shows "&lt;ability&gt; Ability increased to N" and the
 /// abilities page from AbilityUpdate (13024: varint abilityId, varint newLevel, then the ability list). DECA's gain
-/// rules are server-side, so these are <b>approximated</b>: each use may raise the ability one level, less likely as it
-/// nears its cap of twice the character's level (at most <see cref="MaxAbilityLevel"/>).
+/// rules are server-side, so these are <b>approximated</b>: each use may raise the ability one level, up to its cap of
+/// ten times the character's level (the client's own cap on the abilities page: 2,000 at level 200).
 /// </summary>
 public sealed partial class GameServer
 {
     private const double AbilityGainChance = 0.35;
-    public const int MaxAbilityLevel = 500;
+    public const int AbilityCapPerLevel = 10;
 
     /// <summary>Client ability ids (Abilities in the balance data).</summary>
     public const int MeleeCombat = 7, RangedCombat = 8, Fortitude = 19, Warding = 20, Reflex = 21, Vigour = 22, Willpower = 23, CriticalStrike = 29, CriticalSkills = 30, HandToHand = 18,
@@ -63,7 +63,9 @@ public sealed partial class GameServer
         var sheet = s.Sheet;
         if (sheet is null || abilityId < 0 || !sheet.KnownAbilities.Contains(abilityId)) return;
         var current = Math.Max(1, sheet.AbilityLevels.GetValueOrDefault(abilityId, 1));
-        var cap = Math.Min(MaxAbilityLevel, 2 * sheet.Level + 5);
+        // Combat abilities (flat chance) go up to the client's cap of ten per level; fishing and cooking keep their own,
+        // easing curve and cap (twice the level + 5, at most 500), left as they were.
+        var cap = flatChance is not null ? AbilityCapPerLevel * Math.Max(1, sheet.Level) : Math.Min(500, 2 * sheet.Level + 5);
         if (current >= cap) return;
         var chance = flatChance ?? AbilityGainChance * Math.Max(0.05, 1.0 - (double)current / cap);
         if (Random.Shared.NextDouble() >= chance) return;

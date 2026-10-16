@@ -142,6 +142,21 @@ public sealed class ServerOptions
     /// <summary>Health and energy regeneration rules (server/content/regen.json, copied next to the server binary).</summary>
     public string? RegenPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "regen.json");
 
+    /// <summary>Each class's starting skills and its abilities (server/content/class-kits.json).</summary>
+    public string? ClassKitsPath { get; set; } = DefaultClassKitsPath;
+
+    /// <summary>Where <see cref="ClassKitsPath"/> starts; the tests clear it so they use the built-in kits, not the owner's.</summary>
+    public static string? DefaultClassKitsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "class-kits.json");
+
+    /// <summary>XP from each level to the next (server/content/xp-levels.json, the live game's table).</summary>
+    public string? XpLevelsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "xp-levels.json");
+
+    /// <summary>Whether monsters attack players on sight (server/content/aggro.json; off by owner's rule).</summary>
+    public string? AggroPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "aggro.json");
+
+    /// <summary>Overrides aggro.json when set (tests).</summary>
+    public bool? AggroOnSight { get; set; }
+
     /// <summary>Monster model sizes by appearance (server/content/mob-scales.json, copied next to the server binary).</summary>
     public string? MobScalesPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "mob-scales.json");
 

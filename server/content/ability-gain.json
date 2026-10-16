@@ -1,4 +1,4 @@
 {
-  "_comment": "Chance per action that a combat ability goes up by one (owner's rules, 2026-10-14). A skill cast trains the ability on the skill (Ranged Combat, Nature Magic, Fire Magic...); an auto-attack that lands trains the weapon's ability (Bow, Sword, Totem...); a critical hit trains Critical Strike or Critical Skills. Abilities still stop at the cap (twice the character's level + 5, at most 500). Restart the server after editing.",
+  "_comment": "Chance per action that a combat ability goes up by one (owner's rules, 2026-10-14). A skill cast trains the ability on the skill (Ranged Combat, Nature Magic, Fire Magic...); an auto-attack that lands trains the weapon's ability (Bow, Sword, Totem...); every auto-attack that lands trains Critical Strike and every skill hit or heal trains Critical Skills, crit or not (misses, evades and damage-over-time ticks don't). Abilities stop at the cap of ten per character level (2,000 at level 200), the cap the abilities page shows. A skill cast on you trains the defensive ability for its type (Fortitude, Warding, Reflex, Vigour, Willpower). Restart the server after editing.",
   "combatChance": 0.01
 }

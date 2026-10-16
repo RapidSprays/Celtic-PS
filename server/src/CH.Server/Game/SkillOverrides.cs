@@ -29,28 +29,34 @@ public static class SkillOverrides
     }
 
     private static bool HasDotFields(JsonElement o) =>
-        o.TryGetProperty("dotMultiplier", out _) || o.TryGetProperty("dotRanks", out _) || o.TryGetProperty("dotDuration", out _) || o.TryGetProperty("dotTick", out _);
+        new[] { "Multiplier", "Ranks", "Duration", "Tick" }.Any(f => o.TryGetProperty("dot" + f, out _) || o.TryGetProperty("effect" + f, out _));
+
+    /// <summary>A status-effect field under either name: "dotRanks" or "effectRanks" (the same thing, for buffs like Bless).</summary>
+    private static bool TryEffectField(JsonElement o, string field, out JsonElement value) =>
+        o.TryGetProperty("effect" + field, out value) || o.TryGetProperty("dot" + field, out value);
 
     /// <summary>
-    /// The skill's status effect (Rupture's bleed, a poison…): dotMultiplier scales the per-tick amount at every rank,
+    /// The skill's status effect (Rupture's bleed, a poison, or a buff like Bless; each field also works as effect…:
+    /// effectMultiplier, effectRanks, effectDuration, effectTick): dotMultiplier scales the amount at every rank,
     /// dotRanks sets amount and base for single ranks (from 1), dotDuration and dotTick set every rank's length and the
     /// seconds between ticks. Per tick = ceil(base + amount × (1 + √(ability ÷ 100) + √(stat ÷ divisor))).
     /// </summary>
     private static StatusEffectInfo ChangeEffect(StatusEffectInfo effect, JsonElement o)
     {
         float? Float(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : null;
-        var multiplier = Float(o, "dotMultiplier") ?? 1f;
-        var ranks = o.TryGetProperty("dotRanks", out var r) && r.ValueKind == JsonValueKind.Object
+        float? Effect(string field) => TryEffectField(o, field, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : null;
+        var multiplier = Effect("Multiplier") ?? 1f;
+        var ranks = TryEffectField(o, "Ranks", out var r) && r.ValueKind == JsonValueKind.Object
             ? r.EnumerateObject().Where(x => int.TryParse(x.Name, out _)).ToDictionary(x => int.Parse(x.Name) - 1, x => x.Value)
             : [];
         var levels = effect.Levels.Select((level, i) =>
         {
-            var l = level with { Amount = level.Amount * multiplier, BaseAmount = level.BaseAmount * multiplier, Duration = Float(o, "dotDuration") ?? level.Duration };
+            var l = level with { Amount = level.Amount * multiplier, BaseAmount = level.BaseAmount * multiplier, Duration = Effect("Duration") ?? level.Duration };
             if (ranks.TryGetValue(i, out var exact))
                 l = l with { Amount = Float(exact, "amount") ?? l.Amount, BaseAmount = Float(exact, "base") ?? l.BaseAmount };
             return l;
         }).ToList();
-        return effect with { Levels = levels, TickSeconds = Float(o, "dotTick") ?? effect.TickSeconds };
+        return effect with { Levels = levels, TickSeconds = Effect("Tick") ?? effect.TickSeconds };
     }
 
     private static List<SkillLevelInfo> Change(IReadOnlyList<SkillLevelInfo> levels, JsonElement o)

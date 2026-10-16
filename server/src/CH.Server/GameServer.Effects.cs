@@ -59,20 +59,21 @@ public sealed partial class GameServer
     /// Reapers Touch a flat amount. Against a monster, each type is cut by its resist (flat, percent or immune) and the
     /// Grimoire's level factor applies. Attack doesn't add damage: it decides whether the swing hits.
     /// </summary>
-    private int AutoAttackDamage(Session s, Mob? target = null)
+    private int AutoAttackDamage(Session s, Mob? target = null, Session? player = null)
     {
         var sheet = s.Sheet!;
         var m = Modifiers(s);
-        var total = WeaponHit(s, m, target) + m.ExtraAttackDamage;
+        var total = WeaponHit(s, m, target, player) + m.ExtraAttackDamage;
         if (target is not null) total *= LevelFactor(sheet.Level, target.Level);
         return Math.Max(1, (int)(total * sheet.AttackDamageFactor));
     }
 
     /// <summary>
     /// One weapon hit, as Master's Grimoire's DPS solver has it for auto-attacks and for skills that include one: physical
-    /// damage × (1 + √(Strength/40) + √(weapon ability/280)), elemental damage as it is, each type cut by the monster's resist.
+    /// damage × (1 + √(Strength/40) + √(weapon ability/280)), elemental damage as it is, each type cut by the monster's
+    /// resist, or by a player target's (armour for pierce, slash and crush, wards and lures included).
     /// </summary>
-    private double WeaponHit(Session s, EffectModifiers m, Mob? target)
+    private double WeaponHit(Session s, EffectModifiers m, Mob? target, Session? player = null)
     {
         var sheet = s.Sheet!;
         var weaponAbility = sheet.AbilityLevel(WeaponAbility(Weapon(s)));
@@ -82,7 +83,9 @@ public sealed partial class GameServer
         foreach (var (type, amount) in sheet.DamageByType)
         {
             var part = type <= 2 ? (int)(amount * multiplier) + amount * pct : amount;
-            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level, ResistChange(target.Effects, type)) : part;
+            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level, ResistChange(target.Effects, type))
+                : player is not null ? part * MobStats.ResistFactor(PlayerResist(player, type, Modifiers(player)), sheet.Level)
+                : part;
         }
         return total;
     }
@@ -225,7 +228,7 @@ public sealed partial class GameServer
 
     /// <summary>
     /// What players' debuffs do to a monster: attack (Howling Wind and other ChangeAttack/AttackPercent effects, which
-    /// lower its chance to hit), defence (ChangeDefence, DefencePercent, ChangeEvasions: raise players' chance to hit it),
+    /// lower its chance to hit), defence (ChangeDefence, DefencePercent: raise players' chance to hit it),
     /// attack speed (any slow halves its attack rate; see below) and stuns (Stun, Stun2, Frozen, Stasis: no attacks).
     /// </summary>
     private static (int Attack, int Defence, int AttackSpeedPercent, bool Stunned) MobDebuffs(Mob mob)
@@ -240,7 +243,7 @@ public sealed partial class GameServer
             {
                 case EffectType.ChangeAttack: attack += a; break;
                 case EffectType.AttackPercent: attack += baseAttack * a / 100; break;
-                case EffectType.ChangeDefence or EffectType.ChangeEvasions: defence += a; break;
+                case EffectType.ChangeDefence: defence += a; break;
                 case EffectType.DefencePercent: defence += baseDefence * a / 100; break;
                 // Owner's rule: any attack-speed-down on a monster halves its attack rate (attacks take twice as long),
                 // whatever the effect's own number; they don't stack. Speed-ups (rare on monsters) add as they are.

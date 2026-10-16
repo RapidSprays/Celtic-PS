@@ -56,6 +56,9 @@ public sealed record EffectModifiers
 
     public int Armour { get; init; }
     public int Defence { get; init; }
+
+    /// <summary>Added to every skill evasion (Bless: "increasing all your Skill Evasions").</summary>
+    public int Evasion { get; init; }
     public int Attack { get; init; }
     public int MaxHealth { get; init; }
     public int MaxEnergy { get; init; }
@@ -92,7 +95,8 @@ public sealed record EffectModifiers
             {
                 EffectType.ChangeArmour => m with { Armour = m.Armour + a },
                 EffectType.ArmourPercent => m with { Armour = m.Armour + baseArmour * a / 100 },
-                EffectType.ChangeDefence or EffectType.ChangeEvasions => m with { Defence = m.Defence + a },
+                EffectType.ChangeDefence => m with { Defence = m.Defence + a },
+                EffectType.ChangeEvasions => m with { Evasion = m.Evasion + a },
                 EffectType.DefencePercent => m with { Defence = m.Defence + baseDefence * a / 100 },
                 EffectType.ChangeAttack => m with { Attack = m.Attack + a },
                 EffectType.AttackPercent => m with { Attack = m.Attack + baseAttack * a / 100 },

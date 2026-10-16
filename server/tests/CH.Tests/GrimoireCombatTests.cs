@@ -29,4 +29,34 @@ public sealed class GrimoireCombatTests
         Assert.True(lured > plain);
         Assert.Equal(200, Spawn.AfterResist(3, 200, 200, change: -900)); // can't go below 0: full damage
     }
+
+    [Fact]
+    public void Levels_take_the_live_games_xp()
+    {
+        Progression.LoadXpTable(Path.Combine(AppContext.BaseDirectory, "content", "xp-levels.json"));
+        Assert.Equal(433, Progression.XpToNextLevel(1));
+        Assert.Equal(8_820_673, Progression.XpToNextLevel(200));
+        Assert.Equal(25_880_828, Progression.XpToNextLevel(230));
+        // The Grimoire author's formula gives the same table.
+        Assert.All(Enumerable.Range(1, 250), level => Assert.Equal(Progression.XpToNextLevel(level), Progression.OfficialXp(level)));
+    }
+
+    [Fact]
+    public void Class_kits_load_from_the_content_file_with_the_same_lists()
+    {
+        var kits = ClassKit.Read(Path.Combine(AppContext.BaseDirectory, "content", "class-kits.json"))!;
+        // Owner's warrior kit (2026-10-15): the starter skills plus Shatter, Rupture, Defensive Formation, Double Attack, Shield Bash, Frenzy, Taunt, Warcry.
+        Assert.Equal([1, 47, 2, 3, 215, 214, 227, 212, 46, 45, 33, 128], kits[CharacterClass.Warrior].Skills);
+        Assert.Contains(14, kits[CharacterClass.Warrior].Abilities); // First Aid, for every class
+        Assert.Equal([11, 42, 43, 55, 40, 41, 226, 225, 133, 222, 139, 140, 137, 126, 221], kits[CharacterClass.Mage].Skills);
+        Assert.Equal([53, 18, 16, 17, 49, 192, 127, 220, 219, 212], kits[CharacterClass.Rogue].Skills);
+        Assert.Equal([13, 52, 14, 3, 218, 252, 132, 130, 211], kits[CharacterClass.Ranger].Skills);
+        Assert.Equal([38, 8, 5, 3, 134, 224, 39, 37, 124, 10, 148, 149, 150, 151, 152, 153, 36, 223], kits[CharacterClass.Druid].Skills);
+        foreach (var (cls, kit) in ClassKit.Defaults.Where(k => k.Key is not (CharacterClass.Warrior or CharacterClass.Mage or CharacterClass.Rogue or CharacterClass.Ranger or CharacterClass.Druid)))
+        {
+            Assert.Equal(kit.Skills, kits[cls].Skills);
+            Assert.Equal(kit.Abilities.Order(), kits[cls].Abilities.Order());
+            Assert.Empty(kits[cls].StartingLevels);
+        }
+    }
 }

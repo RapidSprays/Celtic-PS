@@ -17,6 +17,7 @@ public sealed class ServerHost : IAsyncDisposable
         _store = new GameStore(options.DatabasePath);
         foreach (var gm in options.GmAccounts) _store.SetGm(_store.GetOrCreateAccount(gm).Username, true);
         _frames = new FrameLog(options.LogDirectory);
+        CH.Server.Game.ClassKit.Load(options.ClassKitsPath); // before Balance, which tags skills by class
         Balance = CH.Server.Game.Balance.Load(options.BalancePath, options.CustomItemsPath);
         logs.CreateLogger("main").LogInformation("Balance data: {State}", Balance.IsLoaded
             ? $"version {Balance.Version}, {Balance.Items.Count} items, {Balance.Skills.Count} skills, {Balance.Mobs.Count} mobs, {Balance.Zones.Count} zones"

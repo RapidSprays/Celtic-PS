@@ -203,11 +203,15 @@ public sealed partial class GameServer
             return;
         }
         var stats = LiveStats(s);
-        PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, AutoAttackDamage(s), now);
+        PlayerHitsPlayer(zone, s, target, AttackKind.Attack, 0, AutoAttackDamage(s, player: target), now);
         s.NextSwingAt = now + stats.AttackSpeed / 1000.0;
     }
 
-    /// <summary>Damage between duelling players: the target's armour and defence apply as against monsters.</summary>
+    /// <summary>
+    /// Damage between players (duels and PvP zones). The damage passed in is already cut by the target's resists, as
+    /// against monsters (armour for pierce, slash and crush; wards and lures count); here it takes the same roll (two-thirds
+    /// to full) and ×2 crits. Defence decides misses.
+    /// </summary>
     private void PlayerHitsPlayer(Zone zone, Session s, Session target, AttackKind kind, int skillId, int baseDamage, double now, bool allowMiss = true)
     {
         var duel = target.Duel is { Started: true } d && ReferenceEquals(d.Other(target), s) ? d : null;
@@ -222,11 +226,11 @@ public sealed partial class GameServer
         var damage = 0;
         if (!miss)
         {
-            damage = (int)Math.Round(baseDamage * (0.8 + Random.Shared.NextDouble() * 0.4) * (critical ? s.Sheet.CritMultiplier : 1));
-            damage = Math.Max(1, damage - (target.Sheet!.Armour + m.Armour) / 10);
+            damage = Math.Max(1, (int)Math.Round(baseDamage * DamageRoll(s, kind) * (critical ? s.Sheet.CritMultiplier : 1)));
             damage = AbsorbWithShields(target, damage); // what's left after energy shields
         }
         LifeTap(s, damage);
+        if (damage > 0 && kind is AttackKind.Attack or AttackKind.Skill) TrainCombatAbility(s, kind == AttackKind.Attack ? CriticalStrike : CriticalSkills);
         if (damage > 0) MaybeInterrupt(target, now);
         // Duels stop at 1 HP: nobody dies. PvP zones are for real.
         var lethal = target.Health - damage <= 0;

@@ -34,8 +34,9 @@ public sealed partial class GameServer
         items.Add((ClassKit.MinorHealthPotion, ClassKit.StartingPotions, ItemRecord.Backpack));
         foreach (var book in ClassSkillBooks((CharacterClass)c.Class).Where(b => !kit.Skills.Contains(_balance.SkillTaughtBy(b)!.Id)).Take(SkillBooksInKit))
             items.Add((book.Id, 1, ItemRecord.Backpack));
-        if (_store.GrantKit(c.Id, items, kit.Skills, ClassKit.StartingCoins, hud: ""))
-            _log.LogInformation("Granted {Class} starter kit to {Name}", kit.Class, c.Name);
+        if (!_store.GrantKit(c.Id, items, kit.Skills, ClassKit.StartingCoins, hud: "")) return;
+        foreach (var (ability, level) in kit.StartingLevels) _store.SetAbilityLevel(c.Id, ability, level); // class-kits.json
+        _log.LogInformation("Granted {Class} starter kit to {Name}", kit.Class, c.Name);
     }
 
     private IEnumerable<ItemInfo> ClassSkillBooks(CharacterClass cls) =>
