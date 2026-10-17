@@ -3,7 +3,7 @@
   "tickSeconds": 5,
   "baseHealth": 2,
   "baseEnergy": 2,
-  "baseInCombat": true,
+  "baseInCombat": false,
   "outOfCombatSeconds": 6,
   "perSigil": 1
 }

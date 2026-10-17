@@ -20,7 +20,8 @@ public sealed partial class GameServer
         ".where - your zone and position",
         ".spawn <mob id or name> [level] - hostile mob here (saved)",
         ".npc <mob id or name> [conv <id>] - friendly NPC here, facing you (saved)",
-        ".near [radius] - spawns and mobs around you",
+        ".near [radius] - spawns and mobs around you (with spawn point ids for spawn-tuning.json)",
+        ".mobheight <+n | -n | =y> - move the nearest monster up or down (live; prints the y to keep in spawn-tuning.json)",
         ".delete <spawn id> | .delete nearest - remove a saved spawn",
         ".find <name> - search mob templates",
         ".level <n> | .level +<n> | .level -<n> - set or change your level",
@@ -40,13 +41,14 @@ public sealed partial class GameServer
         ".who - who is online | .gm <account> [off] - grant or remove GM | .resetpassword <account> - forget a password",
         TreeHelp);
 
-    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree", "battleground", "tutorial"];
+    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree", "battleground", "tutorial", "aggro"];
 
     private static readonly string PlayerHelp = string.Join("\n",
         "Commands:",
         ".who - who is online",
         ".battleground - enter or leave the Clan Battleground (clan members; everyone outside your clan is an enemy)",
         ".tutorial on|off - the new-player tutorial hints (off by default)",
+        ".aggro on|off - the aggro meter on the left of the screen (needs the client mod)",
         ".where - your zone and position",
         ".zones - list the zones",
         TreeHelp,
@@ -260,10 +262,33 @@ public sealed partial class GameServer
                     .Where(m => m.Dist <= radius)
                     .OrderBy(m => m.Dist)
                     .Take(12)
-                    .Select(m => $"{(m.Mob.SpawnRecordId is { } id ? $"spawn #{id}" : "auto")}: {m.Mob.Template.Name}" +
+                    .Select(m => $"{(m.Mob.SpawnRecordId is { } id ? $"spawn #{id}" : m.Mob.SpawnPointId is { } sp ? $"point {sp}" : "auto")}: {m.Mob.Template.Name}" +
                                  $"{(m.Mob.IsNpc ? " (NPC)" : $" L{m.Mob.Level} {m.Mob.State}")} {m.Dist:F0}m");
                 var lines = near.ToList();
                 Tell(s, lines.Count == 0 ? $"Nothing within {radius:F0}m." : string.Join("\n", lines));
+                break;
+            }
+
+            case "mobheight":
+            {
+                // The nearest monster within 40 m moves up (+n), down (-n) or to a height (=y), and is re-sent to everyone,
+                // so a flying or sunken model can be lined up by eye. The y to keep goes in spawn-tuning.json.
+                var nearest = zone.Mobs.Values.Where(m => !m.IsNpc && m.State != MobState.Dead)
+                    .Select(m => (Mob: m, Pos: m.PositionAt(now)))
+                    .Select(m => (m.Mob, Dist: MathF.Sqrt((m.Pos.X - x) * (m.Pos.X - x) + (m.Pos.Z - z) * (m.Pos.Z - z))))
+                    .Where(m => m.Dist <= 40).OrderBy(m => m.Dist).Select(m => m.Mob).FirstOrDefault();
+                var text = args.Length > 0 ? args[0] : "";
+                if (nearest is null || text.Length < 2 || !float.TryParse(text[1..], NumberStyles.Float, CultureInfo.InvariantCulture, out var value) || text[0] is not ('+' or '-' or '='))
+                {
+                    Tell(s, nearest is null ? "No monster within 40 m." : $"Usage: .mobheight +2 | -1.5 | =-60.3 (nearest: {nearest.Template.Name} at y {nearest.HomeY:F2})");
+                    break;
+                }
+                nearest.HomeY = text[0] == '=' ? value : nearest.HomeY + (text[0] == '-' ? -value : value);
+                Broadcast(zone, Opcode.ZoneMonsterDisappeared, b => b.WriteVariableUInt32(nearest.ServerId));
+                Broadcast(zone, Opcode.ZoneMonsterAppeared, ToWire(nearest, now).Write);
+                Tell(s, $"{nearest.Template.Name} now at y {nearest.HomeY:F2}" + (nearest.SpawnPointId is { } point
+                    ? $". To keep it: \"y\": {nearest.HomeY.ToString("F2", CultureInfo.InvariantCulture)} on spawnId {point} in spawn-tuning.json spawnPoints."
+                    : " (a GM spawn: not kept after a restart)."));
                 break;
             }
 
@@ -304,6 +329,10 @@ public sealed partial class GameServer
 
             case "tutorial":
                 TutorialCommand(s, args);
+                break;
+
+            case "aggro":
+                AggroCommand(s, args);
                 break;
 
             case "gold":

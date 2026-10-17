@@ -20,7 +20,11 @@ public static class SkillOverrides
         {
             if (entry.Name.StartsWith('_') || !int.TryParse(entry.Name, out var id) || !balance.Skills.TryGetValue(id, out var skill)) continue;
             var o = entry.Value;
-            balance.ReplaceSkill(skill with { Levels = Change(skill.Levels, o), PvpLevels = Change(skill.PvpLevels, o) });
+            balance.ReplaceSkill(skill with
+            {
+                Levels = Change(skill.Levels, o), PvpLevels = Change(skill.PvpLevels, o),
+                CastWithWeaponDelay = o.TryGetProperty("castWithWeaponDelay", out var wd) ? wd.ValueKind == JsonValueKind.True : skill.CastWithWeaponDelay,
+            });
             if (skill.StatusEffectId > 0 && balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var effect) && HasDotFields(o))
                 balance.ReplaceStatusEffect(ChangeEffect(effect, o));
             changed++;

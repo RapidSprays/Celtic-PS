@@ -63,7 +63,8 @@ public sealed partial class GameServer
     {
         var sheet = s.Sheet!;
         var m = Modifiers(s);
-        var total = WeaponHit(s, m, target, player) + m.ExtraAttackDamage;
+        var total = WeaponHit(s, m, target, player) + m.ExtraAttackDamage
+            + (target is not null && _spawnTuning.TakesDivine(target.Template.Id) ? m.DivineAttackDamage : 0); // Dragonlord Wrath
         if (target is not null) total *= LevelFactor(sheet.Level, target.Level);
         return Math.Max(1, (int)(total * sheet.AttackDamageFactor));
     }
@@ -83,7 +84,7 @@ public sealed partial class GameServer
         foreach (var (type, amount) in sheet.DamageByType)
         {
             var part = type <= 2 ? (int)(amount * multiplier) + amount * pct : amount;
-            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level, ResistChange(target.Effects, type))
+            total += target?.Combat is { } c ? c.AfterResist(type, part, sheet.Level, MobResistChange(target.Effects, type))
                 : player is not null ? part * MobStats.ResistFactor(PlayerResist(player, type, Modifiers(player)), sheet.Level)
                 : part;
         }
@@ -94,6 +95,17 @@ public sealed partial class GameServer
     /// What resist-changing effects (ChangeResistance: Lure of Fire, Ice, Magic, Soldiers, Assassins, Giants, Lure of
     /// Death…) add to resist of a damage type. Each lure's type is in status-effects.json (Fire → heat, Giants → crush).
     /// </summary>
+    /// <summary>
+    /// A monster's resist change: lures and resist debuffs, plus armour effects (Shatter's "reducing their armour") on its
+    /// physical resists (pierce, slash, crush), since a monster's armour is those resists.
+    /// </summary>
+    private static int MobResistChange(IEnumerable<ActiveEffect> effects, int type)
+    {
+        var now = NetTime.Now;
+        var armour = type <= 2 ? effects.Where(e => e.Type == EffectType.ChangeArmour && e.ExpiresAt > now).Sum(e => e.Amount) : 0;
+        return ResistChange(effects, type) + armour;
+    }
+
     private static int ResistChange(IEnumerable<ActiveEffect> effects, int type)
     {
         var now = NetTime.Now;
@@ -148,7 +160,7 @@ public sealed partial class GameServer
             b.WriteVariableInt32(e.Info.Id);
             // The level the effect works at. Skill ranks go past an effect's last level (trained rank plus gear ranks,
             // e.g. Steady Aim 49 + 8 = 57 of 50); the client drops an icon whose level it can't find.
-            b.WriteVariableInt32(Math.Clamp(e.LevelIndex, 0, Math.Max(0, e.Info.Levels.Count - 1)));
+            b.WriteVariableInt32(e.Info.ClientLevel(e.LevelIndex));
             b.WriteVariableInt32((int)Math.Ceiling(Math.Max(0, e.ExpiresAt - now)));
             b.Write(e.AbilityLevel);
             b.Write((float)e.StatRatio); // the client's GetModifiedAmount(ability, stat), so tooltips show the real amount
@@ -160,10 +172,12 @@ public sealed partial class GameServer
         object? caster = null)
     {
         if (!_balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var info) || info.Level(skillLevel) is not { } level) return;
+        if (info.Id == FingalsBaneEffect && HasFingalsShield(s)) return; // scripted casts too
         s.Effects.RemoveAll(e => e.Info.Id == info.Id);
         var effect = new ActiveEffect
         {
-            Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + TickOf(info),
+            Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration),
+            NextTickAt = caster is Session && (EffectType)info.Type == EffectType.Dot ? now : now + TickOf(info), // PvP: first tick on the hit
             AbilityLevel = abilityLevel, StatRatio = statRatio, Caster = caster,
         };
         if (EffectModifiers.IsShield(effect.Type)) effect.ShieldRemaining = Math.Max(1, effect.Amount);
@@ -191,7 +205,7 @@ public sealed partial class GameServer
             dot.NextTickAt = now + TickOf(dot.Info);
             var caster = (Session)dot.Caster!;
             if (!caster.InZone || caster.Position.Zone != s.Position.Zone) continue;
-            double tick = Math.Max(1, Math.Abs(dot.Amount));
+            double tick = Math.Max(1, Math.Abs(dot.Amount)) * _dotDamage.Factor(dot.Info.Id, Random.Shared); // dot-damage.json variance
             if (dot.Info.DamageType is { } dotType) tick *= MobStats.ResistFactor(PlayerResist(s, dotType, Modifiers(s)), caster.Sheet!.Level);
             PlayerHitsPlayer(zone, caster, s, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
             TrainAbility(caster, CriticalSkills, _dotCriticalChance * Modifiers(caster).AbilityGainMultiplier);
@@ -206,7 +220,7 @@ public sealed partial class GameServer
             var damage = Math.Abs(dot.Amount);
             if (dot.Info.DamageType is { } type and not 9)
                 damage = (int)(damage * MobStats.ResistFactor(PlayerResist(s, type, Modifiers(s)), source.Level));
-            damage = Math.Max(1, damage);
+            damage = Math.Max(1, (int)(damage * IncomingLevelFactor(sheet.Level, source.Level)));
             s.Health = Math.Max(0, s.Health - damage);
             SendPlayerDamage(zone, s, new DamageEntry(DamageDirection.MobToPlayer, (int)source.ServerId, s.CharacterId, AttackKind.StatusEffect, dot.Info.Id,
                 damage, s.Health, Reaction.SkillHitAggressive, ++_damageId, false));
@@ -245,7 +259,10 @@ public sealed partial class GameServer
         mob.Effects.RemoveAll(e => e.Info.Id == info.Id);
         mob.Effects.Add(new ActiveEffect
         {
-            Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration), NextTickAt = now + TickOf(info), Caster = caster,
+            // Owner's rule (2026-10-16): a player's damage over time (Stinging Swarm, Incinerate, Strangling Vines, Rend,
+            // Rupture, Frostbite, Barbed Shot…) does its first tick's damage on the hit, then ticks on as usual.
+            Info = info, LevelIndex = skillLevel, ExpiresAt = now + Math.Max(1, level.Duration),
+            NextTickAt = (EffectType)info.Type == EffectType.Dot ? now : now + TickOf(info), Caster = caster,
             AbilityLevel = abilityLevel, StatRatio = statRatio,
         });
         if (_zones.TryGetValue(caster.Position.Zone, out var zone)) BroadcastMobEffects(zone, mob);
@@ -298,8 +315,9 @@ public sealed partial class GameServer
             dot.NextTickAt = now + TickOf(dot.Info);
             if (dot.Caster is Session caster && zone.Players.Contains(caster) && mob.State != MobState.Dead)
             {
-                double tick = Math.Max(1, dot.Amount);
-                if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level, ResistChange(mob.Effects, type));
+                // Dragonlord Spite's own range (divine-strike.json), else the tick with the owner's variance (dot-damage.json).
+                double tick = _divineStrike.Offhand(dot.Info.Id, Random.Shared) ?? Math.Max(1, dot.Amount) * _dotDamage.Factor(dot.Info.Id, Random.Shared);
+                if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level, MobResistChange(mob.Effects, type));
                 PlayerHits(zone, caster, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
                 // Owner's rule (2026-10-15): every damage-over-time tick from a player's skill can train Critical Skills.
                 TrainAbility(caster, CriticalSkills, _dotCriticalChance * Modifiers(caster).AbilityGainMultiplier);

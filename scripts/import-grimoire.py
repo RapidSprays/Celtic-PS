@@ -174,6 +174,30 @@ for r in rows("moblist.txt"):
 json.dump({"source": "Master's Grimoire (2022-09)", "mobs": stats}, open(os.path.join(out, "mob-stats.json"), "w", encoding="utf-8"))
 print(f"Monster stats: official level, health, attack, defence, damage, XP and gold for {len(stats)} monsters")
 
+# ---- Live respawn times ------------------------------------------------------------------------------------------
+# spawnpoints.txt column 3: "2 min - 3 min", "10 sec", "5 hr". The server uses them when spawn-tuning.json says so.
+def _respawn_seconds(text):
+    return sum(int(n) * {"hr": 3600, "min": 60, "sec": 1}[u] for n, u in re.findall(r"(\d+)\s*(hr|min|sec)", text))
+respawn_times = {}
+for cols in rows("spawnpoints.txt"):
+    if len(cols) < 3 or not cols[0].isdigit(): continue
+    parts = cols[2].split(" - ")
+    lo, hi = _respawn_seconds(parts[0]), _respawn_seconds(parts[-1])
+    if lo > 0: respawn_times[cols[0]] = [lo, max(lo, hi)]
+json.dump({"source": "Master's Grimoire (2022-09) spawnpoints.txt", "respawns": respawn_times}, open(os.path.join(out, "spawn-respawns.json"), "w", encoding="utf-8"))
+print(f"Live respawn times: {len(respawn_times)} spawn points")
+
+# ---- Vendor sell prices -----------------------------------------------------------------------------------------
+# itemlist.txt column 7 is what a vendor pays for the item (live, 2026-10-16: Sapphire 500, Diamond 1,500).
+prices = {}
+with open(os.path.join(grimoire_db, "itemlist.txt"), encoding="utf-8-sig") as f:
+    for line in f:
+        cols = line.rstrip("\n").split("~")
+        if len(cols) > 7 and cols[0].isdigit() and cols[7].strip().isdigit() and int(cols[7]) > 0:
+            prices[cols[0]] = int(cols[7])
+json.dump({"source": "Master's Grimoire (2022-09)", "sellPrices": prices}, open(os.path.join(out, "item-prices.json"), "w", encoding="utf-8"))
+print(f"Vendor sell prices: {len(prices)} items")
+
 # ---- Equipment sets ---------------------------------------------------------------------------------------------
 # setbonusitem.txt: set~piece item; setbonusreward.txt: set~reward item~pieces needed. The reward is an unequippable
 # item ("Warden Armour Set Bonus Ranger") holding the bonus; the server's own aura values are in

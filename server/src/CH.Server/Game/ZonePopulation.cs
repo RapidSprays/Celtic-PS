@@ -9,6 +9,9 @@ public sealed record GeneratedCamp(float X, float Y, float Z, float Radius, int 
     /// <summary>Relative chance of each of <see cref="Templates"/> (an official spawn point's mix); empty → equal chances.</summary>
     public IReadOnlyList<double> Weights { get; init; } = [];
 
+    /// <summary>The official spawn point's id (Master's Grimoire), for its live respawn time and the owner's tuning.</summary>
+    public int? SpawnId { get; init; }
+
     /// <summary>Each monster's home on walkable ground (docs/world-placement.md); empty → random points in the radius.</summary>
     public IReadOnlyList<(float X, float Z)> Points { get; init; } = [];
 }
@@ -66,6 +69,7 @@ public static class ZonePopulation
                 c.GetProperty("minLevel").GetInt32(), c.GetProperty("maxLevel").GetInt32(), c.GetProperty("roam").GetSingle())
             {
                 Weights = c.TryGetProperty("weights", out var w) ? w.EnumerateArray().Select(x => x.GetDouble()).ToList() : [],
+                SpawnId = c.TryGetProperty("spawnId", out var sid) && sid.ValueKind == System.Text.Json.JsonValueKind.Number ? sid.GetInt32() : null,
                 Points = c.TryGetProperty("points", out var pts)
                     ? pts.EnumerateArray().Select(p => (p[0].GetSingle(), p[1].GetSingle())).ToList()
                     : [],
@@ -80,14 +84,15 @@ public static class ZonePopulation
     /// <paramref name="official"/> stats get their own level and health instead of the camp's level range.
     /// </summary>
     public static List<Mob> Build(int zoneId, Balance balance, double now, IReadOnlyDictionary<int, GeneratedCamp[]>? generated = null,
-        OfficialMobStats? official = null)
+        OfficialMobStats? official = null, SpawnTuning? tuning = null)
     {
+        tuning ??= SpawnTuning.None;
         var mobs = new List<Mob>();
         if (!balance.Zones.TryGetValue(zoneId, out var zone)) return mobs;
-        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam, IReadOnlyList<(float X, float Z)> Points, IReadOnlyList<double> Weights)>();
+        var centres = new List<(float X, float Y, float Z, float Radius, int Count, int[] Templates, int MinLevel, int MaxLevel, float Roam, IReadOnlyList<(float X, float Z)> Points, IReadOnlyList<double> Weights, int? SpawnId)>();
         if (generated is not null && generated.TryGetValue(zoneId, out var gen) && gen.Length > 0)
         {
-            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius, c.Points, c.Weights)));
+            centres.AddRange(gen.Select(c => (c.X, c.Y, c.Z, c.Radius, c.Count, c.Templates, c.MinLevel, c.MaxLevel, c.RoamRadius, c.Points, c.Weights, c.SpawnId)));
         }
         else if (Camps.TryGetValue(zoneId, out var camps))
         {
@@ -95,7 +100,7 @@ public static class ZonePopulation
             {
                 var anchor = zone.PlayerSpawns.FirstOrDefault(p => p.Id == camp.Anchor);
                 if (anchor is null) continue;
-                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius, [], []));
+                centres.Add((anchor.X + camp.OffsetX, anchor.Y, anchor.Z + camp.OffsetZ, camp.Radius, camp.Count, camp.Templates, camp.MinLevel, camp.MaxLevel, camp.RoamRadius, [], [], null));
             }
         }
         var rng = new Random(zoneId * 7919);
@@ -107,7 +112,7 @@ public static class ZonePopulation
             for (var t = 0; t < camp.Templates.Length; t++)
             {
                 if (!balance.Mobs.TryGetValue(camp.Templates[t], out var info)) continue;
-                var weight = t < camp.Weights.Count ? camp.Weights[t] : 1;
+                var weight = tuning.Weight(info.Id, t < camp.Weights.Count ? camp.Weights[t] : 1); // spawn-tuning.json
                 if (official is not null && official.TryGet(info.Id, out var combat) && combat.Level > 0 && combat.Health > 0)
                     variants.Add(new MobVariant(info, combat.Level, combat.Health, weight, combat));
                 else
@@ -137,15 +142,21 @@ public static class ZonePopulation
                     FixedMaxHealth = first.Health,
                     Combat = first.Combat,
                     HomeX = x,
-                    HomeY = camp.Y,
+                    HomeY = tuning.Y(camp.SpawnId, camp.Y), // spawn-tuning.json spawnPoints "y"
                     HomeZ = z,
                     Direction = (float)(rng.NextDouble() * 360),
                     Opinion = 0,
                     AggroRange = MobStats.AggroRange(first.Template.Power),
                     RoamRadius = camp.Roam,
                     Variants = own.Count > 1 ? own : [],
+                    SpawnPointId = camp.SpawnId,
+                    Scale = tuning.Scale(camp.SpawnId),
+                    GeneratedCamp = true,
                 };
                 mob.Reroll(rng);
+                // Boss spots (spawn-tuning.json startHighTier): a fresh 4, 5 or 6 star at every server start.
+                if (tuning.StartAnyTier(camp.SpawnId)) mob.RollStartTier(Random.Shared, anyTier: true); // gold bosses or their placeholders
+                else if (tuning.StartHighTier(camp.SpawnId)) mob.RollStartTier(Random.Shared);
                 mob.Reset(now);
                 mobs.Add(mob);
             }

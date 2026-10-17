@@ -158,6 +158,12 @@ public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRan
     /// <summary>Radius in metres (the client's tooltip &lt;AOE&gt;): enemy skills hit everything around the target; group skills reach party members around the caster.</summary>
     public float AreaOfEffect { get; init; }
 
+    /// <summary>
+    /// Owner's rule (2026-10-16, skill-overrides.json "castWithWeaponDelay"): the cast takes the weapon's attack delay on top
+    /// of its own cast time (Shatter, Double Attack, Barbed Shot, Rend), and lands at its end.
+    /// </summary>
+    public bool CastWithWeaponDelay { get; init; }
+
     /// <summary>What evades the skill: 0 physical, 1 spell, 2 movement, 3 wounding, 4 weakening, 5 mental; −1 nothing.</summary>
     public int AvoidanceType { get; init; } = -1;
 
@@ -227,6 +233,15 @@ public sealed record StatusEffectInfo(int Id, string Name, int Type, IReadOnlyLi
 
     /// <summary>Damage type of damage over time (0 pierce … 9 true), for resists; null → not resisted.</summary>
     public int? DamageType { get; init; }
+
+    /// <summary>
+    /// Ranks the client's own table has. Player skills' effects are extended past it on the server (gear ranks such as
+    /// Exalted Dragonlord's Rapid Shot +8), but the client is only ever sent a rank it knows.
+    /// </summary>
+    public int ClientLevels { get; init; } = -1;
+
+    /// <summary>The rank to send the client for a server rank.</summary>
+    public int ClientLevel(int index) => Math.Clamp(index, 0, Math.Max(0, (ClientLevels >= 0 ? ClientLevels : Levels.Count) - 1));
 
     public StatusEffectLevel? Level(int index) => Levels.Count == 0 ? null : Levels[Math.Clamp(index, 0, Levels.Count - 1)];
 }
@@ -492,6 +507,11 @@ public sealed class Balance
                 : [];
             statusEffects[id] = new StatusEffectInfo(id, Str(e, "Name"), Int(e, "EffectType"), levels);
         }
+        // Player skills' buffs and debuffs grow past their last rank like the skills' damage does, so gear ranks above
+        // rank 50 count (Rapid Shot +8 lasts 4 s longer; amounts keep their last step).
+        foreach (var effectId in skills.Values.Where(s => s.StatusEffectId > 0 && s.Levels.Count >= SkillLevels.Ranks).Select(s => s.StatusEffectId).Distinct().ToList())
+            if (statusEffects.TryGetValue(effectId, out var effect) && effect.Levels.Count >= 2 && effect.Levels.Count < SkillLevels.Ranks)
+                statusEffects[effectId] = effect with { Levels = SkillLevels.ExtendEffect(effect.Levels), ClientLevels = effect.Levels.Count };
 
         var recipes = new Dictionary<int, string>();
         var recipeTemplates = new Dictionary<int, RecipeInfo>();

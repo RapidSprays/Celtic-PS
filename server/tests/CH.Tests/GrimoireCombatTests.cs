@@ -102,4 +102,16 @@ public sealed class GrimoireCombatTests
         Assert.Equal(0.85, CH.Server.GameServer.LevelFactor(230, 10), 6);   // 220 above: the cap
         Assert.Equal(0.80, CH.Server.GameServer.LevelFactor(100, 105), 6);  // a monster 5 above: 4% a level (unchanged)
     }
+
+    [Fact]
+    public void Monsters_well_below_the_player_deal_less_damage_by_the_owners_table()
+    {
+        Assert.Equal(1.0, CH.Server.GameServer.IncomingLevelFactor(140, 145), 6);  // monster above: full damage
+        Assert.Equal(1.0, CH.Server.GameServer.IncomingLevelFactor(140, 140), 6);  // same level
+        Assert.Equal(1.0, CH.Server.GameServer.IncomingLevelFactor(140, 125), 6);  // 15 above: full
+        Assert.Equal(0.90, CH.Server.GameServer.IncomingLevelFactor(140, 124), 6); // 16 above: 10% less
+        Assert.Equal(0.90, CH.Server.GameServer.IncomingLevelFactor(140, 71), 6);  // 69 above
+        Assert.Equal(0.80, CH.Server.GameServer.IncomingLevelFactor(140, 70), 6);  // 70 above: 20% less
+        Assert.Equal(0.80, CH.Server.GameServer.IncomingLevelFactor(270, 140), 6); // 130 above: still 20% (the most)
+    }
 }

@@ -124,6 +124,39 @@ public sealed class ServerOptions
     /// <summary>Our own fixed-price merchant stock (server/content/shop-extras.json, copied next to the server binary).</summary>
     public string? ShopExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "shop-extras.json");
 
+    /// <summary>Vendor sell prices from Master's Grimoire (scripts/import-grimoire.py writes item-prices.json beside the balance JSON).</summary>
+    public string? ItemPricesPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "item-prices.json");
+
+    /// <summary>The owner's threat (aggro) numbers (server/content/threat.json).</summary>
+    public string? ThreatPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "threat.json");
+
+    /// <summary>The owner's damage-over-time variance and damage types (server/content/dot-damage.json).</summary>
+    public string? DotDamagePath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "dot-damage.json");
+
+    /// <summary>The owner's quest item rewards (server/content/quest-rewards.json).</summary>
+    public string? QuestRewardsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "quest-rewards.json");
+
+    /// <summary>The owner's quest levels and item requirements (server/content/quest-requirements.json).</summary>
+    public string? QuestRequirementsPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "quest-requirements.json");
+
+    /// <summary>The owner's call-for-help ranges (server/content/call-for-help.json).</summary>
+    public string? CallForHelpPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "call-for-help.json");
+
+    /// <summary>The owner's Divine Strike damage ranges (server/content/divine-strike.json).</summary>
+    public string? DivineStrikePath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "divine-strike.json");
+
+    /// <summary>The owner's spawn odds and respawn times (server/content/spawn-tuning.json).</summary>
+    public string? SpawnTuningPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "spawn-tuning.json");
+
+    /// <summary>Live respawn times per spawn point (scripts/import-grimoire.py writes spawn-respawns.json beside the balance JSON).</summary>
+    public string? SpawnRespawnsPath => BalancePath is null ? null : Path.Combine(Path.GetDirectoryName(BalancePath)!, "spawn-respawns.json");
+
+    /// <summary>Token vendors the world data lacks, or the owner's over it (server/content/token-vendor-extras.json).</summary>
+    public string? TokenVendorExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "token-vendor-extras.json");
+
+    /// <summary>The owner's own sell prices for single items (server/content/sell-prices.json).</summary>
+    public string? SellPricesPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "sell-prices.json");
+
     /// <summary>NPCs the world data doesn't place (server/content/npc-extras.json).</summary>
     public string? NpcExtrasPath { get; set; } = Path.Combine(AppContext.BaseDirectory, "content", "npc-extras.json");
 

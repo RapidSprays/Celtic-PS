@@ -1,0 +1,7374 @@
+{
+ "_comment": "Token vendors the world data lacks, or yours over it (restart the server after editing). Key: the TOKENVENDOR id the NPC's conversation opens. Each stock entry gives qty (default 1) of template for its cost, a list of items handed in. name is only a label for you. Made 2026-10-16 for Remus the Mount Vendor and James the Mount Breeder: War Wolf/Bear/Silver Elk breeding, mount exchanges, and the Hellsteed and Nightmare Steeds (upgraded at James, shops 486/488/489/534; Dark/Nightmare Essence: buy for 1, upgrade with the current steed and 1 more, sell back for as many as went in). Spirit pets and mounts (owner's rules): a Spirit from two of the top tier of the top colour (colour-specific pets: two Giants of their colour), Spirit II from two Spirit, Spirit III from two Spirit II; a Spirit sells for what its two top-tier pets or mounts would, a Spirit II or III for one of the tier below. Special pets (Phoenix: Phoenix Egg, Seedling: Corrupted Seed, Festive Reindeer: Magical Bell, Imp: Cursed Coin), as their shop texts say: the Tiny one for 1, each size up for the pet and 1 more, exchanged back for as many as went in. Holtz the Peddler (Otherworld hunt, shops 17-20): the Minor armlet for 1 Contraption Piece; each tier after it for the tier before plus Pieces (2, 3, 4, 5) and from Mighty on Contraption Cores (1 to 5) with 5 Pieces.",
+ "vendors": {
+  "182": {
+   "title": "Upgrade Wolf Mount Colour 1",
+   "stock": [
+    {
+     "template": 60147,
+     "name": "Trained Brown War Wolf",
+     "cost": [
+      {
+       "template": 60146,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60148,
+     "name": "Hardened Brown War Wolf",
+     "cost": [
+      {
+       "template": 60147,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60149,
+     "name": "Relentless Brown War Wolf",
+     "cost": [
+      {
+       "template": 60148,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60150,
+     "name": "Ferocious Brown War Wolf",
+     "cost": [
+      {
+       "template": 60149,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60151,
+     "name": "Primal Brown War Wolf",
+     "cost": [
+      {
+       "template": 60150,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "183": {
+   "title": "Upgrade Wolf Mount Colour 2",
+   "stock": [
+    {
+     "template": 60153,
+     "name": "Trained Red War Wolf",
+     "cost": [
+      {
+       "template": 60152,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60154,
+     "name": "Hardened Red War Wolf",
+     "cost": [
+      {
+       "template": 60153,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60155,
+     "name": "Relentless Red War Wolf",
+     "cost": [
+      {
+       "template": 60154,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60156,
+     "name": "Ferocious Red War Wolf",
+     "cost": [
+      {
+       "template": 60155,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60157,
+     "name": "Primal Red War Wolf",
+     "cost": [
+      {
+       "template": 60156,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "184": {
+   "title": "Upgrade Wolf Mount Colour 3",
+   "stock": [
+    {
+     "template": 60159,
+     "name": "Trained Black War Wolf",
+     "cost": [
+      {
+       "template": 60158,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60160,
+     "name": "Hardened Black War Wolf",
+     "cost": [
+      {
+       "template": 60159,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60161,
+     "name": "Relentless Black War Wolf",
+     "cost": [
+      {
+       "template": 60160,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60162,
+     "name": "Ferocious Black War Wolf",
+     "cost": [
+      {
+       "template": 60161,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60163,
+     "name": "Primal Black War Wolf",
+     "cost": [
+      {
+       "template": 60162,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "185": {
+   "title": "Upgrade Wolf Mount Colour 4",
+   "stock": [
+    {
+     "template": 60165,
+     "name": "Trained Silver War Wolf",
+     "cost": [
+      {
+       "template": 60164,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60166,
+     "name": "Hardened Silver War Wolf",
+     "cost": [
+      {
+       "template": 60165,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60167,
+     "name": "Relentless Silver War Wolf",
+     "cost": [
+      {
+       "template": 60166,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60168,
+     "name": "Ferocious Silver War Wolf",
+     "cost": [
+      {
+       "template": 60167,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60169,
+     "name": "Primal Silver War Wolf",
+     "cost": [
+      {
+       "template": 60168,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "186": {
+   "title": "Upgrade Bear Mount Colour 1",
+   "stock": [
+    {
+     "template": 60171,
+     "name": "Trained Brown War Bear",
+     "cost": [
+      {
+       "template": 60170,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60172,
+     "name": "Hardened Brown War Bear",
+     "cost": [
+      {
+       "template": 60171,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60173,
+     "name": "Relentless Brown War Bear",
+     "cost": [
+      {
+       "template": 60172,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60174,
+     "name": "Ferocious Brown War Bear",
+     "cost": [
+      {
+       "template": 60173,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60175,
+     "name": "Primal Brown War Bear",
+     "cost": [
+      {
+       "template": 60174,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "187": {
+   "title": "Upgrade Bear Mount Colour 2",
+   "stock": [
+    {
+     "template": 60177,
+     "name": "Trained Grey War Bear",
+     "cost": [
+      {
+       "template": 60176,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60178,
+     "name": "Hardened Grey War Bear",
+     "cost": [
+      {
+       "template": 60177,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60179,
+     "name": "Relentless Grey War Bear",
+     "cost": [
+      {
+       "template": 60178,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60180,
+     "name": "Ferocious Grey War Bear",
+     "cost": [
+      {
+       "template": 60179,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60181,
+     "name": "Primal Grey War Bear",
+     "cost": [
+      {
+       "template": 60180,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "188": {
+   "title": "Upgrade Bear Mount Colour 3",
+   "stock": [
+    {
+     "template": 60183,
+     "name": "Trained Black War Bear",
+     "cost": [
+      {
+       "template": 60182,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60184,
+     "name": "Hardened Black War Bear",
+     "cost": [
+      {
+       "template": 60183,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60185,
+     "name": "Relentless Black War Bear",
+     "cost": [
+      {
+       "template": 60184,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60186,
+     "name": "Ferocious Black War Bear",
+     "cost": [
+      {
+       "template": 60185,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60187,
+     "name": "Primal Black War Bear",
+     "cost": [
+      {
+       "template": 60186,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "189": {
+   "title": "Upgrade Bear Mount Colour 4",
+   "stock": [
+    {
+     "template": 60189,
+     "name": "Trained Silver War Bear",
+     "cost": [
+      {
+       "template": 60188,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60190,
+     "name": "Hardened Silver War Bear",
+     "cost": [
+      {
+       "template": 60189,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60191,
+     "name": "Relentless Silver War Bear",
+     "cost": [
+      {
+       "template": 60190,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60192,
+     "name": "Ferocious Silver War Bear",
+     "cost": [
+      {
+       "template": 60191,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 60193,
+     "name": "Primal Silver War Bear",
+     "cost": [
+      {
+       "template": 60192,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "318": {
+   "title": "Upgrade White Elk Mount",
+   "stock": [
+    {
+     "template": 63802,
+     "name": "Trained Silver War Elk",
+     "cost": [
+      {
+       "template": 63801,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 63803,
+     "name": "Hardened Silver War Elk",
+     "cost": [
+      {
+       "template": 63802,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 63804,
+     "name": "Relentless Silver War Elk",
+     "cost": [
+      {
+       "template": 63803,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 63805,
+     "name": "Ferocious Silver War Elk",
+     "cost": [
+      {
+       "template": 63804,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 63806,
+     "name": "Primal Silver War Elk",
+     "cost": [
+      {
+       "template": 63805,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "190": {
+   "title": "Exchange Wolf Mount Colour 1",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60146,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60147,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60148,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60149,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60150,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60151,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "191": {
+   "title": "Exchange Wolf Mount Colour 2",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60152,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60153,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60154,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60155,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60156,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60157,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "192": {
+   "title": "Exchange Wolf Mount Colour 3",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60158,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60159,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60160,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60161,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60162,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60163,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "193": {
+   "title": "Exchange Wolf Mount Colour 4",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60164,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60165,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60166,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60167,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60168,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60169,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "194": {
+   "title": "Exchange Bear Mount Colour 1",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60170,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60171,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60172,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60173,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60174,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60175,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "195": {
+   "title": "Exchange Bear Mount Colour 2",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60176,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60177,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60178,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60179,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60180,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60181,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "196": {
+   "title": "Exchange Bear Mount Colour 3",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60182,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60183,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60184,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60185,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60186,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60187,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "197": {
+   "title": "Exchange Bear Mount Colour 4",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 60188,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 60189,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 60190,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 60191,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 60192,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 60193,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "267": {
+   "title": "Exchange Horse Mount Colour 1",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 61196,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 61197,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 61198,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 61199,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 61200,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 61201,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "268": {
+   "title": "Exchange Horse Mount Colour 2",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 61202,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 61203,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 61204,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 61205,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 61206,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 61207,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "269": {
+   "title": "Exchange Horse Mount Colour 3",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 61208,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 61209,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 61210,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 61211,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 61212,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 61213,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "270": {
+   "title": "Exchange Horse Mount Colour 4",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 61214,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 61215,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 61216,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 61217,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 61218,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 61219,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "322": {
+   "title": "Exchange White Elk Mount",
+   "stock": [
+    {
+     "template": 60195,
+     "name": "Bag of Two Mount Tokens",
+     "cost": [
+      {
+       "template": 63801,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60197,
+     "name": "Bag of Four Mount Tokens",
+     "cost": [
+      {
+       "template": 63802,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60199,
+     "name": "Bag of Six Mount Tokens",
+     "cost": [
+      {
+       "template": 63803,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60201,
+     "name": "Bag of Eight Mount Tokens",
+     "cost": [
+      {
+       "template": 63804,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60203,
+     "name": "Bag of Ten Mount Tokens",
+     "cost": [
+      {
+       "template": 63805,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60205,
+     "name": "Bag of Twelve Mount Tokens",
+     "cost": [
+      {
+       "template": 63806,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "438": {
+   "title": "Purchase Hellsteed",
+   "stock": [
+    {
+     "template": 65770,
+     "name": "Tame Hellsteed",
+     "cost": [
+      {
+       "template": 65776,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "439": {
+   "title": "Upgrade Hellsteed",
+   "stock": [
+    {
+     "template": 65771,
+     "name": "Trained Hellsteed",
+     "cost": [
+      {
+       "template": 65770,
+       "qty": 1
+      },
+      {
+       "template": 65776,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65772,
+     "name": "Hardened Hellsteed",
+     "cost": [
+      {
+       "template": 65771,
+       "qty": 1
+      },
+      {
+       "template": 65776,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65773,
+     "name": "Relentless Hellsteed",
+     "cost": [
+      {
+       "template": 65772,
+       "qty": 1
+      },
+      {
+       "template": 65776,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65774,
+     "name": "Ferocious Hellsteed",
+     "cost": [
+      {
+       "template": 65773,
+       "qty": 1
+      },
+      {
+       "template": 65776,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65775,
+     "name": "Primal Hellsteed",
+     "cost": [
+      {
+       "template": 65774,
+       "qty": 1
+      },
+      {
+       "template": 65776,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "458": {
+   "title": "Sell Hellsteed",
+   "stock": [
+    {
+     "template": 65776,
+     "name": "Dark Essence",
+     "cost": [
+      {
+       "template": 65770,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65776,
+     "name": "Dark Essence",
+     "cost": [
+      {
+       "template": 65771,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65776,
+     "name": "Dark Essence",
+     "cost": [
+      {
+       "template": 65772,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65776,
+     "name": "Dark Essence",
+     "cost": [
+      {
+       "template": 65773,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65776,
+     "name": "Dark Essence",
+     "cost": [
+      {
+       "template": 65774,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65776,
+     "name": "Dark Essence",
+     "cost": [
+      {
+       "template": 65775,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "487": {
+   "title": "Sell Nightmare Fire Steed",
+   "stock": [
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 66319,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 66320,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 66321,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 66322,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 66323,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 66324,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "490": {
+   "title": "Sell Nightmare Frost Steed",
+   "stock": [
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67113,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67114,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67115,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67116,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67117,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67118,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "491": {
+   "title": "Sell Nightmare Magic Steed",
+   "stock": [
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67120,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67121,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67122,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67123,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67124,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 67125,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "535": {
+   "title": "Sell Nightmare Umbral Steed",
+   "stock": [
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 68198,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 68199,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 68200,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 68201,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 68202,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 66317,
+     "name": "Nightmare Essence",
+     "cost": [
+      {
+       "template": 68203,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "485": {
+   "title": "Purchase Nightmare Steed",
+   "stock": [
+    {
+     "template": 66319,
+     "name": "Tame Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67113,
+     "name": "Tame Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67120,
+     "name": "Tame Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 68198,
+     "name": "Tame Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "602": {
+   "title": "Upgrade Spirit War Wolf",
+   "stock": [
+    {
+     "template": 73001,
+     "name": "Spirit War Wolf II",
+     "cost": [
+      {
+       "template": 65050,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73011,
+     "name": "Spirit War Wolf III",
+     "cost": [
+      {
+       "template": 73001,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "603": {
+   "title": "Upgrade Spirit War Bear",
+   "stock": [
+    {
+     "template": 73002,
+     "name": "Spirit War Bear II",
+     "cost": [
+      {
+       "template": 65051,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73012,
+     "name": "Spirit War Bear III",
+     "cost": [
+      {
+       "template": 73002,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "604": {
+   "title": "Upgrade Spirit War Horse",
+   "stock": [
+    {
+     "template": 73004,
+     "name": "Spirit War Horse II",
+     "cost": [
+      {
+       "template": 65053,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73014,
+     "name": "Spirit War Horse III",
+     "cost": [
+      {
+       "template": 73004,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "605": {
+   "title": "Upgrade Spirit War Elk",
+   "stock": [
+    {
+     "template": 73003,
+     "name": "Spirit War Elk II",
+     "cost": [
+      {
+       "template": 65052,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73013,
+     "name": "Spirit War Elk III",
+     "cost": [
+      {
+       "template": 73003,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "606": {
+   "title": "Upgrade Spirit War Tiger",
+   "stock": [
+    {
+     "template": 73000,
+     "name": "Spirit War Tiger II",
+     "cost": [
+      {
+       "template": 65049,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73010,
+     "name": "Spirit War Tiger III",
+     "cost": [
+      {
+       "template": 73000,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "607": {
+   "title": "Upgrade Spirit Hellsteed",
+   "stock": [
+    {
+     "template": 73005,
+     "name": "Spirit Hellsteed II",
+     "cost": [
+      {
+       "template": 66309,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73015,
+     "name": "Spirit Hellsteed III",
+     "cost": [
+      {
+       "template": 73005,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "608": {
+   "title": "Upgrade Spirit Nightmare Fire Steed",
+   "stock": [
+    {
+     "template": 73006,
+     "name": "Spirit Nightmare Fire Steed II",
+     "cost": [
+      {
+       "template": 66325,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73016,
+     "name": "Spirit Nightmare Fire Steed III",
+     "cost": [
+      {
+       "template": 73006,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "609": {
+   "title": "Upgrade Spirit Nightmare Frost Steed",
+   "stock": [
+    {
+     "template": 73007,
+     "name": "Spirit Nightmare Frost Steed II",
+     "cost": [
+      {
+       "template": 67119,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73017,
+     "name": "Spirit Nightmare Frost Steed III",
+     "cost": [
+      {
+       "template": 73007,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "610": {
+   "title": "Upgrade Spirit Nightmare Magic Steed",
+   "stock": [
+    {
+     "template": 73008,
+     "name": "Spirit Nightmare Magic Steed II",
+     "cost": [
+      {
+       "template": 67126,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73018,
+     "name": "Spirit Nightmare Magic Steed III",
+     "cost": [
+      {
+       "template": 73008,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "611": {
+   "title": "Upgrade Spirit Nightmare Umbral Steed",
+   "stock": [
+    {
+     "template": 73009,
+     "name": "Spirit Nightmare Umbral Steed II",
+     "cost": [
+      {
+       "template": 68204,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73019,
+     "name": "Spirit Nightmare Umbral Steed III",
+     "cost": [
+      {
+       "template": 73009,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "379": {
+   "title": "Purchase Spirit Mount",
+   "stock": [
+    {
+     "template": 65050,
+     "name": "Spirit War Wolf",
+     "cost": [
+      {
+       "template": 60169,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 65051,
+     "name": "Spirit War Bear",
+     "cost": [
+      {
+       "template": 60193,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 65053,
+     "name": "Spirit War Horse",
+     "cost": [
+      {
+       "template": 61219,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 65052,
+     "name": "Spirit War Elk",
+     "cost": [
+      {
+       "template": 63806,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 65049,
+     "name": "Spirit War Tiger",
+     "cost": [
+      {
+       "template": 65040,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66309,
+     "name": "Spirit Hellsteed",
+     "cost": [
+      {
+       "template": 65775,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66325,
+     "name": "Spirit Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66324,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 67119,
+     "name": "Spirit Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 67118,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 67126,
+     "name": "Spirit Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 67125,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 68204,
+     "name": "Spirit Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 68203,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "457": {
+   "title": "Sell Spirit Mount",
+   "stock": [
+    {
+     "template": 60214,
+     "name": "Bag of Twenty-Four Mount Tokens",
+     "cost": [
+      {
+       "template": 65050,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65050,
+     "name": "Spirit War Wolf",
+     "cost": [
+      {
+       "template": 73001,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73001,
+     "name": "Spirit War Wolf II",
+     "cost": [
+      {
+       "template": 73011,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60214,
+     "name": "Bag of Twenty-Four Mount Tokens",
+     "cost": [
+      {
+       "template": 65051,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65051,
+     "name": "Spirit War Bear",
+     "cost": [
+      {
+       "template": 73002,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73002,
+     "name": "Spirit War Bear II",
+     "cost": [
+      {
+       "template": 73012,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60214,
+     "name": "Bag of Twenty-Four Mount Tokens",
+     "cost": [
+      {
+       "template": 65053,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65053,
+     "name": "Spirit War Horse",
+     "cost": [
+      {
+       "template": 73004,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73004,
+     "name": "Spirit War Horse II",
+     "cost": [
+      {
+       "template": 73014,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60214,
+     "name": "Bag of Twenty-Four Mount Tokens",
+     "cost": [
+      {
+       "template": 65052,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65052,
+     "name": "Spirit War Elk",
+     "cost": [
+      {
+       "template": 73003,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73003,
+     "name": "Spirit War Elk II",
+     "cost": [
+      {
+       "template": 73013,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 60214,
+     "name": "Bag of Twenty-Four Mount Tokens",
+     "cost": [
+      {
+       "template": 65049,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65049,
+     "name": "Spirit War Tiger",
+     "cost": [
+      {
+       "template": 73000,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73000,
+     "name": "Spirit War Tiger II",
+     "cost": [
+      {
+       "template": 73010,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66318,
+     "name": "Bag of Six Dark Essences",
+     "cost": [
+      {
+       "template": 66309,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 66309,
+     "name": "Spirit Hellsteed",
+     "cost": [
+      {
+       "template": 73005,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73005,
+     "name": "Spirit Hellsteed II",
+     "cost": [
+      {
+       "template": 73015,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66328,
+     "name": "Bag of Six Nightmare Essences",
+     "cost": [
+      {
+       "template": 66325,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 66325,
+     "name": "Spirit Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 73006,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73006,
+     "name": "Spirit Nightmare Fire Steed II",
+     "cost": [
+      {
+       "template": 73016,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66328,
+     "name": "Bag of Six Nightmare Essences",
+     "cost": [
+      {
+       "template": 67119,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 67119,
+     "name": "Spirit Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 73007,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73007,
+     "name": "Spirit Nightmare Frost Steed II",
+     "cost": [
+      {
+       "template": 73017,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66328,
+     "name": "Bag of Six Nightmare Essences",
+     "cost": [
+      {
+       "template": 67126,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 67126,
+     "name": "Spirit Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 73008,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73008,
+     "name": "Spirit Nightmare Magic Steed II",
+     "cost": [
+      {
+       "template": 73018,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66328,
+     "name": "Bag of Six Nightmare Essences",
+     "cost": [
+      {
+       "template": 68204,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 68204,
+     "name": "Spirit Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 73009,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73009,
+     "name": "Spirit Nightmare Umbral Steed II",
+     "cost": [
+      {
+       "template": 73019,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "612": {
+   "title": "Upgrade Spirit Mastiff",
+   "stock": [
+    {
+     "template": 73057,
+     "name": "Spirit Mastiff II",
+     "cost": [
+      {
+       "template": 66119,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73058,
+     "name": "Spirit Mastiff III",
+     "cost": [
+      {
+       "template": 73057,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "613": {
+   "title": "Upgrade Spirit Hare",
+   "stock": [
+    {
+     "template": 73061,
+     "name": "Spirit Hare II",
+     "cost": [
+      {
+       "template": 66120,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73062,
+     "name": "Spirit Hare III",
+     "cost": [
+      {
+       "template": 73061,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "614": {
+   "title": "Upgrade Spirit Wolf",
+   "stock": [
+    {
+     "template": 73059,
+     "name": "Spirit Wolf II",
+     "cost": [
+      {
+       "template": 66121,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73060,
+     "name": "Spirit Wolf III",
+     "cost": [
+      {
+       "template": 73059,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "615": {
+   "title": "Upgrade Spirit Spider",
+   "stock": [
+    {
+     "template": 73063,
+     "name": "Spirit Spider II",
+     "cost": [
+      {
+       "template": 66122,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73064,
+     "name": "Spirit Spider III",
+     "cost": [
+      {
+       "template": 73063,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "616": {
+   "title": "Upgrade Spirit Boar",
+   "stock": [
+    {
+     "template": 73065,
+     "name": "Spirit Boar II",
+     "cost": [
+      {
+       "template": 66123,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73066,
+     "name": "Spirit Boar III",
+     "cost": [
+      {
+       "template": 73065,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "617": {
+   "title": "Upgrade Spirit Chicken",
+   "stock": [
+    {
+     "template": 73067,
+     "name": "Spirit Chicken II",
+     "cost": [
+      {
+       "template": 66124,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73068,
+     "name": "Spirit Chicken III",
+     "cost": [
+      {
+       "template": 73067,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "618": {
+   "title": "Upgrade Spirit Eagle",
+   "stock": [
+    {
+     "template": 73069,
+     "name": "Spirit Eagle II",
+     "cost": [
+      {
+       "template": 66125,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73070,
+     "name": "Spirit Eagle III",
+     "cost": [
+      {
+       "template": 73069,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "619": {
+   "title": "Upgrade Spirit Pig",
+   "stock": [
+    {
+     "template": 73071,
+     "name": "Spirit Pig II",
+     "cost": [
+      {
+       "template": 66126,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73072,
+     "name": "Spirit Pig III",
+     "cost": [
+      {
+       "template": 73071,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "633": {
+   "title": "Upgrade Spirit Green Hatchling",
+   "stock": [
+    {
+     "template": 73049,
+     "name": "Spirit Green Hatchling II",
+     "cost": [
+      {
+       "template": 66127,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73050,
+     "name": "Spirit Green Hatchling III",
+     "cost": [
+      {
+       "template": 73049,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "634": {
+   "title": "Upgrade Spirit Red Hatchling",
+   "stock": [
+    {
+     "template": 73051,
+     "name": "Spirit Red Hatchling II",
+     "cost": [
+      {
+       "template": 66128,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73052,
+     "name": "Spirit Red Hatchling III",
+     "cost": [
+      {
+       "template": 73051,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "635": {
+   "title": "Upgrade Spirit Blue Hatchling",
+   "stock": [
+    {
+     "template": 73053,
+     "name": "Spirit Blue Hatchling II",
+     "cost": [
+      {
+       "template": 66129,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73054,
+     "name": "Spirit Blue Hatchling III",
+     "cost": [
+      {
+       "template": 73053,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "636": {
+   "title": "Upgrade Spirit Black Hatchling",
+   "stock": [
+    {
+     "template": 73055,
+     "name": "Spirit Black Hatchling II",
+     "cost": [
+      {
+       "template": 66130,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73056,
+     "name": "Spirit Black Hatchling III",
+     "cost": [
+      {
+       "template": 73055,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "470": {
+   "title": "Purchase Spirit Hatchling",
+   "stock": [
+    {
+     "template": 66127,
+     "name": "Spirit Green Hatchling",
+     "cost": [
+      {
+       "template": 63190,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66128,
+     "name": "Spirit Red Hatchling",
+     "cost": [
+      {
+       "template": 63196,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66129,
+     "name": "Spirit Blue Hatchling",
+     "cost": [
+      {
+       "template": 63202,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66130,
+     "name": "Spirit Black Hatchling",
+     "cost": [
+      {
+       "template": 63208,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "625": {
+   "title": "Upgrade Spirit Orange Phoenix",
+   "stock": [
+    {
+     "template": 73033,
+     "name": "Spirit Orange Phoenix II",
+     "cost": [
+      {
+       "template": 66132,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73034,
+     "name": "Spirit Orange Phoenix III",
+     "cost": [
+      {
+       "template": 73033,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "626": {
+   "title": "Upgrade Spirit Red Phoenix",
+   "stock": [
+    {
+     "template": 73035,
+     "name": "Spirit Red Phoenix II",
+     "cost": [
+      {
+       "template": 66131,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73036,
+     "name": "Spirit Red Phoenix III",
+     "cost": [
+      {
+       "template": 73035,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "627": {
+   "title": "Upgrade Spirit Blue Phoenix",
+   "stock": [
+    {
+     "template": 73037,
+     "name": "Spirit Blue Phoenix II",
+     "cost": [
+      {
+       "template": 66133,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73038,
+     "name": "Spirit Blue Phoenix III",
+     "cost": [
+      {
+       "template": 73037,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "628": {
+   "title": "Upgrade Spirit Purple Phoenix",
+   "stock": [
+    {
+     "template": 73039,
+     "name": "Spirit Purple Phoenix II",
+     "cost": [
+      {
+       "template": 66134,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73040,
+     "name": "Spirit Purple Phoenix III",
+     "cost": [
+      {
+       "template": 73039,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "471": {
+   "title": "Purchase Spirit Phoenix",
+   "stock": [
+    {
+     "template": 66132,
+     "name": "Spirit Orange Phoenix",
+     "cost": [
+      {
+       "template": 65004,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66131,
+     "name": "Spirit Red Phoenix",
+     "cost": [
+      {
+       "template": 64998,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66133,
+     "name": "Spirit Blue Phoenix",
+     "cost": [
+      {
+       "template": 65010,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66134,
+     "name": "Spirit Purple Phoenix",
+     "cost": [
+      {
+       "template": 65016,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "620": {
+   "title": "Upgrade Spirit Blazeroot Seedling",
+   "stock": [
+    {
+     "template": 73023,
+     "name": "Spirit Blazeroot Seedling II",
+     "cost": [
+      {
+       "template": 66135,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73024,
+     "name": "Spirit Blazeroot Seedling III",
+     "cost": [
+      {
+       "template": 73023,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "621": {
+   "title": "Upgrade Spirit Frostroot Seedling",
+   "stock": [
+    {
+     "template": 73025,
+     "name": "Spirit Frostroot Seedling II",
+     "cost": [
+      {
+       "template": 66136,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73026,
+     "name": "Spirit Frostroot Seedling III",
+     "cost": [
+      {
+       "template": 73025,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "622": {
+   "title": "Upgrade Spirit Voltroot Seedling",
+   "stock": [
+    {
+     "template": 73027,
+     "name": "Spirit Voltroot Seedling II",
+     "cost": [
+      {
+       "template": 66140,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73028,
+     "name": "Spirit Voltroot Seedling III",
+     "cost": [
+      {
+       "template": 73027,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "623": {
+   "title": "Upgrade Spirit Causticroot Seedling",
+   "stock": [
+    {
+     "template": 73029,
+     "name": "Spirit Causticroot Seedling II",
+     "cost": [
+      {
+       "template": 66138,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73030,
+     "name": "Spirit Causticroot Seedling III",
+     "cost": [
+      {
+       "template": 73029,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "624": {
+   "title": "Upgrade Spirit Salveroot Seedling",
+   "stock": [
+    {
+     "template": 73031,
+     "name": "Spirit Salveroot Seedling II",
+     "cost": [
+      {
+       "template": 66137,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73032,
+     "name": "Spirit Salveroot Seedling III",
+     "cost": [
+      {
+       "template": 73031,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "472": {
+   "title": "Purchase Spirit Seedling",
+   "stock": [
+    {
+     "template": 66135,
+     "name": "Spirit Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65418,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66136,
+     "name": "Spirit Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65424,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66140,
+     "name": "Spirit Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65448,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66138,
+     "name": "Spirit Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65436,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66137,
+     "name": "Spirit Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65430,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "629": {
+   "title": "Upgrade Spirit Bloodbound Imp",
+   "stock": [
+    {
+     "template": 73041,
+     "name": "Spirit Bloodbound Imp II",
+     "cost": [
+      {
+       "template": 66141,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73042,
+     "name": "Spirit Bloodbound Imp III",
+     "cost": [
+      {
+       "template": 73041,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "630": {
+   "title": "Upgrade Spirit Hexbound Imp",
+   "stock": [
+    {
+     "template": 73043,
+     "name": "Spirit Hexbound Imp II",
+     "cost": [
+      {
+       "template": 66142,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73044,
+     "name": "Spirit Hexbound Imp III",
+     "cost": [
+      {
+       "template": 73043,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "631": {
+   "title": "Upgrade Spirit Blightbound Imp",
+   "stock": [
+    {
+     "template": 73045,
+     "name": "Spirit Blightbound Imp II",
+     "cost": [
+      {
+       "template": 66143,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73046,
+     "name": "Spirit Blightbound Imp III",
+     "cost": [
+      {
+       "template": 73045,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "632": {
+   "title": "Upgrade Spirit Soulbound Imp",
+   "stock": [
+    {
+     "template": 73047,
+     "name": "Spirit Soulbound Imp II",
+     "cost": [
+      {
+       "template": 66144,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 73048,
+     "name": "Spirit Soulbound Imp III",
+     "cost": [
+      {
+       "template": 73047,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "473": {
+   "title": "Purchase Spirit Imp",
+   "stock": [
+    {
+     "template": 66141,
+     "name": "Spirit Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65959,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66142,
+     "name": "Spirit Hexbound Imp",
+     "cost": [
+      {
+       "template": 65965,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66143,
+     "name": "Spirit Blightbound Imp",
+     "cost": [
+      {
+       "template": 65971,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66144,
+     "name": "Spirit Soulbound Imp",
+     "cost": [
+      {
+       "template": 65977,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "469": {
+   "title": "Purchase Spirit Pet",
+   "stock": [
+    {
+     "template": 66119,
+     "name": "Spirit Mastiff",
+     "cost": [
+      {
+       "template": 58688,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66120,
+     "name": "Spirit Hare",
+     "cost": [
+      {
+       "template": 58712,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66121,
+     "name": "Spirit Wolf",
+     "cost": [
+      {
+       "template": 59529,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66122,
+     "name": "Spirit Spider",
+     "cost": [
+      {
+       "template": 59965,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66123,
+     "name": "Spirit Boar",
+     "cost": [
+      {
+       "template": 59989,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66124,
+     "name": "Spirit Chicken",
+     "cost": [
+      {
+       "template": 61243,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66125,
+     "name": "Spirit Eagle",
+     "cost": [
+      {
+       "template": 63830,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 66126,
+     "name": "Spirit Pig",
+     "cost": [
+      {
+       "template": 65406,
+       "qty": 2
+      }
+     ]
+    }
+   ]
+  },
+  "474": {
+   "title": "Sell Spirit Pet",
+   "stock": [
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66119,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66119,
+     "name": "Spirit Mastiff",
+     "cost": [
+      {
+       "template": 73057,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73057,
+     "name": "Spirit Mastiff II",
+     "cost": [
+      {
+       "template": 73058,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66120,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66120,
+     "name": "Spirit Hare",
+     "cost": [
+      {
+       "template": 73061,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73061,
+     "name": "Spirit Hare II",
+     "cost": [
+      {
+       "template": 73062,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66121,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66121,
+     "name": "Spirit Wolf",
+     "cost": [
+      {
+       "template": 73059,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73059,
+     "name": "Spirit Wolf II",
+     "cost": [
+      {
+       "template": 73060,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66122,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66122,
+     "name": "Spirit Spider",
+     "cost": [
+      {
+       "template": 73063,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73063,
+     "name": "Spirit Spider II",
+     "cost": [
+      {
+       "template": 73064,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66123,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66123,
+     "name": "Spirit Boar",
+     "cost": [
+      {
+       "template": 73065,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73065,
+     "name": "Spirit Boar II",
+     "cost": [
+      {
+       "template": 73066,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66124,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66124,
+     "name": "Spirit Chicken",
+     "cost": [
+      {
+       "template": 73067,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73067,
+     "name": "Spirit Chicken II",
+     "cost": [
+      {
+       "template": 73068,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66125,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66125,
+     "name": "Spirit Eagle",
+     "cost": [
+      {
+       "template": 73069,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73069,
+     "name": "Spirit Eagle II",
+     "cost": [
+      {
+       "template": 73070,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66126,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66126,
+     "name": "Spirit Pig",
+     "cost": [
+      {
+       "template": 73071,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73071,
+     "name": "Spirit Pig II",
+     "cost": [
+      {
+       "template": 73072,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "475": {
+   "title": "Sell Divergent Spirit Pet",
+   "stock": [
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66127,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66127,
+     "name": "Spirit Green Hatchling",
+     "cost": [
+      {
+       "template": 73049,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73049,
+     "name": "Spirit Green Hatchling II",
+     "cost": [
+      {
+       "template": 73050,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66128,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66128,
+     "name": "Spirit Red Hatchling",
+     "cost": [
+      {
+       "template": 73051,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73051,
+     "name": "Spirit Red Hatchling II",
+     "cost": [
+      {
+       "template": 73052,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66129,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66129,
+     "name": "Spirit Blue Hatchling",
+     "cost": [
+      {
+       "template": 73053,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73053,
+     "name": "Spirit Blue Hatchling II",
+     "cost": [
+      {
+       "template": 73054,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66130,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66130,
+     "name": "Spirit Black Hatchling",
+     "cost": [
+      {
+       "template": 73055,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73055,
+     "name": "Spirit Black Hatchling II",
+     "cost": [
+      {
+       "template": 73056,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66132,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66132,
+     "name": "Spirit Orange Phoenix",
+     "cost": [
+      {
+       "template": 73033,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73033,
+     "name": "Spirit Orange Phoenix II",
+     "cost": [
+      {
+       "template": 73034,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66131,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66131,
+     "name": "Spirit Red Phoenix",
+     "cost": [
+      {
+       "template": 73035,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73035,
+     "name": "Spirit Red Phoenix II",
+     "cost": [
+      {
+       "template": 73036,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66133,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66133,
+     "name": "Spirit Blue Phoenix",
+     "cost": [
+      {
+       "template": 73037,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73037,
+     "name": "Spirit Blue Phoenix II",
+     "cost": [
+      {
+       "template": 73038,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66134,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66134,
+     "name": "Spirit Purple Phoenix",
+     "cost": [
+      {
+       "template": 73039,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73039,
+     "name": "Spirit Purple Phoenix II",
+     "cost": [
+      {
+       "template": 73040,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66135,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66135,
+     "name": "Spirit Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 73023,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73023,
+     "name": "Spirit Blazeroot Seedling II",
+     "cost": [
+      {
+       "template": 73024,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66136,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66136,
+     "name": "Spirit Frostroot Seedling",
+     "cost": [
+      {
+       "template": 73025,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73025,
+     "name": "Spirit Frostroot Seedling II",
+     "cost": [
+      {
+       "template": 73026,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66140,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66140,
+     "name": "Spirit Voltroot Seedling",
+     "cost": [
+      {
+       "template": 73027,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73027,
+     "name": "Spirit Voltroot Seedling II",
+     "cost": [
+      {
+       "template": 73028,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66138,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66138,
+     "name": "Spirit Causticroot Seedling",
+     "cost": [
+      {
+       "template": 73029,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73029,
+     "name": "Spirit Causticroot Seedling II",
+     "cost": [
+      {
+       "template": 73030,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66137,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66137,
+     "name": "Spirit Salveroot Seedling",
+     "cost": [
+      {
+       "template": 73031,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73031,
+     "name": "Spirit Salveroot Seedling II",
+     "cost": [
+      {
+       "template": 73032,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66141,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66141,
+     "name": "Spirit Bloodbound Imp",
+     "cost": [
+      {
+       "template": 73041,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73041,
+     "name": "Spirit Bloodbound Imp II",
+     "cost": [
+      {
+       "template": 73042,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66142,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66142,
+     "name": "Spirit Hexbound Imp",
+     "cost": [
+      {
+       "template": 73043,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73043,
+     "name": "Spirit Hexbound Imp II",
+     "cost": [
+      {
+       "template": 73044,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66143,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66143,
+     "name": "Spirit Blightbound Imp",
+     "cost": [
+      {
+       "template": 73045,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73045,
+     "name": "Spirit Blightbound Imp II",
+     "cost": [
+      {
+       "template": 73046,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58736,
+     "name": "Bag of Twelve Pet Tokens",
+     "cost": [
+      {
+       "template": 66144,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66144,
+     "name": "Spirit Soulbound Imp",
+     "cost": [
+      {
+       "template": 73047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 73047,
+     "name": "Spirit Soulbound Imp II",
+     "cost": [
+      {
+       "template": 73048,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "360": {
+   "title": "Upgrade Red Phoenix",
+   "stock": [
+    {
+     "template": 64994,
+     "name": "Small Red Phoenix",
+     "cost": [
+      {
+       "template": 64993,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 64995,
+     "name": "Medium Red Phoenix",
+     "cost": [
+      {
+       "template": 64994,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 64996,
+     "name": "Large Red Phoenix",
+     "cost": [
+      {
+       "template": 64995,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 64997,
+     "name": "Huge Red Phoenix",
+     "cost": [
+      {
+       "template": 64996,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 64998,
+     "name": "Giant Red Phoenix",
+     "cost": [
+      {
+       "template": 64997,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "447": {
+   "title": "Exchange a Red Phoenix",
+   "stock": [
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64993,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64994,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64995,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64996,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64997,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64998,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "361": {
+   "title": "Upgrade Orange Phoenix",
+   "stock": [
+    {
+     "template": 65000,
+     "name": "Small Orange Phoenix",
+     "cost": [
+      {
+       "template": 64999,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65001,
+     "name": "Medium Orange Phoenix",
+     "cost": [
+      {
+       "template": 65000,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65002,
+     "name": "Large Orange Phoenix",
+     "cost": [
+      {
+       "template": 65001,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65003,
+     "name": "Huge Orange Phoenix",
+     "cost": [
+      {
+       "template": 65002,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65004,
+     "name": "Giant Orange Phoenix",
+     "cost": [
+      {
+       "template": 65003,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "448": {
+   "title": "Exchange a Orange Phoenix",
+   "stock": [
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 64999,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65000,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65001,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65002,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65003,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65004,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "362": {
+   "title": "Upgrade Blue Phoenix",
+   "stock": [
+    {
+     "template": 65006,
+     "name": "Small Blue Phoenix",
+     "cost": [
+      {
+       "template": 65005,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65007,
+     "name": "Medium Blue Phoenix",
+     "cost": [
+      {
+       "template": 65006,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65008,
+     "name": "Large Blue Phoenix",
+     "cost": [
+      {
+       "template": 65007,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65009,
+     "name": "Huge Blue Phoenix",
+     "cost": [
+      {
+       "template": 65008,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65010,
+     "name": "Giant Blue Phoenix",
+     "cost": [
+      {
+       "template": 65009,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "449": {
+   "title": "Exchange a Blue Phoenix",
+   "stock": [
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65005,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65006,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65007,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65008,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65009,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65010,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "363": {
+   "title": "Upgrade Purple Phoenix",
+   "stock": [
+    {
+     "template": 65012,
+     "name": "Small Purple Phoenix",
+     "cost": [
+      {
+       "template": 65011,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65013,
+     "name": "Medium Purple Phoenix",
+     "cost": [
+      {
+       "template": 65012,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65014,
+     "name": "Large Purple Phoenix",
+     "cost": [
+      {
+       "template": 65013,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65015,
+     "name": "Huge Purple Phoenix",
+     "cost": [
+      {
+       "template": 65014,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65016,
+     "name": "Giant Purple Phoenix",
+     "cost": [
+      {
+       "template": 65015,
+       "qty": 1
+      },
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "450": {
+   "title": "Exchange a Purple Phoenix",
+   "stock": [
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65011,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65012,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65013,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65014,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65015,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65047,
+     "name": "Phoenix Egg",
+     "cost": [
+      {
+       "template": 65016,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "359": {
+   "title": "Purchase Phoenix",
+   "stock": [
+    {
+     "template": 64993,
+     "name": "Tiny Red Phoenix",
+     "cost": [
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 64999,
+     "name": "Tiny Orange Phoenix",
+     "cost": [
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65005,
+     "name": "Tiny Blue Phoenix",
+     "cost": [
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65011,
+     "name": "Tiny Purple Phoenix",
+     "cost": [
+      {
+       "template": 65047,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "392": {
+   "title": "Upgrade Blazeroot Seedling",
+   "stock": [
+    {
+     "template": 65414,
+     "name": "Small Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65413,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65415,
+     "name": "Medium Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65414,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65416,
+     "name": "Large Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65415,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65417,
+     "name": "Huge Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65416,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65418,
+     "name": "Giant Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65417,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "451": {
+   "title": "Exchange a Blazeroot Seedling",
+   "stock": [
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65413,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65414,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65415,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65416,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65417,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65418,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "393": {
+   "title": "Upgrade Frostroot Seedling",
+   "stock": [
+    {
+     "template": 65420,
+     "name": "Small Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65419,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65421,
+     "name": "Medium Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65420,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65422,
+     "name": "Large Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65421,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65423,
+     "name": "Huge Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65422,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65424,
+     "name": "Giant Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65423,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "452": {
+   "title": "Exchange a Frostroot Seedling",
+   "stock": [
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65419,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65420,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65421,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65422,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65423,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65424,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "394": {
+   "title": "Upgrade Voltroot Seedling",
+   "stock": [
+    {
+     "template": 65444,
+     "name": "Small Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65443,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65445,
+     "name": "Medium Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65444,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65446,
+     "name": "Large Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65445,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65447,
+     "name": "Huge Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65446,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65448,
+     "name": "Giant Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65447,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "453": {
+   "title": "Exchange a Voltroot Seedling",
+   "stock": [
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65443,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65444,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65445,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65446,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65447,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65448,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "395": {
+   "title": "Upgrade Causticroot Seedling",
+   "stock": [
+    {
+     "template": 65432,
+     "name": "Small Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65431,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65433,
+     "name": "Medium Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65432,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65434,
+     "name": "Large Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65433,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65435,
+     "name": "Huge Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65434,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65436,
+     "name": "Giant Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65435,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "454": {
+   "title": "Exchange a Causticroot Seedling",
+   "stock": [
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65431,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65432,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65433,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65434,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65435,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65436,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "396": {
+   "title": "Upgrade Salveroot Seedling",
+   "stock": [
+    {
+     "template": 65426,
+     "name": "Small Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65425,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65427,
+     "name": "Medium Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65426,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65428,
+     "name": "Large Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65427,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65429,
+     "name": "Huge Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65428,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65430,
+     "name": "Giant Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65429,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "455": {
+   "title": "Exchange a Salveroot Seedling",
+   "stock": [
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65425,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65426,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65427,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65428,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65429,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65455,
+     "name": "Corrupted Seed",
+     "cost": [
+      {
+       "template": 65430,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "397": {
+   "title": "Upgrade Chaosroot Seedling",
+   "stock": [
+    {
+     "template": 65438,
+     "name": "Small Chaosroot Seedling",
+     "cost": [
+      {
+       "template": 65437,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65439,
+     "name": "Medium Chaosroot Seedling",
+     "cost": [
+      {
+       "template": 65438,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65440,
+     "name": "Large Chaosroot Seedling",
+     "cost": [
+      {
+       "template": 65439,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65441,
+     "name": "Huge Chaosroot Seedling",
+     "cost": [
+      {
+       "template": 65440,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65442,
+     "name": "Giant Chaosroot Seedling",
+     "cost": [
+      {
+       "template": 65441,
+       "qty": 1
+      },
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "391": {
+   "title": "Purchase Seedling",
+   "stock": [
+    {
+     "template": 65413,
+     "name": "Tiny Blazeroot Seedling",
+     "cost": [
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65419,
+     "name": "Tiny Frostroot Seedling",
+     "cost": [
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65443,
+     "name": "Tiny Voltroot Seedling",
+     "cost": [
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65431,
+     "name": "Tiny Causticroot Seedling",
+     "cost": [
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65425,
+     "name": "Tiny Salveroot Seedling",
+     "cost": [
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65437,
+     "name": "Tiny Chaosroot Seedling",
+     "cost": [
+      {
+       "template": 65455,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "442": {
+   "title": "Upgrade Festive Reindeer",
+   "stock": [
+    {
+     "template": 65923,
+     "name": "Small Festive Reindeer",
+     "cost": [
+      {
+       "template": 65922,
+       "qty": 1
+      },
+      {
+       "template": 65934,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65924,
+     "name": "Medium Festive Reindeer",
+     "cost": [
+      {
+       "template": 65923,
+       "qty": 1
+      },
+      {
+       "template": 65934,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65925,
+     "name": "Large Festive Reindeer",
+     "cost": [
+      {
+       "template": 65924,
+       "qty": 1
+      },
+      {
+       "template": 65934,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65926,
+     "name": "Huge Festive Reindeer",
+     "cost": [
+      {
+       "template": 65925,
+       "qty": 1
+      },
+      {
+       "template": 65934,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65927,
+     "name": "Giant Festive Reindeer",
+     "cost": [
+      {
+       "template": 65926,
+       "qty": 1
+      },
+      {
+       "template": 65934,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "456": {
+   "title": "Exchange a Festive Reindeer",
+   "stock": [
+    {
+     "template": 65934,
+     "name": "Magical Bell",
+     "cost": [
+      {
+       "template": 65922,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65934,
+     "name": "Magical Bell",
+     "cost": [
+      {
+       "template": 65923,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65934,
+     "name": "Magical Bell",
+     "cost": [
+      {
+       "template": 65924,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65934,
+     "name": "Magical Bell",
+     "cost": [
+      {
+       "template": 65925,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65934,
+     "name": "Magical Bell",
+     "cost": [
+      {
+       "template": 65926,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65934,
+     "name": "Magical Bell",
+     "cost": [
+      {
+       "template": 65927,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "441": {
+   "title": "Purchase Reindeer",
+   "stock": [
+    {
+     "template": 65922,
+     "name": "Tiny Festive Reindeer",
+     "cost": [
+      {
+       "template": 65934,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "460": {
+   "title": "Upgrade Bloodbound Imp",
+   "stock": [
+    {
+     "template": 65955,
+     "name": "Small Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65954,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65956,
+     "name": "Medium Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65955,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65957,
+     "name": "Large Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65956,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65958,
+     "name": "Huge Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65957,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65959,
+     "name": "Giant Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65958,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "464": {
+   "title": "Exchange a Bloodbound Imp",
+   "stock": [
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65954,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65955,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65956,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65957,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65958,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65959,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "461": {
+   "title": "Upgrade Hexbound Imp",
+   "stock": [
+    {
+     "template": 65961,
+     "name": "Small Hexbound Imp",
+     "cost": [
+      {
+       "template": 65960,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65962,
+     "name": "Medium Hexbound Imp",
+     "cost": [
+      {
+       "template": 65961,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65963,
+     "name": "Large Hexbound Imp",
+     "cost": [
+      {
+       "template": 65962,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65964,
+     "name": "Huge Hexbound Imp",
+     "cost": [
+      {
+       "template": 65963,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65965,
+     "name": "Giant Hexbound Imp",
+     "cost": [
+      {
+       "template": 65964,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "465": {
+   "title": "Exchange a Hexbound Imp",
+   "stock": [
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65960,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65961,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65962,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65963,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65964,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65965,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "462": {
+   "title": "Upgrade Blightbound Imp",
+   "stock": [
+    {
+     "template": 65967,
+     "name": "Small Blightbound Imp",
+     "cost": [
+      {
+       "template": 65966,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65968,
+     "name": "Medium Blightbound Imp",
+     "cost": [
+      {
+       "template": 65967,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65969,
+     "name": "Large Blightbound Imp",
+     "cost": [
+      {
+       "template": 65968,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65970,
+     "name": "Huge Blightbound Imp",
+     "cost": [
+      {
+       "template": 65969,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65971,
+     "name": "Giant Blightbound Imp",
+     "cost": [
+      {
+       "template": 65970,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "466": {
+   "title": "Exchange a Blightbound Imp",
+   "stock": [
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65966,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65967,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65968,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65969,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65970,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65971,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "463": {
+   "title": "Upgrade Soulbound Imp",
+   "stock": [
+    {
+     "template": 65973,
+     "name": "Small Soulbound Imp",
+     "cost": [
+      {
+       "template": 65972,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65974,
+     "name": "Medium Soulbound Imp",
+     "cost": [
+      {
+       "template": 65973,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65975,
+     "name": "Large Soulbound Imp",
+     "cost": [
+      {
+       "template": 65974,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65976,
+     "name": "Huge Soulbound Imp",
+     "cost": [
+      {
+       "template": 65975,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65977,
+     "name": "Giant Soulbound Imp",
+     "cost": [
+      {
+       "template": 65976,
+       "qty": 1
+      },
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "467": {
+   "title": "Exchange a Soulbound Imp",
+   "stock": [
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65972,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65973,
+       "qty": 1
+      }
+     ],
+     "qty": 2
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65974,
+       "qty": 1
+      }
+     ],
+     "qty": 3
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65975,
+       "qty": 1
+      }
+     ],
+     "qty": 4
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65976,
+       "qty": 1
+      }
+     ],
+     "qty": 5
+    },
+    {
+     "template": 65953,
+     "name": "Cursed Coin",
+     "cost": [
+      {
+       "template": 65977,
+       "qty": 1
+      }
+     ],
+     "qty": 6
+    }
+   ]
+  },
+  "459": {
+   "title": "Purchase Imp",
+   "stock": [
+    {
+     "template": 65954,
+     "name": "Tiny Bloodbound Imp",
+     "cost": [
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65960,
+     "name": "Tiny Hexbound Imp",
+     "cost": [
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65966,
+     "name": "Tiny Blightbound Imp",
+     "cost": [
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 65972,
+     "name": "Tiny Soulbound Imp",
+     "cost": [
+      {
+       "template": 65953,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "486": {
+   "title": "Upgrade Nightmare Fire Steed",
+   "stock": [
+    {
+     "template": 66320,
+     "name": "Trained Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66319,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66321,
+     "name": "Hardened Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66320,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66322,
+     "name": "Relentless Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66321,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66323,
+     "name": "Ferocious Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66322,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 66324,
+     "name": "Primal Nightmare Fire Steed",
+     "cost": [
+      {
+       "template": 66323,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "488": {
+   "title": "Upgrade Nightmare Frost Steed",
+   "stock": [
+    {
+     "template": 67114,
+     "name": "Trained Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 67113,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67115,
+     "name": "Hardened Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 67114,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67116,
+     "name": "Relentless Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 67115,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67117,
+     "name": "Ferocious Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 67116,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67118,
+     "name": "Primal Nightmare Frost Steed",
+     "cost": [
+      {
+       "template": 67117,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "489": {
+   "title": "Upgrade Nightmare Magic Steed",
+   "stock": [
+    {
+     "template": 67121,
+     "name": "Trained Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 67120,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67122,
+     "name": "Hardened Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 67121,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67123,
+     "name": "Relentless Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 67122,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67124,
+     "name": "Ferocious Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 67123,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 67125,
+     "name": "Primal Nightmare Magic Steed",
+     "cost": [
+      {
+       "template": 67124,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "534": {
+   "title": "Upgrade Nightmare Umbral Steed",
+   "stock": [
+    {
+     "template": 68199,
+     "name": "Trained Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 68198,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 68200,
+     "name": "Hardened Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 68199,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 68201,
+     "name": "Relentless Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 68200,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 68202,
+     "name": "Ferocious Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 68201,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 68203,
+     "name": "Primal Nightmare Umbral Steed",
+     "cost": [
+      {
+       "template": 68202,
+       "qty": 1
+      },
+      {
+       "template": 66317,
+       "qty": 1
+      }
+     ]
+    }
+   ]
+  },
+  "17": {
+   "title": "Otherworld Hunt Bracelet Strength (Holtz the Peddler; owner's costs 2026-10-17)",
+   "stock": [
+    {
+     "template": 58442,
+     "name": "Minor Armlet of Strength",
+     "cost": [
+      {
+       "template": 58482,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58443,
+     "name": "Lesser Armlet of Strength",
+     "cost": [
+      {
+       "template": 58442,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58444,
+     "name": "Mystic Armlet of Strength",
+     "cost": [
+      {
+       "template": 58443,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58445,
+     "name": "Greater Armlet of Strength",
+     "cost": [
+      {
+       "template": 58444,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58446,
+     "name": "Grand Armlet of Strength",
+     "cost": [
+      {
+       "template": 58445,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      }
+     ]
+    },
+    {
+     "template": 58447,
+     "name": "Mighty Armlet of Strength",
+     "cost": [
+      {
+       "template": 58446,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58448,
+     "name": "Majestic Armlet of Strength",
+     "cost": [
+      {
+       "template": 58447,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58449,
+     "name": "Royal Armlet of Strength",
+     "cost": [
+      {
+       "template": 58448,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58450,
+     "name": "Imperial Armlet of Strength",
+     "cost": [
+      {
+       "template": 58449,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58451,
+     "name": "Godly Armlet of Strength",
+     "cost": [
+      {
+       "template": 58450,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 5
+      }
+     ]
+    }
+   ]
+  },
+  "18": {
+   "title": "Otherworld Hunt Bracelet Dexterity (Holtz the Peddler; owner's costs 2026-10-17)",
+   "stock": [
+    {
+     "template": 58452,
+     "name": "Minor Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58482,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58453,
+     "name": "Lesser Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58452,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58454,
+     "name": "Mystic Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58453,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58455,
+     "name": "Greater Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58454,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58456,
+     "name": "Grand Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58455,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      }
+     ]
+    },
+    {
+     "template": 58457,
+     "name": "Mighty Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58456,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58458,
+     "name": "Majestic Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58457,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58459,
+     "name": "Royal Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58458,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58460,
+     "name": "Imperial Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58459,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58461,
+     "name": "Godly Bracelet of Dexterity",
+     "cost": [
+      {
+       "template": 58460,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 5
+      }
+     ]
+    }
+   ]
+  },
+  "19": {
+   "title": "Otherworld Hunt Bracelet Focus (Holtz the Peddler; owner's costs 2026-10-17)",
+   "stock": [
+    {
+     "template": 58462,
+     "name": "Minor Armband of Focus",
+     "cost": [
+      {
+       "template": 58482,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58463,
+     "name": "Lesser Armband of Focus",
+     "cost": [
+      {
+       "template": 58462,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58464,
+     "name": "Mystic Armband of Focus",
+     "cost": [
+      {
+       "template": 58463,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58465,
+     "name": "Greater Armband of Focus",
+     "cost": [
+      {
+       "template": 58464,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58466,
+     "name": "Grand Armband of Focus",
+     "cost": [
+      {
+       "template": 58465,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      }
+     ]
+    },
+    {
+     "template": 58467,
+     "name": "Mighty Armband of Focus",
+     "cost": [
+      {
+       "template": 58466,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58468,
+     "name": "Majestic Armband of Focus",
+     "cost": [
+      {
+       "template": 58467,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58469,
+     "name": "Royal Armband of Focus",
+     "cost": [
+      {
+       "template": 58468,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58470,
+     "name": "Imperial Armband of Focus",
+     "cost": [
+      {
+       "template": 58469,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58471,
+     "name": "Godly Armband of Focus",
+     "cost": [
+      {
+       "template": 58470,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 5
+      }
+     ]
+    }
+   ]
+  },
+  "20": {
+   "title": "Otherworld Hunt Bracelet Vitality (Holtz the Peddler; owner's costs 2026-10-17)",
+   "stock": [
+    {
+     "template": 58472,
+     "name": "Minor Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58482,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58473,
+     "name": "Lesser Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58472,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58474,
+     "name": "Mystic Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58473,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58475,
+     "name": "Greater Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58474,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58476,
+     "name": "Grand Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58475,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      }
+     ]
+    },
+    {
+     "template": 58477,
+     "name": "Mighty Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58476,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 1
+      }
+     ]
+    },
+    {
+     "template": 58478,
+     "name": "Majestic Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58477,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 2
+      }
+     ]
+    },
+    {
+     "template": 58479,
+     "name": "Royal Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58478,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 3
+      }
+     ]
+    },
+    {
+     "template": 58480,
+     "name": "Imperial Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58479,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 4
+      }
+     ]
+    },
+    {
+     "template": 58481,
+     "name": "Godly Bracer of Vitality",
+     "cost": [
+      {
+       "template": 58480,
+       "qty": 1
+      },
+      {
+       "template": 58482,
+       "qty": 5
+      },
+      {
+       "template": 58483,
+       "qty": 5
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

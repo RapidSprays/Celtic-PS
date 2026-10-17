@@ -73,11 +73,14 @@ public sealed partial class GameServer
         var available = new List<int>();
         var notYet = new List<int>();
         var level = s.Sheet?.Level ?? 1;
+        HashSet<int>? owned = null; // read once, only when a quest needs an item (quest-requirements.json)
+        ISet<int> Owned() => owned ??= s.Character is { } ch ? _store.ListItems(ch.Id).Select(i => i.TemplateId).ToHashSet() : [];
         foreach (var q in _quests.Quests.Values)
         {
             if (q.Giver is null || q.Seasonal || q.IsBounty) continue; // bounties come from the boards
             if (s.Quests.TryGetValue(q.Id, out var state) && (!state.Completed || !q.Repeatable)) continue;
             if (!q.Prerequisites.All(p => QuestDone(s, p))) continue;
+            if (!_questRequirements.ItemsMet(q.Id, Owned)) continue;
             (level >= q.MinLevel ? available : notYet).Add(q.Id);
         }
         return (available, notYet);
@@ -255,8 +258,22 @@ public sealed partial class GameServer
         _store.AddCurrency(c.Id, info.RewardCoins, 0);
         var before = s.Sheet!.Level;
         var items = new List<(int, int)>();
-        // A piece of gear for the quest's level now and then. Approximated: the real rewards are server-only.
-        if (Random.Shared.NextDouble() < 0.4)
+        // The owner's items for this quest (quest-rewards.json), else a piece of gear for the quest's level now and then
+        // (approximated: the real rewards are server-only).
+        if (_questRewards.For(info.Id, (CharacterClass)c.Class) is { } own)
+            foreach (var (item, quantity) in own.Where(i => _balance.Items.ContainsKey(i.Item)))
+            {
+                items.Add((item, quantity));
+                GrantItem(c.Id, item, quantity);
+            }
+        else if (NamesakeReward(info.Name) is { } namesake)
+        {
+            // A quest named after a piece of gear gives it (the Warden armour's Astral Gauntlets, the Dragonlord set, the
+            // seasonal hats…), as on live.
+            items.Add((namesake, 1));
+            GrantItem(c.Id, namesake, 1);
+        }
+        else if (Random.Shared.NextDouble() < 0.4)
             foreach (var drop in _loot.Roll(info.Level, 4, (CharacterClass)c.Class, Random.Shared))
             {
                 items.Add((drop, 1));
@@ -281,6 +298,23 @@ public sealed partial class GameServer
                     CompleteStage(s, other, i);
         SendQuestData(s);
     }
+
+    /// <summary>
+    /// The piece of gear a quest is named after ("Astral Gauntlets" → item 17772): the equippable item with exactly that
+    /// name (the lowest id when there are a few copies), or null.
+    /// </summary>
+    private int? NamesakeReward(string questName)
+    {
+        _namesakes ??= _balance.Items.Values.Where(i => i.Slot >= EquipSlot.Weapon && !i.IsPlaceholder)
+            .GroupBy(i => i.Name).Where(g => g.Count() <= 3).ToDictionary(g => g.Key, g => g.Min(i => i.Id));
+        // The test copies ("CT Astral Helm") and old versions ("Spiritshadow Helm OLD") give the same piece.
+        var name = questName.Trim();
+        if (name.StartsWith("CT ", StringComparison.Ordinal)) name = name[3..];
+        if (name.EndsWith(" OLD", StringComparison.Ordinal)) name = name[..^4];
+        return _namesakes.TryGetValue(name, out var id) ? id : null;
+    }
+
+    private Dictionary<string, int>? _namesakes;
 
     /// <summary>A stage that's satisfied the moment it opens: items already carried, a quest already done, standing on the spot.</summary>
     private void CheckStageAlreadyMet(Session s, QuestState q, int stage)
@@ -327,6 +361,34 @@ public sealed partial class GameServer
         SaveQuest(s, q);
         Send(s, Opcode.QuestStageProgressReply, b => QuestMessages.WriteProgress(b, q.Info.Id, stage, (int)info.Type, info.Target.Count - st.Sum, null));
         SendQuestData(s);
+    }
+
+    /// <summary>
+    /// Recounts every open "collect" stage (LootItem) from the backpack, so items that arrive any way count: a trade, mail,
+    /// a shop or token vendor, a chest, normal loot, the auction house (the owner's report, 2026-10-17: a Sun Disc traded
+    /// to his warrior didn't count). Runs after every sheet refresh; never lowers a count, and doesn't run inside itself.
+    /// </summary>
+    private void RecountQuestItems(Session s)
+    {
+        if (s.RecountingQuestItems || s.Character is null || s.Quests.Count == 0) return;
+        var stages = OpenStages(s, StageType.LootItem).ToList();
+        if (stages.Count == 0) return;
+        s.RecountingQuestItems = true;
+        try
+        {
+            var backpack = _store.ListItems(s.Character.Id).Where(i => i.Slot == ItemRecord.Backpack).ToList();
+            foreach (var (q, i) in stages)
+            {
+                if (q.Completed || q.Stages[i].Done || !q.Stages[i].Active) continue;
+                var target = q.Info.Stages[i].Target;
+                var held = Math.Min(target.Count, backpack.Where(it => it.TemplateId == target.Id).Sum(it => it.Quantity));
+                if (held > q.Stages[i].Sum) Advance(s, q, i, held - q.Stages[i].Sum);
+            }
+        }
+        finally
+        {
+            s.RecountingQuestItems = false;
+        }
     }
 
     private IEnumerable<(QuestState Quest, int Stage)> OpenStages(Session s, StageType type) =>

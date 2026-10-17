@@ -37,19 +37,47 @@ public sealed partial class GameServer
 
     /// <summary>
     /// The client's permanent "Health/Energy Regen Boost Amulet" effects (62/63), at the level nearest the gear's total
-    /// regen, so regen gear shows as a buff, plus each completed set's aura. Display only: the tick and the character sheet
+    /// regen, so regen gear shows as a buff, the permanent "Attack Speed Boost" (61) for haste gear, plus each completed set's aura. Display only: the tick and the character sheet
     /// apply the real amounts.
     /// </summary>
+    /// <summary>"Fingals Shield": protection from Mordris's Fingal's Bane (skill 2215, its burn 2147).</summary>
+    private const int FingalsShieldEffect = 2148, FingalsBaneSkill = 2215, FingalsBaneEffect = 2147;
+
+    /// <summary>
+    /// The Dragonlord Aura (2100-2104) grants Fingal's Shield; the owner's rule (2026-10-16) gives it with the Exalted
+    /// Aura (5348) too.
+    /// </summary>
+    private static bool HasFingalsShield(Session s) => s.Sheet?.AuraEffects.Any(a => a is >= 2100 and <= 2104 or 5348) == true;
+
+    /// <summary>The client's permanent regen effects (health, energy) for gear worn in a slot.</summary>
+    private static (int Health, int Energy) RegenIcons(EquipSlot slot) => slot switch
+    {
+        EquipSlot.RingR1 or EquipSlot.RingR2 or EquipSlot.RingL1 or EquipSlot.RingL2 => (117, 118),
+        EquipSlot.BangleR or EquipSlot.BangleL => (119, 120),
+        EquipSlot.Offhand => (69, 70),
+        EquipSlot.Head => (115, 116),
+        EquipSlot.Mount => (158, 159),
+        _ => (Sigils.GearHealthRegenEffect, Sigils.GearEnergyRegenEffect),
+    };
+
     private void UpdateGearRegenEffects(Session s)
     {
-        var gear = s.Sheet?.GearRegenPerTick ?? default;
+        // One health and one energy icon per kind of item, as on live: the client's "Health/Energy Regen Boost Amulet",
+        // "… Ring", "… Bracelet", "… Offhand" (quivers, books), "… Helm" and "… Mount" effects, each at the level nearest that
+        // kind's total. Anything else (charms, armour, weapons, pets) shows on the amulet icons.
         var wanted = new List<(int Effect, int Amount)>();
-        if (gear.Health + gear.HealthOutOfCombat > 0) wanted.Add((Sigils.GearHealthRegenEffect, gear.Health + gear.HealthOutOfCombat));
-        if (gear.Energy + gear.EnergyOutOfCombat > 0) wanted.Add((Sigils.GearEnergyRegenEffect, gear.Energy + gear.EnergyOutOfCombat));
+        foreach (var kind in (s.Sheet?.GearRegenBySlot ?? []).GroupBy(r => RegenIcons(r.Slot)))
+        {
+            if (kind.Sum(r => r.Health) is > 0 and var health) wanted.Add((kind.Key.Health, health));
+            if (kind.Sum(r => r.Energy) is > 0 and var energy) wanted.Add((kind.Key.Energy, energy));
+        }
+        // Haste gear (Ring of Haste, Spectral Ring of the Reaper, haste quivers): the best one's percent, as the sheet applies it.
+        if (s.Sheet?.GearHastePercent is > 0 and var haste) wanted.Add((Sigils.GearHasteEffect, haste));
         var levels = wanted.Select(w => (w.Effect, Level: _balance.StatusEffects.TryGetValue(w.Effect, out var info) && info.Levels.Count > 0
             ? Enumerable.Range(0, info.Levels.Count).MinBy(i => Math.Abs(info.Levels[i].Amount - w.Amount)) : 0)).ToList();
         // Set bonuses: the set's own aura effect ("Exalted Aura"), so it shows under the health bar with its description.
         levels.AddRange((s.Sheet?.AuraEffects ?? []).Distinct().Select(effect => (effect, 0)));
+        if (HasFingalsShield(s)) levels.Add((FingalsShieldEffect, 0));
         var current = s.Effects.Where(e => e.DisplayOnly).Select(e => (e.Info.Id, e.LevelIndex)).OrderBy(x => x).ToList();
         if (current.SequenceEqual(levels.OrderBy(x => x))) return;
         s.Effects.RemoveAll(e => e.DisplayOnly);

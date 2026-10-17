@@ -119,17 +119,17 @@ public sealed class MultiplayerTests : IDisposable
         Assert.Equal(aId, look.ReadVariableUInt32());
         Assert.Equal(30, look.ReadVariableInt32()); // 25 equipment slots + headgear + fashion + level + PvP rank and rating
 
-        // A kill near Bran shares the XP with him.
+        // A kill near Bran gives him his own kill pop-up (his XP, the gold and his items), as on live.
         Say(a, ChatChannel.Local, ".spawn Scrawny Coast Wolf 1");
         var wolf = a.Expect(Opcode.ZoneMonsterAppeared).ReadVariableUInt32();
         a.Send(Opcode.StartAttackingNPC, new StartAttacking(TargetType.Mob, NetTime.Now, wolf).Write);
         var swing = b.Expect(Opcode.AttackState);
         Assert.Equal((true, false, (int)aId), (swing.ReadByte() == 1, swing.ReadByte() == 1, swing.ReadVariableInt32()));
         a.Expect(Opcode.WonCombat, TimeSpan.FromSeconds(20));
-        string shared;
-        do shared = b.Expect(Opcode.SimpleMessageForThePlayer, TimeSpan.FromSeconds(5)).ReadString();
-        while (!shared.Contains("party"));
-        Assert.Contains("Aoife's kill", shared);
+        var shared = b.Expect(Opcode.WonCombat, TimeSpan.FromSeconds(5));
+        shared.ReadVariableInt32(); // mob template
+        Assert.Equal((int)wolf, shared.ReadVariableInt32());
+        Assert.Equal((int)aId, shared.ReadVariableInt32()); // names the killer: "Aoife defeated…"
 
         // Bran leaves the zone: Aoife is told, and his party survives the trip.
         Say(b, ChatChannel.Local, ".goto stonevale");

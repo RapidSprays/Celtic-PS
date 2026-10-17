@@ -1,0 +1,1204 @@
+{
+ "_comment": "Item rewards for quests (restart the server after editing). The game data has none (they're server-only), so a quest not listed here gets a 40% chance of a piece of gear for its level; a quest listed here gives exactly its items instead (an empty list gives none). id: the quest's id; quantity defaults to 1; an item with a class (Warrior, Druid, Mage, Ranger, Rogue) goes only to that class. name is a label for you. A quest that isn't listed and is named after a piece of gear (Astral Gauntlets, Dragonlord Helm…) gives that piece.",
+ "quests": [
+  {
+   "id": 2434,
+   "name": "Look to the Future (Azhar the Fugitive, daily: 4 Hounds of Ruin)",
+   "items": [
+    {
+     "id": 58482,
+     "name": "Contraption Piece",
+     "quantity": 1
+    }
+   ]
+  },
+  {
+   "id": 2436,
+   "name": "Look to the Future (Azhar the Fugitive, the first time)",
+   "items": [
+    {
+     "id": 58482,
+     "name": "Contraption Piece",
+     "quantity": 1
+    }
+   ]
+  },
+  {
+   "id": 2435,
+   "name": "Occulus Rift (Azhar the Fugitive, weekly: 2 Elite Blight Hounds and the Elite Huntsman)",
+   "items": [
+    {
+     "id": 58483,
+     "name": "Contraption Core",
+     "quantity": 1
+    }
+   ]
+  },
+  {
+   "id": 482,
+   "name": "Onyx Hands (hands armour for your class)",
+   "items": [
+    {
+     "id": 23569,
+     "name": "Onyx Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 23574,
+     "name": "Onyx Wristguards",
+     "class": "Druid"
+    },
+    {
+     "id": 23579,
+     "name": "Onyx Vambraces",
+     "class": "Ranger"
+    },
+    {
+     "id": 23584,
+     "name": "Onyx Gloves",
+     "class": "Mage"
+    },
+    {
+     "id": 23589,
+     "name": "Onyx Handwraps",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 483,
+   "name": "Onyx Feet (feet armour for your class)",
+   "items": [
+    {
+     "id": 23568,
+     "name": "Onyx Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 23573,
+     "name": "Onyx Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 23578,
+     "name": "Onyx Treads",
+     "class": "Ranger"
+    },
+    {
+     "id": 23583,
+     "name": "Onyx Shoes",
+     "class": "Mage"
+    },
+    {
+     "id": 23588,
+     "name": "Onyx Footguards",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 484,
+   "name": "Onyx Helm (head armour for your class)",
+   "items": [
+    {
+     "id": 23567,
+     "name": "Onyx Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 23572,
+     "name": "Onyx Circlet",
+     "class": "Druid"
+    },
+    {
+     "id": 23577,
+     "name": "Onyx Hood",
+     "class": "Ranger"
+    },
+    {
+     "id": 23582,
+     "name": "Onyx Hat",
+     "class": "Mage"
+    },
+    {
+     "id": 23587,
+     "name": "Onyx Cowl",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 485,
+   "name": "Onyx Legs (legs armour for your class)",
+   "items": [
+    {
+     "id": 23566,
+     "name": "Onyx Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 23571,
+     "name": "Onyx Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 23576,
+     "name": "Onyx Legguards",
+     "class": "Ranger"
+    },
+    {
+     "id": 23581,
+     "name": "Onyx Skirt",
+     "class": "Mage"
+    },
+    {
+     "id": 23586,
+     "name": "Onyx Breeches",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 486,
+   "name": "Onyx Torso (chest armour for your class)",
+   "items": [
+    {
+     "id": 23565,
+     "name": "Onyx Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 23570,
+     "name": "Onyx Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 23575,
+     "name": "Onyx Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 23580,
+     "name": "Onyx Gown",
+     "class": "Mage"
+    },
+    {
+     "id": 23585,
+     "name": "Onyx Jerkin",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 487,
+   "name": "Obsidian Hands (hands armour for your class)",
+   "items": [
+    {
+     "id": 23594,
+     "name": "Obsidian Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 23599,
+     "name": "Obsidian Wristguards",
+     "class": "Druid"
+    },
+    {
+     "id": 23604,
+     "name": "Obsidian Vambraces",
+     "class": "Ranger"
+    },
+    {
+     "id": 23609,
+     "name": "Obsidian Gloves",
+     "class": "Mage"
+    },
+    {
+     "id": 23614,
+     "name": "Obsidian Handwraps",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 488,
+   "name": "Obsidian Feet (feet armour for your class)",
+   "items": [
+    {
+     "id": 23593,
+     "name": "Obsidian Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 23598,
+     "name": "Obsidian Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 23603,
+     "name": "Obsidian Treads",
+     "class": "Ranger"
+    },
+    {
+     "id": 23608,
+     "name": "Obsidian Shoes",
+     "class": "Mage"
+    },
+    {
+     "id": 23613,
+     "name": "Obsidian Footguards",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 489,
+   "name": "Obsidian Helm (head armour for your class)",
+   "items": [
+    {
+     "id": 23592,
+     "name": "Obsidian Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 23597,
+     "name": "Obsidian Circlet",
+     "class": "Druid"
+    },
+    {
+     "id": 23602,
+     "name": "Obsidian Hood",
+     "class": "Ranger"
+    },
+    {
+     "id": 23607,
+     "name": "Obsidian Hat",
+     "class": "Mage"
+    },
+    {
+     "id": 23612,
+     "name": "Obsidian Cowl",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 490,
+   "name": "Obsidian Legs (legs armour for your class)",
+   "items": [
+    {
+     "id": 23591,
+     "name": "Obsidian Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 23596,
+     "name": "Obsidian Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 23601,
+     "name": "Obsidian Legguards",
+     "class": "Ranger"
+    },
+    {
+     "id": 23606,
+     "name": "Obsidian Skirt",
+     "class": "Mage"
+    },
+    {
+     "id": 23611,
+     "name": "Obsidian Breeches",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 491,
+   "name": "Obsidian Torso (chest armour for your class)",
+   "items": [
+    {
+     "id": 23590,
+     "name": "Obsidian Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 23595,
+     "name": "Obsidian Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 23600,
+     "name": "Obsidian Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 23605,
+     "name": "Obsidian Gown",
+     "class": "Mage"
+    },
+    {
+     "id": 23610,
+     "name": "Obsidian Jerkin",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 493,
+   "name": "Claws of the Beast (hands armour for your class)",
+   "items": [
+    {
+     "id": 34668,
+     "name": "Beastbone Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 34673,
+     "name": "Beastbone Wristguards",
+     "class": "Druid"
+    },
+    {
+     "id": 34678,
+     "name": "Beastbone Vambraces",
+     "class": "Ranger"
+    },
+    {
+     "id": 34683,
+     "name": "Beastbone Gloves",
+     "class": "Mage"
+    },
+    {
+     "id": 34688,
+     "name": "Beastbone Handwraps",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 494,
+   "name": "Paws of the Beast (feet armour for your class)",
+   "items": [
+    {
+     "id": 34669,
+     "name": "Beastbone Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 34674,
+     "name": "Beastbone Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 34679,
+     "name": "Beastbone Treads",
+     "class": "Ranger"
+    },
+    {
+     "id": 34684,
+     "name": "Beastbone Shoes",
+     "class": "Mage"
+    },
+    {
+     "id": 34689,
+     "name": "Beastbone Footguards",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 495,
+   "name": "Head of the Beast (head armour for your class)",
+   "items": [
+    {
+     "id": 34670,
+     "name": "Beastbone Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 34675,
+     "name": "Beastbone Circlet",
+     "class": "Druid"
+    },
+    {
+     "id": 34680,
+     "name": "Beastbone Hood",
+     "class": "Ranger"
+    },
+    {
+     "id": 34685,
+     "name": "Beastbone Hat",
+     "class": "Mage"
+    },
+    {
+     "id": 34690,
+     "name": "Beastbone Cowl",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 496,
+   "name": "Legs of the Beast (legs armour for your class)",
+   "items": [
+    {
+     "id": 34671,
+     "name": "Beastbone Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 34676,
+     "name": "Beastbone Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 34681,
+     "name": "Beastbone Legguards",
+     "class": "Ranger"
+    },
+    {
+     "id": 34686,
+     "name": "Beastbone Skirt",
+     "class": "Mage"
+    },
+    {
+     "id": 34691,
+     "name": "Beastbone Breeches",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 497,
+   "name": "Ribs of the Beast (chest armour for your class)",
+   "items": [
+    {
+     "id": 34672,
+     "name": "Beastbone Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 34677,
+     "name": "Beastbone Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 34682,
+     "name": "Beastbone Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 34687,
+     "name": "Beastbone Gown",
+     "class": "Mage"
+    },
+    {
+     "id": 34692,
+     "name": "Beastbone Jerkin",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 498,
+   "name": "Talons of the Beast (hands armour for your class)",
+   "items": [
+    {
+     "id": 34693,
+     "name": "Ancient Beastbone Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 34698,
+     "name": "Ancient Beastbone Wristguards",
+     "class": "Druid"
+    },
+    {
+     "id": 34703,
+     "name": "Ancient Beastbone Vambraces",
+     "class": "Ranger"
+    },
+    {
+     "id": 34708,
+     "name": "Ancient Beastbone Gloves",
+     "class": "Mage"
+    },
+    {
+     "id": 34713,
+     "name": "Ancient Beastbone Handwraps",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 499,
+   "name": "Hooves of the Beast (feet armour for your class)",
+   "items": [
+    {
+     "id": 34694,
+     "name": "Ancient Beastbone Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 34699,
+     "name": "Ancient Beastbone Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 34704,
+     "name": "Ancient Beastbone Treads",
+     "class": "Ranger"
+    },
+    {
+     "id": 34709,
+     "name": "Ancient Beastbone Shoes",
+     "class": "Mage"
+    },
+    {
+     "id": 34714,
+     "name": "Ancient Beastbone Footguards",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 500,
+   "name": "Skull of the Beast (head armour for your class)",
+   "items": [
+    {
+     "id": 34695,
+     "name": "Ancient Beastbone Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 34700,
+     "name": "Ancient Beastbone Circlet",
+     "class": "Druid"
+    },
+    {
+     "id": 34705,
+     "name": "Ancient Beastbone Hood",
+     "class": "Ranger"
+    },
+    {
+     "id": 34710,
+     "name": "Ancient Beastbone Hat",
+     "class": "Mage"
+    },
+    {
+     "id": 34715,
+     "name": "Ancient Beastbone Cowl",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 501,
+   "name": "Limbs of the Beast (legs armour for your class)",
+   "items": [
+    {
+     "id": 34696,
+     "name": "Ancient Beastbone Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 34701,
+     "name": "Ancient Beastbone Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 34706,
+     "name": "Ancient Beastbone Legguards",
+     "class": "Ranger"
+    },
+    {
+     "id": 34711,
+     "name": "Ancient Beastbone Skirt",
+     "class": "Mage"
+    },
+    {
+     "id": 34716,
+     "name": "Ancient Beastbone Breeches",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 502,
+   "name": "Spine of the Beast (chest armour for your class)",
+   "items": [
+    {
+     "id": 34697,
+     "name": "Ancient Beastbone Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 34702,
+     "name": "Ancient Beastbone Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 34707,
+     "name": "Ancient Beastbone Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 34712,
+     "name": "Ancient Beastbone Gown",
+     "class": "Mage"
+    },
+    {
+     "id": 34717,
+     "name": "Ancient Beastbone Jerkin",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1729,
+   "name": "Alchemical Affairs: Hands (hands armour for your class)",
+   "items": [
+    {
+     "id": 53877,
+     "name": "Alchemical Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 53882,
+     "name": "Alchemical Wristguards",
+     "class": "Druid"
+    },
+    {
+     "id": 53887,
+     "name": "Alchemical Vambraces",
+     "class": "Ranger"
+    },
+    {
+     "id": 53892,
+     "name": "Alchemical Gloves",
+     "class": "Mage"
+    },
+    {
+     "id": 53897,
+     "name": "Alchemical Handwraps",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1730,
+   "name": "Alchemical Affairs: Feet (feet armour for your class)",
+   "items": [
+    {
+     "id": 53878,
+     "name": "Alchemical Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 53883,
+     "name": "Alchemical Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 53888,
+     "name": "Alchemical Treads",
+     "class": "Ranger"
+    },
+    {
+     "id": 53893,
+     "name": "Alchemical Shoes",
+     "class": "Mage"
+    },
+    {
+     "id": 53898,
+     "name": "Alchemical Footguards",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1731,
+   "name": "Alchemical Affairs: Helmet (head armour for your class)",
+   "items": [
+    {
+     "id": 53879,
+     "name": "Alchemical Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 53884,
+     "name": "Alchemical Circlet",
+     "class": "Druid"
+    },
+    {
+     "id": 53889,
+     "name": "Alchemical Hood",
+     "class": "Ranger"
+    },
+    {
+     "id": 53894,
+     "name": "Alchemical Hat",
+     "class": "Mage"
+    },
+    {
+     "id": 53899,
+     "name": "Alchemical Cowl",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1732,
+   "name": "Alchemical Affairs: Legs (legs armour for your class)",
+   "items": [
+    {
+     "id": 53880,
+     "name": "Alchemical Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 53885,
+     "name": "Alchemical Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 53890,
+     "name": "Alchemical Legguards",
+     "class": "Ranger"
+    },
+    {
+     "id": 53895,
+     "name": "Alchemical Skirt",
+     "class": "Mage"
+    },
+    {
+     "id": 53900,
+     "name": "Alchemical Breeches",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1733,
+   "name": "Alchemical Affairs: Torso (chest armour for your class)",
+   "items": [
+    {
+     "id": 53881,
+     "name": "Alchemical Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 53886,
+     "name": "Alchemical Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 53891,
+     "name": "Alchemical Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 53896,
+     "name": "Alchemical Gown",
+     "class": "Mage"
+    },
+    {
+     "id": 53901,
+     "name": "Alchemical Jerkin",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1734,
+   "name": "Occultist Oddities: Hands (hands armour for your class)",
+   "items": [
+    {
+     "id": 53902,
+     "name": "Occult Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 53907,
+     "name": "Occult Wristguards",
+     "class": "Druid"
+    },
+    {
+     "id": 53912,
+     "name": "Occult Vambraces",
+     "class": "Ranger"
+    },
+    {
+     "id": 53917,
+     "name": "Occult Gloves",
+     "class": "Mage"
+    },
+    {
+     "id": 53922,
+     "name": "Occult Handwraps",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1735,
+   "name": "Occultist Oddities: Feet (feet armour for your class)",
+   "items": [
+    {
+     "id": 53903,
+     "name": "Occult Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 53908,
+     "name": "Occult Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 53913,
+     "name": "Occult Treads",
+     "class": "Ranger"
+    },
+    {
+     "id": 53918,
+     "name": "Occult Shoes",
+     "class": "Mage"
+    },
+    {
+     "id": 53923,
+     "name": "Occult Footguards",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1736,
+   "name": "Occultist Oddities: Helmet (head armour for your class)",
+   "items": [
+    {
+     "id": 53904,
+     "name": "Occult Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 53909,
+     "name": "Occult Circlet",
+     "class": "Druid"
+    },
+    {
+     "id": 53914,
+     "name": "Occult Hood",
+     "class": "Ranger"
+    },
+    {
+     "id": 53919,
+     "name": "Occult Hat",
+     "class": "Mage"
+    },
+    {
+     "id": 53924,
+     "name": "Occult Cowl",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1737,
+   "name": "Occultist Oddities: Legs (legs armour for your class)",
+   "items": [
+    {
+     "id": 53905,
+     "name": "Occult Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 53910,
+     "name": "Occult Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 53915,
+     "name": "Occult Legguards",
+     "class": "Ranger"
+    },
+    {
+     "id": 53920,
+     "name": "Occult Skirt",
+     "class": "Mage"
+    },
+    {
+     "id": 53925,
+     "name": "Occult Breeches",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 1738,
+   "name": "Occultist Oddities: Torso (chest armour for your class)",
+   "items": [
+    {
+     "id": 53906,
+     "name": "Occult Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 53911,
+     "name": "Occult Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 53916,
+     "name": "Occult Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 53921,
+     "name": "Occult Gown",
+     "class": "Mage"
+    },
+    {
+     "id": 53926,
+     "name": "Occult Jerkin",
+     "class": "Rogue"
+    }
+   ]
+  },
+  {
+   "id": 101,
+   "name": "Meteoric Might (hand in the Sword of the Shining Sun)",
+   "items": [
+    {
+     "id": 17587,
+     "name": "Meteoric Sword"
+    }
+   ]
+  },
+  {
+   "id": 102,
+   "name": "Meteoric Might (hand in the Totem of the Midnight Stars)",
+   "items": [
+    {
+     "id": 17591,
+     "name": "Meteoric Totem"
+    }
+   ]
+  },
+  {
+   "id": 103,
+   "name": "Meteoric Might (hand in the Bow of the Four Winds)",
+   "items": [
+    {
+     "id": 17588,
+     "name": "Meteoric Bow"
+    }
+   ]
+  },
+  {
+   "id": 104,
+   "name": "Meteoric Might (hand in the Wand of the Silver Moon)",
+   "items": [
+    {
+     "id": 17590,
+     "name": "Meteoric Wand"
+    }
+   ]
+  },
+  {
+   "id": 105,
+   "name": "Meteoric Might (hand in the Dagger of the Darkest Night)",
+   "items": [
+    {
+     "id": 17589,
+     "name": "Meteoric Dagger"
+    }
+   ]
+  },
+  {
+   "id": 89,
+   "name": "Warden Brixos (Warden armour, gloves)",
+   "items": [
+    {
+     "id": 15365,
+     "name": "Bloodstrike Gauntlets",
+     "class": "Warrior"
+    },
+    {
+     "id": 15370,
+     "name": "Greythorn Gauntlets",
+     "class": "Ranger"
+    },
+    {
+     "id": 15375,
+     "name": "Moonshadow Gloves",
+     "class": "Rogue"
+    },
+    {
+     "id": 15380,
+     "name": "Goldsong Gloves",
+     "class": "Druid"
+    },
+    {
+     "id": 15385,
+     "name": "Loremantle Gloves",
+     "class": "Mage"
+    }
+   ]
+  },
+  {
+   "id": 90,
+   "name": "Warden Rhallai (Warden armour, boots)",
+   "items": [
+    {
+     "id": 15364,
+     "name": "Bloodstrike Boots",
+     "class": "Warrior"
+    },
+    {
+     "id": 15369,
+     "name": "Greythorn Boots",
+     "class": "Ranger"
+    },
+    {
+     "id": 15374,
+     "name": "Moonshadow Boots",
+     "class": "Rogue"
+    },
+    {
+     "id": 15379,
+     "name": "Goldsong Sandals",
+     "class": "Druid"
+    },
+    {
+     "id": 15384,
+     "name": "Loremantle Shoes",
+     "class": "Mage"
+    }
+   ]
+  },
+  {
+   "id": 91,
+   "name": "Warden Vinda (Warden armour, helm)",
+   "items": [
+    {
+     "id": 15363,
+     "name": "Bloodstrike Helm",
+     "class": "Warrior"
+    },
+    {
+     "id": 15368,
+     "name": "Greythorn Helm",
+     "class": "Ranger"
+    },
+    {
+     "id": 15373,
+     "name": "Moonshadow Helm",
+     "class": "Rogue"
+    },
+    {
+     "id": 15378,
+     "name": "Goldsong Helm",
+     "class": "Druid"
+    },
+    {
+     "id": 15383,
+     "name": "Loremantle Helm",
+     "class": "Mage"
+    }
+   ]
+  },
+  {
+   "id": 92,
+   "name": "Warden Eanan (Warden armour, legs)",
+   "items": [
+    {
+     "id": 15362,
+     "name": "Bloodstrike Greaves",
+     "class": "Warrior"
+    },
+    {
+     "id": 15367,
+     "name": "Greythorn Greaves",
+     "class": "Ranger"
+    },
+    {
+     "id": 15372,
+     "name": "Moonshadow Breeches",
+     "class": "Rogue"
+    },
+    {
+     "id": 15377,
+     "name": "Goldsong Leggings",
+     "class": "Druid"
+    },
+    {
+     "id": 15382,
+     "name": "Loremantle Skirt",
+     "class": "Mage"
+    }
+   ]
+  },
+  {
+   "id": 93,
+   "name": "Warden Griga (Warden armour, chest)",
+   "items": [
+    {
+     "id": 15361,
+     "name": "Bloodstrike Breastplate",
+     "class": "Warrior"
+    },
+    {
+     "id": 15366,
+     "name": "Greythorn Cuirass",
+     "class": "Ranger"
+    },
+    {
+     "id": 15371,
+     "name": "Moonshadow Jerkin",
+     "class": "Rogue"
+    },
+    {
+     "id": 15376,
+     "name": "Goldsong Robe",
+     "class": "Druid"
+    },
+    {
+     "id": 15381,
+     "name": "Loremantle Gown",
+     "class": "Mage"
+    }
+   ]
+  },
+  {
+   "id": 88,
+   "name": "Warden Oisin (the Warden weapon)",
+   "items": [
+    {
+     "id": 17338,
+     "name": "Sword of the Shining Sun",
+     "class": "Warrior"
+    },
+    {
+     "id": 17339,
+     "name": "Bow of the Four Winds",
+     "class": "Ranger"
+    },
+    {
+     "id": 17340,
+     "name": "Dagger of the Darkest Night",
+     "class": "Rogue"
+    },
+    {
+     "id": 17341,
+     "name": "Wand of the Silver Moon",
+     "class": "Mage"
+    },
+    {
+     "id": 17342,
+     "name": "Totem of the Midnight Stars",
+     "class": "Druid"
+    }
+   ]
+  }
+ ]
+}

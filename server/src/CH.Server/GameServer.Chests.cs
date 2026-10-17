@@ -103,6 +103,13 @@ public sealed partial class GameServer
         for (var i = 0; i < Math.Min(quantity, 50); i++) _store.AddItem(characterId, templateId, 1);
     }
 
+    /// <summary>A random event Mystery Chest (Beltane, Samhain, Icebound…), placeholders left out.</summary>
+    private int? RandomEventChest()
+    {
+        var chests = ChestCatalog.Chests.Values.Where(c => c.Kind == ChestKind.Mystery && !_balance.Items[c.ItemId].IsPlaceholder).ToList();
+        return chests.Count == 0 ? null : chests[Random.Shared.Next(chests.Count)].ItemId;
+    }
+
     /// <summary>A small chance for a kill to drop a random Mystery Chest or random-item box.</summary>
     private int? RollChestDrop()
     {

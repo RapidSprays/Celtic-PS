@@ -1,0 +1,43 @@
+{
+ "_comment": "Damage over time (restart the server after editing). Every tick of a player's DoT does a random share of its normal amount, from minPercent to maxPercent (100 = its full tick), then the target's resist to its damage type cuts it. default covers every DoT; a DoT listed under dots with its own minPercent/maxPercent uses those instead (leave them out to keep the default). damageType sets the type resists use (pierce, slash, crush, heat, cold, magic, poison, divine, chaos, true): Rupture and Stinging Swarm have none in the game data, so without it they ignore resists. effect is the DoT's status effect id; Rend's effect is shared by the mount and pet skills Astral Rays, Death Charge, Horn Lance and Impale. Dragonlord and Eldritch Spite use their own range in divine-strike.json.",
+ "default": {
+  "minPercent": 80,
+  "maxPercent": 100
+ },
+ "dots": [
+  {
+   "name": "Rend (Rogue; also Astral Rays, Death Charge, Horn Lance, Impale) - pierce",
+   "effect": 10
+  },
+  {
+   "name": "Barbed Shot (Ranger) - pierce",
+   "effect": 25
+  },
+  {
+   "name": "Rake - slash",
+   "effect": 5715
+  },
+  {
+   "name": "Rupture (Warrior) - no type in the data",
+   "effect": 133,
+   "damageType": "crush"
+  },
+  {
+   "name": "Stinging Swarm (Druid) - no type in the data",
+   "effect": 141,
+   "damageType": "poison"
+  },
+  {
+   "name": "Incinerate (Mage) - heat",
+   "effect": 82
+  },
+  {
+   "name": "Frostbite (Mage) - cold",
+   "effect": 139
+  },
+  {
+   "name": "Strangling Vines (Druid) - magic",
+   "effect": 3
+  }
+ ]
+}

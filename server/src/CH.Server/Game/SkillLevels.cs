@@ -21,6 +21,17 @@ public static class SkillLevels
     /// New ranks copy the last real one; initial and base damage keep growing by the template's own last step (heals
     /// keep growing too, as negative damage). Energy cost, cast time and recharge stay at the last rank's values.
     /// </summary>
+    /// <summary>A skill's status effect, extended the same way: amount, base amount and duration keep their last step.</summary>
+    public static List<StatusEffectLevel> ExtendEffect(IReadOnlyList<StatusEffectLevel> levels)
+    {
+        var result = levels.ToList();
+        var (last, prev) = (levels[^1], levels[^2]);
+        for (var n = 1; result.Count < Ranks; n++)
+            result.Add(new StatusEffectLevel(last.Amount + (last.Amount - prev.Amount) * n, last.BaseAmount + (last.BaseAmount - prev.BaseAmount) * n,
+                last.Duration + (last.Duration - prev.Duration) * n));
+        return result;
+    }
+
     public static List<SkillLevelInfo> Extend(IReadOnlyList<SkillLevelInfo> levels)
     {
         var result = levels.Select(l => l with { MinLevel = 0 }).ToList();

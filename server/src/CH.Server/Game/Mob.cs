@@ -24,7 +24,7 @@ public sealed class Mob
     public required MobInfo Template { get; set; }
     public required int Level { get; set; }
     public required float HomeX { get; init; }
-    public required float HomeY { get; init; }
+    public required float HomeY { get; set; }
     public required float HomeZ { get; init; }
     public float Direction { get; set; }
     public required int Opinion { get; init; }
@@ -34,12 +34,24 @@ public sealed class Mob
     public float RoamRadius { get; init; }
     public long? SpawnRecordId { get; init; }
 
+    /// <summary>The official spawn point this monster stands at (generated camps), for its respawn time.</summary>
+    public int? SpawnPointId { get; init; }
+
+    /// <summary>Model size for this spawn point (spawn-tuning.json spawnPoints "scale"); null → by appearance.</summary>
+    public float? Scale { get; init; }
+
+    /// <summary>From the generated population (spawn-tuning.json sets its respawn), not a GM spawn with its own.</summary>
+    public bool GeneratedCamp { get; init; }
+
     public bool IsNpc => Opinion >= 50;
 
     /// <summary>Fishing spots are gathering mobs (MobTemplate Type 1, opinion −15): fished with a rod, never killed in combat.</summary>
     public bool IsFishingSpot => Template.Type == 1;
     public bool RareSpot { get; init; }
     public int? FixedMaxHealth { get; set; }
+
+    /// <summary>The skill it's casting (GameServer's PendingMobCast), resolved when its cast time is up; null when not casting.</summary>
+    public object? PendingCast { get; set; }
 
     /// <summary>When each of its skills can be cast again (skill id → server time).</summary>
     public Dictionary<int, double> SkillReadyAt { get; } = new();
@@ -131,12 +143,27 @@ public sealed class Mob
     public IReadOnlyList<MobVariant> Variants { get; init; } = [];
 
     /// <summary>Picks this spawn's next monster from <see cref="Variants"/> by weight.</summary>
-    public void Reroll(Random rng)
+    public void Reroll(Random rng) => Pick(Variants, rng);
+
+    /// <summary>
+    /// The first monster at a boss spot when the server starts (spawn-tuning.json "startHighTier"): 4, 5 or 6 star with an
+    /// equal chance, from whichever of those the spot has, then by weight within that star. Later respawns use the usual odds.
+    /// </summary>
+    public void RollStartTier(Random rng, bool anyTier = false)
     {
-        if (Variants.Count < 2) return;
-        var roll = rng.NextDouble() * Variants.Sum(v => v.Weight);
-        var pick = Variants[^1];
-        foreach (var v in Variants)
+        // anyTier (spawn-tuning.json "startAnyTier"): every star the spot has, placeholders included (a gold boss's 3 or 4 star).
+        var tiers = Variants.Select(v => v.Template.Power).Where(p => anyTier || p is >= 4 and <= 6).Distinct().ToList();
+        if (tiers.Count == 0) return;
+        var tier = tiers[rng.Next(tiers.Count)];
+        Pick(Variants.Where(v => v.Template.Power == tier).ToList(), rng);
+    }
+
+    private void Pick(IReadOnlyList<MobVariant> variants, Random rng)
+    {
+        if (variants.Count == 0 || (variants.Count < 2 && ReferenceEquals(variants, Variants))) return;
+        var roll = rng.NextDouble() * variants.Sum(v => v.Weight);
+        var pick = variants[^1];
+        foreach (var v in variants)
         {
             roll -= v.Weight;
             if (roll < 0)

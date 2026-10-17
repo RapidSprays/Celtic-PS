@@ -98,6 +98,12 @@ public sealed class AssemblyPatcher
         // P16: skill descriptions show the skill's own damage and the total with gear in brackets, "4668 (7198)".
         InjectSkillDamageText("P16");
 
+        // P17: extra conversation choices (the pet and mount vendors' token shops).
+        InjectConversationExtras("P17");
+
+        // P18: weapon-delay skills' casting circle takes the whole weapon delay.
+        InjectWeaponDelayCast("P18");
+
         // Inserting instructions can push short-form branches out of range; re-pick branch sizes for every edited method.
         foreach (var method in _edited) method.Body.OptimizeMacros();
     }
@@ -107,6 +113,97 @@ public sealed class AssemblyPatcher
     {
         InjectSkillDamageText("P16");
         foreach (var method in _edited) method.Body.OptimizeMacros();
+    }
+
+    /// <summary>Applies only P18, to a client patched before it existed.</summary>
+    public void ApplyWeaponDelayCastOnly()
+    {
+        InjectWeaponDelayCast("P18");
+        foreach (var method in _edited) method.Body.OptimizeMacros();
+    }
+
+    /// <summary>
+    /// P18: CSkill.getCastingTime's result goes through CHPrivateMods.WeaponDelayCast.CastingTime(skill, time), which gives
+    /// the owner's weapon-delay skills (Shatter, Double Attack, Barbed Shot, Rend) their whole weapon delay on top of their
+    /// cast time, as the server casts them; every other skill keeps the client's time.
+    /// </summary>
+    private void InjectWeaponDelayCast(string id)
+    {
+        var type = _names.FindType(_module, "CSkill");
+        var target = type?.Methods.FirstOrDefault(m => _names.MacName(m) == "getCastingTime" && m.Parameters.Count == 1 && m.HasBody
+            && m.ReturnType.MetadataType == MetadataType.Single);
+        var sites = 0;
+        if (target is not null && !target.Body.Instructions.Any(i => i.Operand is MethodReference m && m.DeclaringType.Name == "WeaponDelayCast"))
+        {
+            if (_module.AssemblyReferences.All(r => r.Name != ModsAssembly))
+                _module.AssemblyReferences.Add(new AssemblyNameReference(ModsAssembly, new Version(1, 0, 0, 0)));
+            var modType = new TypeReference("CHPrivateMods", "WeaponDelayCast", _module, _module.AssemblyReferences.First(r => r.Name == ModsAssembly));
+            var call = new MethodReference("CastingTime", _module.TypeSystem.Single, modType) { HasThis = false };
+            call.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Object));
+            call.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Single));
+            var rets = target.Body.Instructions.Where(i => i.OpCode == OpCodes.Ret).ToList();
+            var il = BeginEdit(target);
+            var time = new VariableDefinition(_module.TypeSystem.Single);
+            target.Body.Variables.Add(time);
+            target.Body.InitLocals = true;
+            foreach (var ret in rets)
+            {
+                // value on the stack → stloc t; ldarg.0; ldloc t; call; ret. The ret becomes the stloc so branches to it stay valid.
+                ret.OpCode = OpCodes.Stloc;
+                ret.Operand = time;
+                var a = il.Create(OpCodes.Ldarg_0);
+                var b = il.Create(OpCodes.Ldloc, time);
+                var c = il.Create(OpCodes.Call, call);
+                var r = il.Create(OpCodes.Ret);
+                il.InsertAfter(ret, a);
+                il.InsertAfter(a, b);
+                il.InsertAfter(b, c);
+                il.InsertAfter(c, r);
+                sites++;
+            }
+        }
+        Record(id, "CSkill.getCastingTime: weapon-delay skills take the whole weapon delay (CHPrivateMods.WeaponDelayCast.CastingTime)", sites, expected: 1);
+    }
+
+    /// <summary>Applies only P17, to a client patched before it existed.</summary>
+    public void ApplyConversationExtrasOnly()
+    {
+        InjectConversationExtras("P17");
+        foreach (var method in _edited) method.Body.OptimizeMacros();
+    }
+
+    /// <summary>
+    /// P17: StaticConversation.LoadFromFile hands each conversation it parsed to CHPrivateMods.ConversationExtras.Add
+    /// (file name, conversation) just before returning true, so the mod can add choices the client's files don't have.
+    /// </summary>
+    private void InjectConversationExtras(string id)
+    {
+        var type = _names.FindType(_module, "StaticConversation");
+        var target = type?.Methods.FirstOrDefault(m => _names.MacName(m) == "LoadFromFile" && m.Parameters.Count == 2 && m.HasBody);
+        var sites = 0;
+        if (target is not null)
+        {
+            if (_module.AssemblyReferences.All(r => r.Name != ModsAssembly))
+                _module.AssemblyReferences.Add(new AssemblyNameReference(ModsAssembly, new Version(1, 0, 0, 0)));
+            var modType = new TypeReference("CHPrivateMods", "ConversationExtras", _module, _module.AssemblyReferences.First(r => r.Name == ModsAssembly));
+            var add = new MethodReference("Add", _module.TypeSystem.Void, modType) { HasThis = false };
+            add.Parameters.Add(new ParameterDefinition(_module.TypeSystem.String));
+            add.Parameters.Add(new ParameterDefinition(_module.TypeSystem.Object));
+            var alreadyDone = target.Body.Instructions.Any(i => i.OpCode == OpCodes.Call && i.Operand is MethodReference m && m.DeclaringType.Name == "ConversationExtras");
+            // "return true": ldc.i4.1; ret, found before BeginEdit (which turns ldc.i4.1 into ldc.i4 1). The call goes after the
+            // ldc so branches to it stay valid; the bool waits on the stack.
+            var returnsTrue = alreadyDone ? [] : target.Body.Instructions.Where(i => i.OpCode == OpCodes.Ldc_I4_1 && i.Next?.OpCode == OpCodes.Ret).ToList();
+            var il = BeginEdit(target);
+            foreach (var one in returnsTrue)
+            {
+                var call = il.Create(OpCodes.Call, add);
+                il.InsertAfter(one, call);
+                il.InsertBefore(call, il.Create(OpCodes.Ldarg_1));
+                il.InsertBefore(call, il.Create(OpCodes.Ldarg_0));
+                sites++;
+            }
+        }
+        Record(id, "StaticConversation.LoadFromFile: extra choices from CHPrivateMods.ConversationExtras.Add", sites, expected: 1);
     }
 
     /// <summary>Call before changing a method body: expands short branches so offsets can grow safely.</summary>

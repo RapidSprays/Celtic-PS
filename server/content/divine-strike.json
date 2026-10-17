@@ -1,0 +1,112 @@
+{
+ "_comment": "Divine Strike damage (restart the server after editing). Each proc hits for a random whole number from min to max (set both the same for a fixed amount). Divine Strike only lands on monsters spawn-tuning.json marks \"divine\": true. weaponProc: the set weapons' proc (5% of auto-attack hits), by the weapon's proc rank. setAura: the armour set aura's strike, the \"weapon glows with a Divine light\" one (divineStrikeChance in set-bonuses.json, 5%), by aura name. Starting values: the game data's weapon numbers and set-bonuses.json's aura numbers. offhandSkills: the Dragonlord and Exalted Dragonlord offhands' damage skills, each a random amount from min to max: Fury's hit (Grimoire, every enemy within 6 m), Spite's tick (Rondel, damage over time for 30 s), Vengeance's strike back (Shield, every hit taken for 30 s). Like the offhands say, Fury, Spite, Vengeance and Wrath (the Quiver's damage buff) only affect monsters spawn-tuning.json marks divine. Starting values: the game data's. offhandBuffs: the offhands' buffs, one fixed amount each, for their 30 s: Wrath (Quiver) adds that much damage to your auto-attacks against divine monsters; Boon (Codex) adds that much Chaos Resist to you and allies within 6 m. Starting values: the game data's. The client's skill tooltips still show the game data's numbers.",
+ "weaponProc": [
+  {
+   "set": "Warden weapons",
+   "rank": 0,
+   "min": 100,
+   "max": 250
+  },
+  {
+   "set": "Meteoric weapons",
+   "rank": 1,
+   "min": 300,
+   "max": 500
+  },
+  {
+   "set": "Frozen Meteoric weapons",
+   "rank": 2,
+   "min": 400,
+   "max": 800
+  },
+  {
+   "set": "Dragonlord weapons",
+   "rank": 3,
+   "min": 800,
+   "max": 1700
+  },
+  {
+   "set": "Exalted Dragonlord weapons",
+   "rank": 4,
+   "min": 1800,
+   "max": 2600
+  }
+ ],
+ "setAura": [
+  {
+   "aura": "Warden's Aura",
+   "min": 50,
+   "max": 50
+  },
+  {
+   "aura": "Meteoric Aura",
+   "min": 100,
+   "max": 100
+  },
+  {
+   "aura": "Frozen Meteoric Aura",
+   "min": 150,
+   "max": 150
+  }
+ ],
+ "offhandSkills": [
+  {
+   "name": "Dragonlord Fury (Dragonlord Grimoire, per enemy hit)",
+   "skill": 2213,
+   "min": 800,
+   "max": 1200
+  },
+  {
+   "name": "Eldritch Fury (Exalted Dragonlord Grimoire, per enemy hit)",
+   "skill": 7338,
+   "min": 1200,
+   "max": 1800
+  },
+  {
+   "name": "Dragonlord Spite (Dragonlord Rondel, per tick)",
+   "effect": 2146,
+   "min": 800,
+   "max": 1400
+  },
+  {
+   "name": "Eldritch Spite (Exalted Dragonlord Rondel, per tick)",
+   "effect": 5323,
+   "min": 1600,
+   "max": 2400
+  },
+  {
+   "name": "Dragonlord Vengeance (Dragonlord Shield, per strike back)",
+   "effect": 2142,
+   "min": 300,
+   "max": 600
+  },
+  {
+   "name": "Eldritch Vengeance (Exalted Dragonlord Shield, per strike back)",
+   "effect": 5319,
+   "min": 1000,
+   "max": 1500
+  }
+ ],
+ "offhandBuffs": [
+  {
+   "name": "Dragonlord Wrath (Dragonlord Quiver): + damage vs divine monsters",
+   "effect": 2144,
+   "amount": 600
+  },
+  {
+   "name": "Eldritch Wrath (Exalted Dragonlord Quiver): + damage vs divine monsters",
+   "effect": 5321,
+   "amount": 800
+  },
+  {
+   "name": "Dragonlord Boon (Dragonlord Codex): + Chaos Resist, you and allies in 6 m",
+   "effect": 2143,
+   "amount": 600
+  },
+  {
+   "name": "Eldritch Boon (Exalted Dragonlord Codex): + Chaos Resist, you and allies in 6 m",
+   "effect": 5320,
+   "amount": 800
+  }
+ ]
+}

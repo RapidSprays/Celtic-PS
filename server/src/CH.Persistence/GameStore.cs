@@ -73,7 +73,7 @@ public sealed record ItemRecord(long Id, long CharacterId, int TemplateId, int Q
 /// <summary>Progress and vitals. Health/energy of -1 mean "full"; attributes of -1 mean "race base, nothing spent".</summary>
 public sealed record CharacterProgress(int Level, int Xp, int Coins, int Health, int Energy, string Hud, bool KitGranted,
     int Strength = -1, int Dexterity = -1, int Focus = -1, int Vitality = -1, int Platinum = 0,
-    bool ShowHeadgear = true, bool ShowFashion = true);
+    bool ShowHeadgear = true, bool ShowFashion = false); // ShowFashion is the client's "Hide Equipment": off shows armour
 
 /// <summary>A hand-placed (GM) spawn point. Opinion below 50 is hostile; NPCs use 100 with level 0.</summary>
 public sealed record SpawnRecord(
@@ -406,6 +406,11 @@ public sealed class GameStore : IDisposable
             PRIMARY KEY (character_id, deck)
         );
         """,
+        // The client's "show fashion" flag is its "Hide Equipment" option: on, it draws only fashion, so characters
+        // looked bare. Every character had it on by default; this turns it off once (players can still tick it).
+        """
+        UPDATE characters SET show_fashion = 0;
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -489,8 +494,8 @@ public sealed class GameStore : IDisposable
         using var cmd = Command(
             """
             INSERT INTO characters(account_id, name, race, face, skin, skin_colour, hair, hair_colour, face_acc, face_acc_col,
-                                   scale, gender, class, zone, x, y, z, direction)
-            VALUES ($a, $n, $race, $face, $skin, $skinc, $hair, $hairc, $facc, $faccc, $scale, $g, $cls, $zone, $x, $y, $z, $d)
+                                   scale, gender, class, zone, x, y, z, direction, show_fashion)
+            VALUES ($a, $n, $race, $face, $skin, $skinc, $hair, $hairc, $facc, $faccc, $scale, $g, $cls, $zone, $x, $y, $z, $d, 0)
             RETURNING id
             """, null,
             ("$a", accountId), ("$n", c.Name), ("$race", c.Race), ("$face", c.Face), ("$skin", c.Skin), ("$skinc", c.SkinColour),

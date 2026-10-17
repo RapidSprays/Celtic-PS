@@ -1,0 +1,455 @@
+{
+ "_comment": "Quest levels and requirements (restart the server after editing). minLevel: the level a quest opens at (below it the NPC shows a grey '!'); level: the quest's level for its reward XP (defaults to minLevel). requiresAnyItem: item ids, one of which the character must own (backpack, equipped or bank) to be offered the quest at all. The Warden armour (Brixos, Rhallai, Vinda, Eanan and Griga in Stonevale) needs a Warden weapon: Sword of the Shining Sun 17338, Bow of the Four Winds 17339, Dagger of the Darkest Night 17340, Wand of the Silver Moon 17341, Totem of the Midnight Stars 17342, or the Meteoric weapon it becomes (17587-17591). Gloves at 85 up to the chest at 100; Roarke's Meteoric Might (the Meteoric weapon) at 105.",
+ "quests": [
+  {
+   "id": 121,
+   "name": "Astral Gauntlets (Warden armour, gloves)",
+   "minLevel": 85,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 122,
+   "name": "Cosmic Gloves (Warden armour, gloves)",
+   "minLevel": 85,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 123,
+   "name": "Lunar Gauntlets (Warden armour, gloves)",
+   "minLevel": 85,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 124,
+   "name": "Celestial Gloves (Warden armour, gloves)",
+   "minLevel": 85,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 125,
+   "name": "Zodiac Gloves (Warden armour, gloves)",
+   "minLevel": 85,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 126,
+   "name": "Astral Boots (Warden armour, boots)",
+   "minLevel": 89,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 127,
+   "name": "Cosmic Sandals (Warden armour, boots)",
+   "minLevel": 89,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 128,
+   "name": "Lunar Boots (Warden armour, boots)",
+   "minLevel": 89,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 129,
+   "name": "Celestial Shoes (Warden armour, boots)",
+   "minLevel": 89,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 130,
+   "name": "Zodiac Boots (Warden armour, boots)",
+   "minLevel": 89,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 131,
+   "name": "Astral Helm (Warden armour, helm)",
+   "minLevel": 93,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 132,
+   "name": "Cosmic Cowl (Warden armour, helm)",
+   "minLevel": 93,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 133,
+   "name": "Lunar Hood (Warden armour, helm)",
+   "minLevel": 93,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 134,
+   "name": "Celestial Cowl (Warden armour, helm)",
+   "minLevel": 93,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 135,
+   "name": "Zodiac Hood (Warden armour, helm)",
+   "minLevel": 93,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 136,
+   "name": "Astral Greaves (Warden armour, legs)",
+   "minLevel": 96,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 137,
+   "name": "Cosmic Leggings (Warden armour, legs)",
+   "minLevel": 96,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 138,
+   "name": "Lunar Greaves (Warden armour, legs)",
+   "minLevel": 96,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 139,
+   "name": "Celestial Skirt (Warden armour, legs)",
+   "minLevel": 96,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 140,
+   "name": "Zodiac Breeches (Warden armour, legs)",
+   "minLevel": 96,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 141,
+   "name": "Astral Breastplate (Warden armour, chest)",
+   "minLevel": 100,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 142,
+   "name": "Cosmic Robe (Warden armour, chest)",
+   "minLevel": 100,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 143,
+   "name": "Lunar Cuirass (Warden armour, chest)",
+   "minLevel": 100,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 144,
+   "name": "Celestial Gown (Warden armour, chest)",
+   "minLevel": 100,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 145,
+   "name": "Zodiac Jerkin (Warden armour, chest)",
+   "minLevel": 100,
+   "requiresAnyItem": [
+    17338,
+    17339,
+    17340,
+    17341,
+    17342,
+    17587,
+    17588,
+    17589,
+    17590,
+    17591
+   ]
+  },
+  {
+   "id": 101,
+   "name": "Meteoric Might (Roarke the Blacksmith, Lir's Reach: the Meteoric weapon)",
+   "minLevel": 105
+  },
+  {
+   "id": 102,
+   "name": "Meteoric Might (Roarke the Blacksmith, Lir's Reach: the Meteoric weapon)",
+   "minLevel": 105
+  },
+  {
+   "id": 103,
+   "name": "Meteoric Might (Roarke the Blacksmith, Lir's Reach: the Meteoric weapon)",
+   "minLevel": 105
+  },
+  {
+   "id": 104,
+   "name": "Meteoric Might (Roarke the Blacksmith, Lir's Reach: the Meteoric weapon)",
+   "minLevel": 105
+  },
+  {
+   "id": 105,
+   "name": "Meteoric Might (Roarke the Blacksmith, Lir's Reach: the Meteoric weapon)",
+   "minLevel": 105
+  }
+ ]
+}

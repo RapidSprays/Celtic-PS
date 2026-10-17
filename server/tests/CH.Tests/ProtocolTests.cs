@@ -95,7 +95,7 @@ public class ProtocolTests
         Assert.Equal(1.05f, r.ReadFloat());        // scale
         Assert.Equal(3, r.ReadVariableInt32());    // face
         Assert.Equal("Brigid", r.ReadString());
-        Assert.Equal(req.Appearance with { ShowFashion = true, ShowHeadGear = true }, CreateCharacterRequest.Read(Reread(m)).Appearance);
+        Assert.Equal(req.Appearance with { ShowFashion = false, ShowHeadGear = true }, CreateCharacterRequest.Read(Reread(m)).Appearance);
     }
 
     private static CharacterSummary Summary(string name = "Brigid") => new(

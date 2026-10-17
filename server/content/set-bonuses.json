@@ -5,7 +5,7 @@
     { "name": "Warden's Aura", "reward": "Warden Armour Set Bonus", "health": 100, "energy": 100, "divine": 50 },
     { "name": "Meteoric Aura", "reward": "Meteor Armour Set Bonus", "health": 200, "energy": 200, "divine": 100 },
     { "name": "Frozen Meteoric Aura", "reward": "Frozen Armour Set Bonus", "health": 300, "energy": 300, "divine": 150 },
-    { "name": "Dragonlord Aura", "reward": "Dragon Armour Set Bonus", "health": 500, "energy": 500, "divine": 0 },
-    { "name": "Exalted Dragonlord Aura", "reward": "Exalted Dragon Armour Set Bonus", "health": 1000, "energy": 1000, "divine": 0 }
+    { "name": "Dragonlord Aura", "reward": "Dragon Armour Set Bonus", "health": 500, "energy": 500, "divine": 200 },
+    { "name": "Exalted Dragonlord Aura", "reward": "Exalted Dragon Armour Set Bonus", "health": 1000, "energy": 1000, "divine": 750 }
   ]
 }

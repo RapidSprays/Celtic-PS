@@ -89,6 +89,12 @@ public sealed record EffectModifiers
     /// <summary>Extra damage on every auto-attack (ChangeDamageType buffs: Reapers Touch "an additional 100 poison damage per attack").</summary>
     public int ExtraAttackDamage { get; init; }
     public int DamageShield { get; init; }
+
+    /// <summary>Dragonlord/Eldritch Wrath's damage, only against monsters vulnerable to Divine.</summary>
+    public int DivineAttackDamage { get; init; }
+
+    /// <summary>Dragonlord/Eldritch Vengeance's strike back, only at monsters vulnerable to Divine.</summary>
+    public int DivineDamageShield { get; init; }
     public int CamouflagePercent { get; init; }
     public float HiddenUpToLevel { get; init; }
 
@@ -126,7 +132,9 @@ public sealed record EffectModifiers
                 EffectType.ChangeRunSpeed or EffectType.ChangeRunSpeedLevelBased => m with { RunSpeedPercent = m.RunSpeedPercent + a },
                 EffectType.BuffRangeAttackAndDamage => m with { RangedAttack = m.RangedAttack + a, RangedDamagePct = m.RangedDamagePct + a / 5.0 },
                 // Sharpen Weapons, Poison Weapon, Reapers Touch: flat damage on every auto-attack.
+                EffectType.ChangeDamageType when DivineStrikeDamage.DivineOnlyEffects.Contains(e.Info.Id) => m with { DivineAttackDamage = m.DivineAttackDamage + a },
                 EffectType.ChangeDamageType => m with { ExtraAttackDamage = m.ExtraAttackDamage + a },
+                EffectType.DamageShield when DivineStrikeDamage.DivineOnlyEffects.Contains(e.Info.Id) => m with { DivineDamageShield = m.DivineDamageShield + Math.Max(1, a) },
                 EffectType.IceSkillBoost => m with { IceSkillBoost = m.IceSkillBoost + a },
                 EffectType.FireSkillBoost => m with { FireSkillBoost = m.FireSkillBoost + a },
                 EffectType.DamageShield => m with { DamageShield = m.DamageShield + Math.Max(1, a) },

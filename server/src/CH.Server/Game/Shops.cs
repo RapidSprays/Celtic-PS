@@ -118,7 +118,40 @@ public sealed class ShopCatalog
         return Math.Max(1, (int)Math.Round(basePrice * factor));
     }
 
-    public int SellPrice(ItemInfo item) => Math.Max(1, BuyPrice(item) / 4);
+    /// <summary>
+    /// What a vendor pays for one: the owner's price (sell-prices.json), else half the price a lux trader sells it for
+    /// (shop-extras.json, owner's rule 2026-10-16), else the live price from Master's Grimoire (Sapphire 500, Diamond
+    /// 1,500), else a quarter of the generated buy price.
+    /// </summary>
+    public int SellPrice(ItemInfo item)
+    {
+        if (SellPrices.TryGetValue(item.Id, out var own)) return Math.Max(0, own);
+        var lux = _extras.Values.Select(p => p.GetValueOrDefault(item.Id)).DefaultIfEmpty(0).Max();
+        if (lux > 0) return Math.Max(1, lux / 2);
+        if (GrimoirePrices.TryGetValue(item.Id, out var live)) return live;
+        return Math.Max(1, BuyPrice(item) / 4);
+    }
+
+    /// <summary>Sell prices from Master's Grimoire (item id → gold).</summary>
+    public IReadOnlyDictionary<int, int> GrimoirePrices { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>The owner's sell prices (item id → gold), over everything else.</summary>
+    public IReadOnlyDictionary<int, int> SellPrices { get; init; } = new Dictionary<int, int>();
+
+    /// <summary>Reads item-prices.json ("sellPrices") or sell-prices.json ("prices": [{id, price}]); missing → none.</summary>
+    public static IReadOnlyDictionary<int, int> LoadPrices(string? path)
+    {
+        var prices = new Dictionary<int, int>();
+        if (path is null || !File.Exists(path)) return prices;
+        using var doc = JsonDocument.Parse(File.ReadAllBytes(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });
+        if (doc.RootElement.TryGetProperty("sellPrices", out var map))
+            foreach (var p in map.EnumerateObject())
+                if (int.TryParse(p.Name, out var id)) prices[id] = p.Value.GetInt32();
+        if (doc.RootElement.TryGetProperty("prices", out var list))
+            foreach (var p in list.EnumerateArray())
+                if (p.TryGetProperty("id", out var id) && p.TryGetProperty("price", out var price)) prices[id.GetInt32()] = price.GetInt32();
+        return prices;
+    }
 
     /// <summary>The template ids a shop sells, built once per shop (deterministic).</summary>
     public IReadOnlyList<int> Stock(int shopId)

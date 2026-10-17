@@ -18,7 +18,9 @@ public sealed partial class GameServer
     private const double ConcentrationIntervalSeconds = 3;
     private const float MeleeTolerance = 1.5f;
     private const float PlayerRadius = 0.3f;
-    private const double MobCorpseSeconds = 4;
+    // The client shows the kill report (chat line and loot pop-up) only once the death animation ends and the corpse
+    // sinks; a corpse removed sooner loses it, which big bosses' long deaths did at 4 s.
+    private const double MobCorpseSeconds = 10;
 
     private sealed class Zone
     {
@@ -76,7 +78,7 @@ public sealed partial class GameServer
         if (_zones.TryGetValue(zoneId, out var zone)) return zone;
         zone = new Zone { Id = zoneId };
         var now = NetTime.Now;
-        foreach (var mob in ZonePopulation.Build(zoneId, _balance, now, _generatedCamps, _officialStats)) zone.Mobs[mob.ServerId] = mob;
+        foreach (var mob in ZonePopulation.Build(zoneId, _balance, now, _generatedCamps, _officialStats, _spawnTuning)) zone.Mobs[mob.ServerId] = mob;
         foreach (var npc in NpcsFor(zoneId, now)) zone.Mobs.TryAdd(npc.ServerId, npc);
         foreach (var spot in FishingSpotsFor(zoneId, now)) zone.Mobs.TryAdd(spot.ServerId, spot);
         zone.GroundItems = GroundItemsFor(zoneId);
@@ -120,7 +122,7 @@ public sealed partial class GameServer
         var (x, z) = m.PositionAt(now);
         var rad = m.Direction * MathF.PI / 180f;
         return new MobSpawn(m.ServerId, (uint)m.Template.Id, x, m.HomeY, z, MathF.Sin(rad), MathF.Cos(rad), m.Opinion,
-            Math.Max(0, m.Health), 0, m.ConversationId, m.IsNpc ? 0 : m.Level, _aggroOnSight ? m.AggroRange : 0, _mobScales.GetValueOrDefault(m.Template.TemplateId, 1f));
+            Math.Max(0, m.Health), 0, m.ConversationId, m.IsNpc ? 0 : m.Level, _aggroOnSight ? m.AggroRange : 0, m.Scale ?? _mobScales.GetValueOrDefault(m.Template.TemplateId, 1f));
     }
 
     /// <summary>
@@ -282,7 +284,7 @@ public sealed partial class GameServer
                     break;
                 }
                 if (TopThreat(zone, mob) is { } top && !ReferenceEquals(top, target)
-                    && mob.Threat[top] > mob.Threat.GetValueOrDefault(target) * 1.1)
+                    && mob.Threat[top] > mob.Threat.GetValueOrDefault(target) * _threat.SwitchMargin) // threat.json
                 {
                     // Someone has 10% more threat than its target: it turns on them (a margin, so it doesn't flicker).
                     if (mob.AttackAnnounced)
@@ -295,6 +297,14 @@ public sealed partial class GameServer
                 RunMobScripts(zone, mob, now);
                 if (mob.State is not (MobState.Chasing or MobState.Fighting) || mob.Target is not Session) break;
                 target = (Session)mob.Target;
+                if (mob.PendingCast is PendingMobCast casting)
+                {
+                    if (now < casting.ResolveAt) break; // casting: it stands and doesn't swing
+                    mob.PendingCast = null;
+                    ResolveMobCast(zone, mob, casting, now);
+                    mob.NextAttackAt = Math.Max(mob.NextAttackAt, now + MobStats.AttackInterval(mob.Template));
+                    break;
+                }
                 var (mx, mz) = mob.PositionAt(now);
                 var (_, px, _, pz, _) = target.Position;
                 var distance = MathF.Sqrt((px - mx) * (px - mx) + (pz - mz) * (pz - mz));
@@ -386,7 +396,7 @@ public sealed partial class GameServer
 
     /// <summary>A skill's own aggro at a rank (skill-aggro.json from the Grimoire import; the last rank's past its table).</summary>
     private double SkillAggro(int skillId, int rank) =>
-        _skillAggro.TryGetValue(skillId, out var ranks) && ranks.Length > 0 ? ranks[Math.Clamp(rank, 0, ranks.Length - 1)] : 0;
+        _threat.SkillFlat(skillId, _skillAggro.TryGetValue(skillId, out var ranks) && ranks.Length > 0 ? ranks[Math.Clamp(rank, 0, ranks.Length - 1)] : 0); // threat.json
 
     private static Dictionary<int, float[]> LoadSkillAggro(string? path)
     {
@@ -456,6 +466,7 @@ public sealed partial class GameServer
         if (mob.AttackAnnounced && mob.Target is Session t)
             Broadcast(zone, Opcode.AttackState, new AttackState(false, true, (int)mob.ServerId, false, t.CharacterId).Write);
         mob.Target = null;
+        mob.PendingCast = null; // giving up: the cast is dropped
         mob.AttackAnnounced = false;
         mob.State = MobState.Returning;
         mob.Damage.Clear();
@@ -470,6 +481,7 @@ public sealed partial class GameServer
 
     private void TickPlayer(Zone zone, Session s, double now)
     {
+        TickAggroMeter(zone, s, now);
         if (s.Dead) return;
 
         TickPvpAttack(zone, s, now);
@@ -625,7 +637,26 @@ public sealed partial class GameServer
             Send(s, Opcode.SkillUpdate, new SkillUpdate(skill.Id, rank, CooldownLeft(s, skill.Id, now)).Write);
             return;
         }
-        s.Casts.Add(new PendingCast(skill, rank, target, now + level.CastingTime, enemy, friend));
+        // Weapon-delay skills (castWithWeaponDelay) take the weapon's attack delay, haste and elixirs included, on top.
+        var castTime = level.CastingTime + (skill.CastWithWeaponDelay ? LiveStats(s).AttackSpeed / 1000.0 : 0);
+        // Owner's rule (2026-10-17): skills queue. One pressed while another is still casting starts when that one lands,
+        // so Pummel pressed during Shatter's cast lands after Shatter.
+        var start = s.Casts.Count > 0 ? Math.Max(now, s.Casts.Max(c => c.ResolveAt)) : now;
+        s.Casts.Add(new PendingCast(skill, rank, target, start + castTime, enemy, friend));
+    }
+
+    /// <summary>
+    /// Tells the client mod which skills take the weapon's delay on top of their cast time (skill-overrides.json
+    /// "castWithWeaponDelay"), so its casting circle matches the server without a new mod build.
+    /// </summary>
+    private void SendWeaponDelaySkills(Session s)
+    {
+        var ids = _balance.Skills.Values.Where(k => k.CastWithWeaponDelay).Select(k => k.Id).OrderBy(i => i).ToList();
+        Send(s, PrivateOpcode.WeaponDelaySkills, b =>
+        {
+            b.WriteVariableInt32(ids.Count);
+            foreach (var id in ids) b.WriteVariableInt32(id);
+        });
     }
 
     /// <summary>Seconds until a skill can be cast again (0 when it's ready).</summary>
@@ -671,7 +702,7 @@ public sealed partial class GameServer
         };
         // Against a monster the skill's own damage type meets its resist (Master's Grimoire's skill list gives the type;
         // skills without one aren't resisted), and a weapon hit included in the skill is resisted type by type.
-        if (mob?.Combat is { } combat && _skillTypes.TryGetValue(cast.Skill.Id, out var type)) amount = combat.AfterResist(type, amount, sheet.Level, ResistChange(mob.Effects, type));
+        if (mob?.Combat is { } combat && _skillTypes.TryGetValue(cast.Skill.Id, out var type)) amount = combat.AfterResist(type, amount, sheet.Level, MobResistChange(mob.Effects, type));
         else if (player is not null && _skillTypes.TryGetValue(cast.Skill.Id, out var playerType))
             amount *= MobStats.ResistFactor(PlayerResist(player, playerType, Modifiers(player)), sheet.Level); // PvP: the target's resist
         if (cast.Skill.IncludesWeaponAttack) amount += WeaponHit(s, buffs, mob, player); // the auto-attack's weapon hit, Strength and weapon ability included
@@ -743,8 +774,12 @@ public sealed partial class GameServer
     }
 
     /// <summary>A skill with no damage of its own, no weapon hit and no gear damage bonus: it only applies its effect.</summary>
+    /// <summary>Owner's rule (2026-10-17): Taunt and Warcry only build threat; they never damage the monster.</summary>
+    private const int TauntSkill = 33, WarcrySkill = 128;
+
     private static bool DealsNoDamage(Session s, PendingCast cast)
     {
+        if (cast.Skill.Id is TauntSkill or WarcrySkill) return true;
         var level = cast.Skill.Level(cast.Level);
         return level.InitialDamage == 0 && level.BaseDamage == 0 && !cast.Skill.IncludesWeaponAttack
             && cast.Skill.Id is not (DoubleAttackSkill or DoubleShotSkill) && s.Sheet!.SkillBonusDamage(cast.Skill.Id) == 0;
@@ -759,6 +794,18 @@ public sealed partial class GameServer
     /// to 50 levels above it, 5% less at 51-70, 10% less at 71-100 and 15% less from 101. Damage over time doesn't use it:
     /// only resists cut it.
     /// </summary>
+    /// <summary>
+    /// Owner's rule (2026-10-16): damage a monster deals to a player well below it in level. Within 15 levels it's full;
+    /// 16-69 levels above the monster, the player takes 10% less; 70 or more, 20% less (the most it goes). Monsters at or
+    /// above the player's level are unchanged. Applies to auto-attacks, monster skills and their damage over time.
+    /// </summary>
+    public static double IncomingLevelFactor(int playerLevel, int mobLevel) => (playerLevel - mobLevel) switch
+    {
+        <= 15 => 1,
+        <= 69 => 0.90,
+        _ => 0.80,
+    };
+
     public static double LevelFactor(int playerLevel, int mobLevel)
     {
         if (playerLevel < mobLevel) return Math.Max(0.1, 1 - 0.04 * (mobLevel - playerLevel));
@@ -843,7 +890,7 @@ public sealed partial class GameServer
                 else
                 {
                     if (!PlayerHitsPlayer(zone, s, enemy, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false))
-                        SystemLine(s, $"{cast.Skill.Name} succeeded!");
+                        SystemLine(s, $"{cast.Skill.Name} Succeeded");
                     // The skill's effect lands on them too: bleeds, poisons and burns (ticking as PvP damage), slows,
                     // stuns, lures and other debuffs.
                     if (cast.Skill.StatusEffectId > 0 && !enemy.Dead) ApplyEffect(enemy, cast.Skill, cast.Level, now, buffAbility, statRatio, caster: s);
@@ -869,6 +916,7 @@ public sealed partial class GameServer
                 if (victim.State == MobState.Dead) continue;
                 if (MobEvadesSkill(s, victim, cast.Skill))
                 {
+                    SystemLine(s, $"{victim.Template.Name} withstands {cast.Skill.Name}"); // live wording (2026-10-16)
                     if (!OwnsOrShares(s, victim) && !OwnerStillHere(zone, victim)) SetMobOwner(zone, victim, s);
                     if (victim.State is MobState.Idle or MobState.Returning) Engage(zone, victim, s, now);
                     Broadcast(zone, Opcode.CombatDamageMessage, new CombatDamage([new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)victim.ServerId,
@@ -882,18 +930,26 @@ public sealed partial class GameServer
                     // Howling Wind and other debuff-only skills: the debuff below, aggro, and no damage number.
                     if (!OwnsOrShares(s, victim) && !OwnerStillHere(zone, victim)) SetMobOwner(zone, victim, s);
                     if (victim.State is MobState.Idle or MobState.Returning) Engage(zone, victim, s, now);
+                    // Taunt and Warcry: what would have been their damage is threat instead (the owner's rule, 2026-10-17).
+                    if (cast.Skill.Id is TauntSkill or WarcrySkill)
+                        AddThreat(victim, s, SkillDamage(s, cast, buffs, victim.Level, againstPlayer: false, victim) * AggroFactor(sheet.Level, victim.Level)
+                            * _threat.ClassMultiplier(s.Character!.Class) * _threat.SkillDamageMultiplier(cast.Skill.Id));
                     Broadcast(zone, Opcode.CombatDamageMessage, new CombatDamage([new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)victim.ServerId,
                         AttackKind.Skill, cast.Skill.Id, 0, victim.Health, Reaction.SkillHitAggressive, ++_damageId, false)], []).Write);
                 }
                 else
                 {
                     var damage = DoubleHitDamage(s, cast, victim.Level) ?? SkillDamage(s, cast, buffs, victim.Level, againstPlayer: false, victim);
-                    crit |= PlayerHits(zone, s, victim, AttackKind.Skill, cast.Skill.Id, Math.Max(1, damage), now, allowMiss: false);
+                    if (_divineStrike.Offhand(cast.Skill.Id, Random.Shared) is { } fury) damage = fury; // Dragonlord Fury: divine-strike.json
+                    if (DivineStrikeDamage.DivineOnlySkills.Contains(cast.Skill.Id) && !_spawnTuning.TakesDivine(victim.Template.Id)) damage = 0;
+                    if (damage > 0) crit |= PlayerHits(zone, s, victim, AttackKind.Skill, cast.Skill.Id, damage, now, allowMiss: false);
                 }
                 AddThreat(victim, s, SkillAggro(cast.Skill.Id, cast.Level) * AggroFactor(sheet.Level, victim.Level)); // Shield Bash, Taunt…
-                if (cast.Skill.StatusEffectId > 0 && victim.State != MobState.Dead) ApplyMobEffect(victim, s, cast.Skill, cast.Level, now, buffAbility, statRatio);
+                if (cast.Skill.StatusEffectId > 0 && victim.State != MobState.Dead
+                    && (!DivineStrikeDamage.DivineOnlySkills.Contains(cast.Skill.Id) || _spawnTuning.TakesDivine(victim.Template.Id))) // Spite: divine monsters only
+                    ApplyMobEffect(victim, s, cast.Skill, cast.Level, now, buffAbility, statRatio);
             }
-            if (landed && !crit) SystemLine(s, $"{cast.Skill.Name} succeeded!");
+            if (landed && !crit) SystemLine(s, $"{cast.Skill.Name} Succeeded");
             return;
         }
         QuestCast(s, cast.Skill.Id, null);
@@ -930,7 +986,7 @@ public sealed partial class GameServer
             healed = true;
         }
         if (healed) TrainCombatAbility(s, CriticalSkills); // a heal on yourself or others can train Critical Skills, once a cast
-        if (recipients.Count > 0) SystemLine(s, $"{cast.Skill.Name} succeeded!");
+        if (recipients.Count > 0) SystemLine(s, $"{cast.Skill.Name} Succeeded");
     }
 
     /// <summary>At most this many monsters take an area skill (the target included).</summary>
@@ -966,7 +1022,7 @@ public sealed partial class GameServer
                 damage = (int)(damage * s.Sheet.CritMultiplier);
             }
             damage = Math.Max(1, damage);
-            if (critical) SystemLine(s, CritLine(s, kind, skillId, damage));
+            if (critical) PartyLine(s, CritLine(s, kind, skillId, damage));
         }
         mob.Health -= damage;
         if (mob.Scripts.HitsTaken.Count < 64) mob.Scripts.HitsTaken.Add((kind == AttackKind.Attack ? 0 : skillId, damage));
@@ -979,10 +1035,15 @@ public sealed partial class GameServer
         // Skills, crit or not (misses, evades and damage-over-time ticks don't count).
         if (damage > 0 && kind is AttackKind.Attack or AttackKind.Skill) TrainCombatAbility(s, kind == AttackKind.Attack ? CriticalStrike : CriticalSkills);
         mob.Damage[s] = mob.Damage.GetValueOrDefault(s) + damage;
-        AddThreat(mob, s, damage * 1.5 * AggroFactor(s.Sheet!.Level, mob.Level));
+        // threat.json: threat per point of damage, times the class's and (for skills and their DoTs) the skill's multiplier.
+        AddThreat(mob, s, damage * _threat.DamageMultiplier * _threat.ClassMultiplier(s.Character!.Class)
+            * (kind == AttackKind.Attack ? 1 : _threat.SkillDamageMultiplier(skillId)) * AggroFactor(s.Sheet!.Level, mob.Level));
         if (damage > 0 && kind is AttackKind.Attack or AttackKind.Skill) _store.AddStat(s.Character!.Id, kind == AttackKind.Attack ? "melee_hit" : "skills_hit", damage);
-        var procs = kind == AttackKind.Attack && damage > 0 && mob.Health > 0 ? RollProcs(s) : [];
-        var divineStrike = kind == AttackKind.Attack && damage > 0 && s.Sheet!.DivineDamage > 0 && mob.HasChaosAura
+        // Divine Strike, the weapons' proc and the auras', only lands on monsters spawn-tuning.json marks "divine".
+        var takesDivine = _spawnTuning.TakesDivine(mob.Template.Id);
+        var procs = kind == AttackKind.Attack && damage > 0 && mob.Health > 0
+            ? RollProcs(s).Where(p => takesDivine || p.Skill.Id != SetBonusCatalog.DivineStrikeSkill).ToList() : [];
+        var divineStrike = kind == AttackKind.Attack && damage > 0 && s.Sheet!.DivineDamage > 0 && takesDivine
             && Random.Shared.NextDouble() < _balance.SetBonuses.DivineStrikeChance;
         var entry = new DamageEntry(DamageDirection.PlayerToMob, s.CharacterId, (int)mob.ServerId, kind, skillId, damage, mob.Health, reaction, ++_damageId, critical);
         Broadcast(zone, Opcode.CombatDamageMessage, new CombatDamage([entry], [new HealthUpdate(HealthUpdate.Mob, (int)mob.ServerId, Math.Max(0, mob.Health))]).Write);
@@ -993,16 +1054,21 @@ public sealed partial class GameServer
         {
             // A system chat line for everyone within 15 m of the striker, the striker included; no pop-up box, which
             // interrupted play (owner's rules, 2026-10-15/16).
-            var glow = $"{s.Name}'s weapon glows with a Divine Light!";
+            // Live wording (2026-10-16): the striker also gets "Divine Strike Succeeded".
+            SystemLine(s, "Divine Strike Succeeded");
+            var glow = $"{s.Name}'s weapon glows with a Divine light.";
             foreach (var p in zone.Players.Where(p => p.InZone && Dist2D(p.Position.X, p.Position.Z, s.Position.X, s.Position.Z) <= DivineLightRange))
                 SystemLine(p, glow);
-            PlayerHits(zone, s, mob, AttackKind.AttackTriggeredSkill, SetBonusCatalog.DivineStrikeSkill, s.Sheet!.DivineDamage, now, allowMiss: false);
+            // divine-strike.json: a random amount between the aura's min and max; else set-bonuses.json's divine.
+            var auraDamage = _divineStrike.Aura(s.Sheet!.SetBonuses, Random.Shared) ?? s.Sheet!.DivineDamage;
+            PlayerHits(zone, s, mob, AttackKind.AttackTriggeredSkill, SetBonusCatalog.DivineStrikeSkill, auraDamage, now, allowMiss: false);
         }
         foreach (var (proc, level) in procs)
         {
             if (mob.State == MobState.Dead) break;
             var lvl = proc.Level(level);
             var procDamage = (int)(Math.Abs(lvl.InitialDamage) + Math.Abs(lvl.BaseDamage));
+            if (proc.Id == SetBonusCatalog.DivineStrikeSkill && _divineStrike.Weapon(level, Random.Shared) is { } divine) procDamage = divine; // divine-strike.json
             if (procDamage > 0) PlayerHits(zone, s, mob, AttackKind.AttackTriggeredSkill, proc.Id, procDamage, now, allowMiss: false);
             if (proc.StatusEffectId > 0 && mob.State != MobState.Dead)
             {
@@ -1034,7 +1100,7 @@ public sealed partial class GameServer
             if (CurrentAi(mob, brain).Decisions.Count == 0) return; // "none" and "inanimate" AI: only its scripts act
             if (ChooseMobSkill(mob, brain, now) is { } choice && _balance.Skills.TryGetValue(choice.SkillId, out var mobSkill))
             {
-                MobCastsSkillArea(zone, mob, target, mobSkill, choice, brain, now);
+                StartMobCast(zone, mob, [target], mobSkill, choice, brain, now);
                 return;
             }
         }
@@ -1060,6 +1126,12 @@ public sealed partial class GameServer
         {
             var shield = target.Effects.First(e => e.Type == EffectType.DamageShield);
             PlayerHits(zone, target, mob, AttackKind.StatusEffect, shield.Info.Id, m.DamageShield, now, allowMiss: false);
+        }
+        // Dragonlord/Eldritch Vengeance: strikes back only at monsters vulnerable to Divine, for the owner's range.
+        if (!miss && m.DivineDamageShield > 0 && mob.State != MobState.Dead && _spawnTuning.TakesDivine(mob.Template.Id))
+        {
+            var vengeance = target.Effects.First(e => e.Type == EffectType.DamageShield && DivineStrikeDamage.DivineOnlyEffects.Contains(e.Info.Id));
+            PlayerHits(zone, target, mob, AttackKind.StatusEffect, vengeance.Info.Id, _divineStrike.Offhand(vengeance.Info.Id, Random.Shared) ?? m.DivineDamageShield, now, allowMiss: false);
         }
     }
 
@@ -1113,6 +1185,49 @@ public sealed partial class GameServer
     /// A monster skill on a player, and on everyone else within its area (Caustic Spray's 7 m) around them. Heals only
     /// go on itself once.
     /// </summary>
+    /// <summary>A monster skill being cast: it lands on its targets at <see cref="ResolveAt"/>.</summary>
+    private sealed record PendingMobCast(SkillInfo Skill, MobSkillChoice Choice, MobBrain Brain, IReadOnlyList<Session> Targets, double ResolveAt);
+
+    /// <summary>
+    /// Seconds between a monster's "started casting" line and its skill landing (live, 2026-10-16: about a second and a
+    /// half from the pop-up to the cast and its damage).
+    /// </summary>
+    public const double MobCastSeconds = 1.5;
+
+    /// <summary>
+    /// A monster starts casting: "Witchfinder Conrad started casting Shackles." for everyone nearby (live wording), and
+    /// <see cref="MobCastSeconds"/> later the skill lands with "The Far-Seeing One cast Swift Tackle on you" for each player
+    /// it hits. The skill's recharge starts now so it isn't chosen again meanwhile. A dead monster's scripted skills
+    /// (death throes) land at once.
+    /// </summary>
+    private void StartMobCast(Zone zone, Mob mob, IReadOnlyList<Session> targets, SkillInfo skill, MobSkillChoice choice, MobBrain brain, double now)
+    {
+        var cast = new PendingMobCast(skill, choice, brain, targets, now + MobCastSeconds);
+        if (mob.State == MobState.Dead || mob.PendingCast is not null)
+        {
+            ResolveMobCast(zone, mob, cast, now); // no time to cast (or already casting): it lands now
+            return;
+        }
+        mob.SkillReadyAt[skill.Id] = now + Math.Max(1, skill.Level(choice.Rank).RechargeTime);
+        var started = $"{mob.Template.Name} started casting {skill.Name}.";
+        var (mx, mz) = mob.PositionAt(now);
+        foreach (var p in zone.Players.Where(p => p.InZone && Dist2D(p.Position.X, p.Position.Z, mx, mz) <= MobCastLineRange).ToList())
+            SystemLine(p, started);
+        if (mob.IsMoving(now))
+        {
+            mob.StopAt(now);
+            BroadcastLeg(zone, mob);
+        }
+        mob.PendingCast = cast;
+    }
+
+    /// <summary>The cast lands on its targets still in the zone and alive.</summary>
+    private void ResolveMobCast(Zone zone, Mob mob, PendingMobCast cast, double now)
+    {
+        foreach (var t in cast.Targets.Where(t => t.InZone && !t.Dead && zone.Players.Contains(t)).ToList())
+            MobCastsSkillArea(zone, mob, t, cast.Skill, cast.Choice, cast.Brain, now);
+    }
+
     private void MobCastsSkillArea(Zone zone, Mob mob, Session target, SkillInfo skill, MobSkillChoice choice, MobBrain brain, double now)
     {
         MobCastsSkill(zone, mob, target, skill, choice, brain, now);
@@ -1121,6 +1236,9 @@ public sealed partial class GameServer
                      && Dist2D(p.Position.X, p.Position.Z, target.Position.X, target.Position.Z) <= skill.AreaOfEffect).ToList())
             MobCastsSkill(zone, mob, other, skill, choice, brain, now);
     }
+
+    /// <summary>How far from a casting monster players see its "started casting" line (metres).</summary>
+    private const float MobCastLineRange = 40f;
 
     /// <summary>Defensive ability that evades (and trains from) each avoidance type, by the owner's mapping.</summary>
     private static int EvasionAbility(int avoidanceType) => avoidanceType switch
@@ -1154,6 +1272,12 @@ public sealed partial class GameServer
         }
         target.LastCombatAt = now;
         BreakStealth(target);
+        SystemLine(target, $"{mob.Template.Name} cast {skill.Name} on you");
+        if ((skill.Id == FingalsBaneSkill || skill.StatusEffectId == FingalsBaneEffect) && HasFingalsShield(target))
+        {
+            SystemLine(target, "Fingals Shield protects you from Fingals Bane.");
+            return;
+        }
         var sheet = target.Sheet!;
         var m = Modifiers(target);
         var defence = EvasionAbility(skill.AvoidanceType);
@@ -1171,6 +1295,7 @@ public sealed partial class GameServer
         var amount = SkillInfo.Amount(level, ability, 0) * (DamageRollFloor + Random.Shared.NextDouble() * (1 - DamageRollFloor));
         if (amount > 0 && _skillTypes.TryGetValue(skill.Id, out var type) && type != 9)
             amount *= MobStats.ResistFactor(PlayerResist(target, type, m), mob.Level);
+        amount *= IncomingLevelFactor(target.Sheet!.Level, mob.Level); // the weapon part below has it already
         if (skill.IncludesWeaponAttack) amount += MobHitDamage(mob, target, m);
         var damage = (int)Math.Round(amount);
         if (damage > 0)
@@ -1217,7 +1342,7 @@ public sealed partial class GameServer
             var resist = PlayerResist(target, type, m);
             total += amount * (0.5 + Random.Shared.NextDouble() * 0.5) * MobStats.ResistFactor(resist, mob.Level);
         }
-        return Math.Max(1, (int)Math.Round(total));
+        return Math.Max(1, (int)Math.Round(total * IncomingLevelFactor(target.Sheet!.Level, mob.Level)));
     }
 
     /// <summary>
@@ -1248,7 +1373,7 @@ public sealed partial class GameServer
                 foreach (var e in effects)
                 {
                     b.WriteVariableInt32(e.Info.Id);
-                    b.WriteVariableInt32(Math.Clamp(e.LevelIndex, 0, Math.Max(0, e.Info.Levels.Count - 1)));
+                    b.WriteVariableInt32(e.Info.ClientLevel(e.LevelIndex));
                     b.WriteVariableInt32((int)Math.Ceiling(e.ExpiresAt - now));
                     b.Write(e.AbilityLevel);
                     b.Write((float)e.StatRatio);
@@ -1274,19 +1399,27 @@ public sealed partial class GameServer
     /// <summary>A line in the player's system chat, where the client also says "Ability increased to…".</summary>
     private void SystemLine(Session s, string text) => Send(s, Opcode.GeneralChat, new ChatMessage(ChatChannel.System, "", text).WriteToClient);
 
+    /// <summary>A system line for the player and their party members in the same zone (crits show on both clients on live).</summary>
+    private void PartyLine(Session s, string text)
+    {
+        SystemLine(s, text);
+        if (s.Party is not { } party) return;
+        foreach (var m in party.Members.Where(m => !ReferenceEquals(m, s) && m.InZone && m.Position.Zone == s.Position.Zone).ToList()) SystemLine(m, text);
+    }
+
     /// <summary>
-    /// The chat line for a critical hit (owner's wording): "Name lands a critical strike for 832 damage", "Name lands a
-    /// critical Fire Bolt for 300 damage", and the damage-over-time effect's name for a crit tick.
+    /// The chat line for a critical hit, as live (2026-10-16): "BowJob lands a critical hit for 1908 damage!", "BowJob lands
+    /// a critical Sharp Shot for 8670 damage!", and the damage-over-time effect's name for a crit tick.
     /// </summary>
     private string CritLine(Session s, AttackKind kind, int skillId, int damage)
     {
         var what = kind switch
         {
-            AttackKind.Attack => "strike",
+            AttackKind.Attack => "hit",
             AttackKind.Skill => _balance.Skills.TryGetValue(skillId, out var skill) ? skill.Name : "skill",
             _ => _balance.StatusEffects.TryGetValue(skillId, out var effect) ? effect.Name : "hit",
         };
-        return $"{s.Name} lands a critical {what} for {damage:N0} damage";
+        return $"{s.Name} lands a critical {what} for {damage} damage!";
     }
 
     /// <summary>A real damage-over-time tick (bleed, poison, burn), not a damage shield's reflect.</summary>
@@ -1319,10 +1452,13 @@ public sealed partial class GameServer
             Broadcast(zone, Opcode.AttackState, new AttackState(false, true, (int)mob.ServerId, false, t.CharacterId).Write);
         mob.State = MobState.Dead;
         mob.Target = null;
+        mob.PendingCast = null;
         mob.AttackAnnounced = false;
         mob.StopAt(now);
         mob.RemoveAt = now + MobCorpseSeconds;
-        mob.RespawnAt = now + Math.Max(MobCorpseSeconds + 1, mob.RespawnSeconds);
+        // Generated spawn points: spawn-tuning.json (per spawn point, per monster, live times or the default); GM spawns keep theirs.
+        var respawn = mob.GeneratedCamp ? _spawnTuning.RespawnSeconds(mob.Template.Id, mob.SpawnPointId, Random.Shared) : mob.RespawnSeconds;
+        mob.RespawnAt = now + Math.Max(MobCorpseSeconds + 1, respawn);
         foreach (var p in zone.Players.Where(p => ReferenceEquals(p.AttackTarget, mob)).ToList()) SetAttackTarget(p, null);
         // The tagger gets the kill (their party shares it as usual); a mob nobody tagged goes to whoever finished it.
         var rewarded = mob.Owner is Session owner && OwnerStillHere(zone, mob) ? owner : killer;
@@ -1339,51 +1475,64 @@ public sealed partial class GameServer
         }
         _store.AddStat(s.Character!.Id, "kills", 1);
         if (mob.Template.Power is >= 1 and <= 6) _store.AddStat(s.Character.Id, $"star_{mob.Template.Power}", 1);
+        // One gold roll; everyone sharing the kill gets it (with their own boosts), their own XP and their own dealt items,
+        // each in their own kill pop-up, as on live (2026-10-16: both party members saw "0xp 100 Gold" and their own drop).
+        var baseCoins = mob.Combat is { } combat
+            ? Random.Shared.Next(Math.Min(combat.Gold.Min, combat.Gold.Max), Math.Max(combat.Gold.Min, combat.Gold.Max) + 1)
+            : MobStats.Coins(mob.Level, mob.Template.Power);
+        // Official loot only (Master's Grimoire), or another monster's through server/content/loot-links.json. Monsters with
+        // neither drop no items (owner's rule, 2026-10-15: no generated gear like a Silverweb Helm from a Bloodguard).
+        var lootFrom = _lootLinks.GetValueOrDefault(mob.Template.Id, mob.Template.Id);
+        var drops = (_officialLoot.Has(lootFrom) ? _officialLoot.Roll(lootFrom, _balance, Random.Shared) : [])
+            .Where(d => !_spawnTuning.Removed(mob.Template.Id, d.Item)) // spawn-tuning.json removeDrops (owner's rule: discs only from the Warden bosses)
+            .Concat(_spawnTuning.RollExtraDrops(mob.Template.Id, Random.Shared).Where(d => _balance.Items.ContainsKey(d.Item))).ToList(); // spawn-tuning.json extraDrops
+        // Grouped: the drops are dealt out among the party (owner's rule, 2026-10-16).
+        var group = KillGroup(s);
+        var loot = group.ToDictionary(m => m, _ => new List<(int, int)>());
+        foreach (var (owner, drop, quantity) in DealLoot(s, drops))
+        {
+            GrantItem(owner.Character!.Id, drop, quantity);
+            loot[owner].Add((drop, quantity));
+        }
+        if (RollChestDrop() is { } chestDrop)
+        {
+            loot[s].Add((chestDrop, 1));
+            GrantItem(s.Character!.Id, chestDrop, 1);
+        }
+        // spawn-tuning.json chestChance: the owner's event-chest chance (the Stonevale 6* legacy bosses: 10%).
+        if (_spawnTuning.RollChest(mob.Template.Id, Random.Shared) && RandomEventChest() is { } eventChest)
+        {
+            loot[s].Add((eventChest, 1));
+            GrantItem(s.Character!.Id, eventChest, 1);
+        }
+        foreach (var m in group)
+        {
+            loot[m].AddRange(QuestKill(m, mob)); // party members' kill and loot stages count too
+            KillReward(m, mob, s.CharacterId, baseCoins, loot[m]);
+        }
+    }
+
+    /// <summary>
+    /// One player's share of a kill: their XP and gold, saved, and their kill report (WonCombat) with their items. The
+    /// report names the killer, so party members read "skorrt defeated The All-Seeing One" and the killer "You defeated…".
+    /// </summary>
+    private void KillReward(Session s, Mob mob, int killerId, int baseCoins, List<(int, int)> loot)
+    {
         var c = s.Character!;
         var progress = _store.GetProgress(c.Id);
         var boosts = Modifiers(s); // Elixir of Knowledge, Jubilation and gold-drop effects
         var tree = s.Sheet!.Tree;
-        // Official XP and gold (Master's Grimoire) for monsters that have them; the old formulas for the rest.
-        // Official XP gets the owner's bonus for monsters above your level and for stars (server/content/xp-bonus.json).
+        // Official XP (Master's Grimoire) for monsters that have it, with the owner's bonus for monsters above your level
+        // and for stars (server/content/xp-bonus.json); the old formula for the rest.
         var baseXp = mob.Combat is { Xp: > 0 } rewards
             ? (int)Math.Round(rewards.XpFor(s.Sheet.Level) * _xpBonus.Multiplier(s.Sheet.Level, mob.Level, mob.Template.Power))
             : MobStats.Xp(mob.Level, mob.Template.Power);
-        var baseCoins = mob.Combat is { } combat
-            ? Random.Shared.Next(Math.Min(combat.Gold.Min, combat.Gold.Max), Math.Max(combat.Gold.Min, combat.Gold.Max) + 1)
-            : MobStats.Coins(mob.Level, mob.Template.Power);
         var xp = (int)Math.Round(baseXp * boosts.XpMultiplier * (100 + Math.Max(0, boosts.XpBoostPercent) + tree["xpPct"]) / 100); // Elixir of Knowledge: x2 / x4 / x5
         var coins = baseCoins * (100 + Math.Max(0, boosts.GoldBoostPercent) + (int)tree["goldPct"]) / 100;
-        var loot = new List<(int, int)>();
-        // Official loot only (Master's Grimoire), or another monster's through server/content/loot-links.json. Monsters with
-        // neither drop no items (owner's rule, 2026-10-15: no generated gear like a Silverweb Helm from a Bloodguard).
-        var lootFrom = _lootLinks.GetValueOrDefault(mob.Template.Id, mob.Template.Id);
-        var drops = _officialLoot.Has(lootFrom) ? _officialLoot.Roll(lootFrom, _balance, Random.Shared) : [];
-        // Grouped: the drops are dealt out among the party (owner's rule, 2026-10-16).
-        var others = new Dictionary<Session, List<(int, int)>>();
-        foreach (var (owner, drop, quantity) in DealLoot(s, drops))
-        {
-            GrantItem(owner.Character!.Id, drop, quantity);
-            if (ReferenceEquals(owner, s)) loot.Add((drop, quantity));
-            else (others.TryGetValue(owner, out var got) ? got : others[owner] = []).Add((drop, quantity));
-        }
-        foreach (var (member, got) in others)
-        {
-            Send(member, Opcode.InventoryUpdate, RefreshSheet(member).InventoryWithMoney().Write);
-            foreach (var (item, quantity) in got)
-                SystemLine(member, $"You receive {(quantity > 1 ? quantity + " x " : "")}{_balance.Items.GetValueOrDefault(item)?.Name ?? "an item"} from {mob.Template.Name}.");
-        }
-        loot.AddRange(QuestKill(s, mob));
-        if (RollChestDrop() is { } chestDrop)
-        {
-            loot.Add((chestDrop, 1));
-            GrantItem(c.Id, chestDrop, 1);
-        }
-
         _store.SaveProgress(c.Id, progress.Level, progress.Xp, progress.Coins + coins);
         var newLevel = AddXp(s, xp, out var sheet);
-        Send(s, Opcode.WonCombat, new WonCombat(mob.Template.Id, (int)mob.ServerId, s.CharacterId, xp, sheet.XpPercent, coins, loot, sheet.InventoryWithMoney()).Write);
+        Send(s, Opcode.WonCombat, new WonCombat(mob.Template.Id, (int)mob.ServerId, killerId, xp, sheet.XpPercent, coins, loot, sheet.InventoryWithMoney()).Write);
         if (newLevel > progress.Level) AnnounceLevel(s, newLevel);
-        SharePartyXp(s, xp, mob);
     }
 
     /// <summary>Adds XP, levelling up as many times as it covers. Returns the new level.</summary>
@@ -1422,6 +1571,7 @@ public sealed partial class GameServer
         var sheet = LoadSheet(s.Character!);
         s.Sheet = sheet;
         _ = LiveStats(s); // recomputes maxima with active effects and clamps current values
+        RecountQuestItems(s); // items from trades, mail, shops, chests, normal loot… count for "collect" stages
         return sheet;
     }
 
@@ -1430,9 +1580,10 @@ public sealed partial class GameServer
         s.Dead = true;
         s.AttackTarget = null;
         s.Casts.Clear();
-        // Death ends buffs, not the pet's meal, the ride or (owner's rule) elixirs. Owner's rule (2026-10-15): you stay on
-        // your mount when you die, with all its bonuses; there's no Dismounted effect (live moves the mount to your bags).
-        s.Effects.RemoveAll(e => !Pets.AllPetEffects.Contains(e.Info.Id) && !Pets.MountEffects.Contains(e.Info.Id)
+        // Death ends buffs, not the pet's meal, the ride, (owner's rule) elixirs or the gear's own icons (regen, haste and
+        // set auras: the gear is still worn). Owner's rule (2026-10-15): you stay on your mount when you die, with all its
+        // bonuses; there's no Dismounted effect (live moves the mount to your bags).
+        s.Effects.RemoveAll(e => !e.DisplayOnly && !Pets.AllPetEffects.Contains(e.Info.Id) && !Pets.MountEffects.Contains(e.Info.Id)
             && !(ElixirRules.Current.KeepOnDeath && ElixirRules.Current.IsElixir(e.Info.Id)));
         foreach (var mob in zone.Mobs.Values.Where(m => ReferenceEquals(m.Target, s)).ToList()) LoseTarget(zone, mob, s, now);
         SendEffects(s);

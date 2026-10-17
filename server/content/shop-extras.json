@@ -16,12 +16,12 @@
     {
      "id": 34781,
      "name": "Sigils of Health Crate",
-     "price": 100000
+     "price": 5000
     },
     {
      "id": 34782,
      "name": "Sigils of Energy Crate",
-     "price": 100000
+     "price": 5000
     }
    ]
   },
@@ -43,7 +43,7 @@
     },
     {
      "id": 20808,
-     "name": "Master's Grimoire",  
+     "name": "Master's Grimoire",
      "price": 200000
     },
     {
@@ -463,6 +463,64 @@
     {
      "id": 34970,
      "name": "Bracelet of Souls"
+    }
+   ]
+  },
+  {
+   "vendor": "Token shop: Sedric the Pet Vendor's \"Buy tokens, eggs, seeds, bells and coins\" (client patch P17)",
+   "shops": [
+    9100
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 56051,
+     "name": "Pet Token",
+     "price": 15000
+    },
+    {
+     "id": 65953,
+     "name": "Cursed Coin",
+     "price": 150000
+    },
+    {
+     "id": 65047,
+     "name": "Phoenix Egg",
+     "price": 150000
+    },
+    {
+     "id": 65455,
+     "name": "Corrupted Seed",
+     "price": 150000
+    },
+    {
+     "id": 65934,
+     "name": "Magical Bell",
+     "price": 150000
+    }
+   ]
+  },
+  {
+   "vendor": "Token shop: Remus the Mount Vendor's \"Buy Mount Tokens and essences\" (client patch P17)",
+   "shops": [
+    9101
+   ],
+   "replace": true,
+   "items": [
+    {
+     "id": 60145,
+     "name": "Mount Token",
+     "price": 35000
+    },
+    {
+     "id": 65776,
+     "name": "Dark Essence",
+     "price": 150000
+    },
+    {
+     "id": 66317,
+     "name": "Nightmare Essence",
+     "price": 150000
     }
    ]
   }

@@ -63,12 +63,10 @@ public sealed partial class GameServer
             var (hungry, fed) = Pets.FamilyOf(pet);
             // Another family's effects go (a different pet was equipped).
             s.Effects.RemoveAll(e => Pets.AllPetEffects.Contains(e.Info.Id) && e.Info.Id != hungry && e.Info.Id != fed && e.Info.Id != Pets.NewFedEffect);
-            if (s.PetTemplate != pet.Id)
-            {
-                if (!s.Effects.Any(e => Pets.IsFedEffect(e.Info.Id)) && NewEffect(fed, 0, now + NewPetFedSeconds) is { } welcome)
-                    s.Effects.Add(welcome);
-                s.PetTemplate = pet.Id;
-            }
+            // Owner's rule (2026-10-16): pets are always fed, so no pet food is needed; a meal that would run out is topped up.
+            if (!s.Effects.Any(e => Pets.IsFedEffect(e.Info.Id)) && NewEffect(fed, 0, now + PermanentSeconds) is { } always)
+                s.Effects.Add(always);
+            s.PetTemplate = pet.Id;
             if (s.Effects.Any(e => Pets.IsFedEffect(e.Info.Id))) s.Effects.RemoveAll(e => e.Info.Id == hungry);
             else if (s.Effects.All(e => e.Info.Id != hungry) && NewEffect(hungry, 0, now + HungryShownSeconds) is { } h) s.Effects.Add(h);
         }
@@ -242,7 +240,7 @@ public sealed partial class GameServer
             {
                 b.WriteVariableInt32(e.StockId);
                 b.WriteVariableInt32(e.Template);
-                b.WriteVariableInt32(1);
+                b.WriteVariableInt32(e.Quantity);
                 b.WriteVariableInt32(e.StockId); // one cost entry per stock entry
             }
             b.WriteVariableInt32(stock.Count);
@@ -277,7 +275,7 @@ public sealed partial class GameServer
         _store.Atomically(() =>
         {
             foreach (var (template, qty) in entry!.Cost) TakeItems(c.Id, template, qty * quantity);
-            GrantItem(c.Id, entry.Template, quantity);
+            GrantItem(c.Id, entry.Template, entry.Quantity * quantity);
         });
         var sheet = RefreshSheet(s);
         var newItem = sheet.Backpack.Where(i => i.TemplateId == entry!.Template).MaxBy(i => i.Id);

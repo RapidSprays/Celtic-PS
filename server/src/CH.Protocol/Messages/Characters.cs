@@ -15,7 +15,7 @@ public sealed record Appearance(
     float Scale,
     byte Gender,
     bool ShowHeadGear = true,
-    bool ShowFashion = true)
+    bool ShowFashion = false) // the client's "Hide Equipment" option: true draws only fashion items
 {
     public void Write(NetBuffer b)
     {

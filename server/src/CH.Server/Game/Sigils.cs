@@ -10,4 +10,7 @@ public static class Sigils
 
     /// <summary>"Health/Energy Regen Boost Amulet" (5…200 per tick in 5s, duration −1 = permanent).</summary>
     public const int GearHealthRegenEffect = 62, GearEnergyRegenEffect = 63;
+
+    /// <summary>The client's permanent "Attack Speed Boost" (levels 10, 19, 28, 30, 35%): shown for haste gear.</summary>
+    public const int GearHasteEffect = 61;
 }

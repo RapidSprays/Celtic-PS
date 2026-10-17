@@ -15,7 +15,7 @@ namespace CHPrivateMods
     /// </summary>
     public static class PassiveTree
     {
-        private const uint LayoutOpcode = 31000, StateOpcode = 31001;
+        private const uint LayoutOpcode = 31000, StateOpcode = 31001, WeaponDelayOpcode = 31002, AggroOpcode = 31003;
         private const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         internal sealed class Node
@@ -50,6 +50,14 @@ namespace CHPrivateMods
                 var opcode = (uint)_readVarUInt.Invoke(msg, null);
                 if (opcode == LayoutOpcode) ReadLayout(msg);
                 else if (opcode == StateOpcode) ReadState(msg);
+                else if (opcode == WeaponDelayOpcode)
+                {
+                    var count = (int)_readVarInt.Invoke(msg, null);
+                    var ids = new System.Collections.Generic.List<int>();
+                    for (var i = 0; i < count; i++) ids.Add((int)_readVarInt.Invoke(msg, null));
+                    WeaponDelayCast.SetSkills(ids);
+                }
+                else if (opcode == AggroOpcode) AggroMeter.Read(() => Byte(msg), () => Str(msg), () => Int(msg));
             }
             catch (Exception e)
             {

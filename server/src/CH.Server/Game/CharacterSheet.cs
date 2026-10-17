@@ -129,6 +129,10 @@ public sealed class CharacterSheet
         }
     }
 
+    /// <summary>Each worn item's regen (always plus out of combat) with the slot it's worn in, for the buff bar's per-slot icons.</summary>
+    public IReadOnlyList<(EquipSlot Slot, int Health, int Energy)> GearRegenBySlot =>
+        Gear.Select(g => (g.Slot, Regen: GearRegen.Of(g))).Where(x => x.Regen.Any).Select(x => (x.Slot, x.Regen.Health, x.Regen.Energy)).ToList();
+
     /// <summary>The character's passive-tree bonuses (docs/passive-tree.md).</summary>
     public TreeBonuses Tree { get; }
 
@@ -417,8 +421,11 @@ public sealed class CharacterSheet
     /// compiled levels in the stats (<see cref="Abilities"/>) and shows a gear bonus in green, "2071/2500" for 1,571
     /// Spear with the Voidfire Halberd's +500, as on live.
     /// </summary>
+    /// Trained levels never count above the cap of ten per character level (live, 2026-10-16: a level 200 ranger's 2,300
+    /// stored Archery counted as 2,000 there, 300 less attack and 25 less damage than here).
     public IReadOnlyList<IdValue> TrainedAbilities() =>
-        Kit.Abilities.Concat(LearnedAbilities).Distinct().Select(a => new IdValue(a, Math.Max(1, AbilityLevels.GetValueOrDefault(a, 1)))).ToList();
+        Kit.Abilities.Concat(LearnedAbilities).Distinct()
+            .Select(a => new IdValue(a, Math.Clamp(AbilityLevels.GetValueOrDefault(a, 1), 1, GameServer.AbilityCapPerLevel * Math.Max(1, Level)))).ToList();
 
     /// <summary>Resist and other BonusTypes for the stats page, as client BonusType ids (see <see cref="BonusTypeIds"/>).</summary>
     /// Pierce, slash and crush always show, as the armour plus any gear resist to that type: what monsters' physical

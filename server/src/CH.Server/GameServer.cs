@@ -20,6 +20,13 @@ public sealed partial class GameServer : IDisposable
     private readonly FrameLog _frames;
     private readonly Balance _balance;
     private readonly IReadOnlyDictionary<int, GeneratedCamp[]> _generatedCamps;
+    private readonly SpawnTuning _spawnTuning;
+    private readonly DivineStrikeDamage _divineStrike;
+    private readonly CallForHelpRanges _callForHelp;
+    private readonly QuestRewards _questRewards;
+    private readonly QuestRequirements _questRequirements;
+    private readonly DotDamage _dotDamage;
+    private readonly ThreatRules _threat;
     private readonly ZoneTravel _travel;
     private readonly LootTable _loot;
     private readonly OfficialLoot _officialLoot;
@@ -55,6 +62,13 @@ public sealed partial class GameServer : IDisposable
         _chestCatalog = ChestCatalog.Build(balance);
         if (balance.IsLoaded) log.LogInformation("Chest catalogue: {Count} chests in {Ms} ms", _chestCatalog.Chests.Count, started.ElapsedMilliseconds);
         _generatedCamps = ZonePopulation.LoadGenerated(options.PopulationPath);
+        _spawnTuning = SpawnTuning.Load(options.SpawnTuningPath, options.SpawnRespawnsPath);
+        _divineStrike = DivineStrikeDamage.Load(options.DivineStrikePath);
+        _callForHelp = CallForHelpRanges.Load(options.CallForHelpPath);
+        _questRewards = QuestRewards.Load(options.QuestRewardsPath);
+        _questRequirements = QuestRequirements.Load(options.QuestRequirementsPath);
+        _dotDamage = DotDamage.Load(options.DotDamagePath);
+        _threat = ThreatRules.Load(options.ThreatPath);
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
         _loot = new LootTable(balance);
         _officialLoot = OfficialLoot.Load(options.LootPath);
@@ -81,9 +95,15 @@ public sealed partial class GameServer : IDisposable
         balance.LoadStatusDetails(options.StatusEffectsPath); // before the overrides, which may change a tick
         if (SkillOverrides.Apply(balance, options.SkillOverridesPath) is > 0 and var overridden)
             log.LogInformation("Skill overrides: {Count} skills changed (server/content/skill-overrides.json)", overridden);
-        _quests = QuestBook.Load(options.WorldPath).WithExtraNpcs(options.NpcExtrasPath);
-        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath), ShopCatalog.LoadReplaced(options.ShopExtrasPath));
-        _tokenVendors = TokenVendorCatalog.Load(options.WorldPath);
+        _divineStrike.ApplyBuffs(balance); // Dragonlord Wrath and Boon amounts (divine-strike.json offhandBuffs), after the overrides
+        _dotDamage.ApplyTypes(balance); // damage types for DoTs the data lacks one for (dot-damage.json), so resists apply
+        _quests = QuestBook.Load(options.WorldPath).WithExtraNpcs(options.NpcExtrasPath).WithRequirements(_questRequirements);
+        _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath), ShopCatalog.LoadReplaced(options.ShopExtrasPath))
+        {
+            GrimoirePrices = ShopCatalog.LoadPrices(options.ItemPricesPath),
+            SellPrices = ShopCatalog.LoadPrices(options.SellPricesPath),
+        };
+        _tokenVendors = TokenVendorCatalog.Load(options.WorldPath, options.TokenVendorExtrasPath);
         _tree = PassiveTree.Load(options.PassiveTreeEnabled ? options.PassiveTreePath : null);
         _itemShop = LoadItemShop(options.ItemShopPath);
         _factionRules = FactionRules.Load(options.FactionsPath);
@@ -630,6 +650,8 @@ public sealed partial class GameServer : IDisposable
         // The client rebuilt the player on load: buffs, the pet's fed state and the skill toggles again.
         if (s.Effects.Count > 0) SendEffects(s);
         SendSkillToggles(s);
+        SendWeaponDelaySkills(s); // the client mod's casting circle (P18) for Shatter, Rend, Barbed Shot, Double Attack…
+        RecountQuestItems(s); // items already in the bags (traded or mailed earlier) count for open "collect" stages
         DiscoverLeystones(s);
         QuestMove(s);
         // Sent once the client is ready (CGame.Ready drops them before): reputation, the item shop's no-cash offers,
@@ -708,11 +730,19 @@ public sealed partial class GameServer : IDisposable
         public int MaxEnergy { get; set; }
         public bool Dead { get; set; }
         public Mob? AttackTarget { get; set; }
+
+        // The aggro meter (GameServer.Aggro.cs)
+        public bool AggroMeterOn { get; set; } = true;
+        public double AggroMeterNextAt { get; set; }
+        public string? AggroMeterLast { get; set; }
         public double NextSwingAt { get; set; }
         public double LastCombatAt { get; set; } = double.MinValue;
         public double NextRegenAt { get; set; }
         public double NextConcentrationAt { get; set; }
         public Dictionary<int, double> Cooldowns { get; } = new();
+
+        /// <summary>Set while collect stages are being recounted, so completing one (which refreshes the sheet) doesn't recount again.</summary>
+        public bool RecountingQuestItems { get; set; }
         public List<PendingCast> Casts { get; } = new();
         public List<ActiveEffect> Effects { get; } = new();
         public CharacterSheet? Sheet { get; set; }

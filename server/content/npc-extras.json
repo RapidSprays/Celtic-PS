@@ -10,6 +10,146 @@
       "y": 0.5,
       "z": 143.8,
       "direction": 22
+    },
+    {
+      "name": "[Quest Vendor] Holtz the Peddler (Otherworld hunt bracelets; Grimoire spawn 4842)",
+      "template": 140168,
+      "conversation": 602,
+      "zone": 7,
+      "x": -595.13,
+      "y": 2.67,
+      "z": 140.26,
+      "direction": 180
+    },
+    {
+      "name": "Davin (Frozen champion quests; Grimoire spawn 1014)",
+      "template": 197,
+      "conversation": 196,
+      "zone": 7,
+      "x": 290.23,
+      "y": 0.55,
+      "z": -191.2,
+      "direction": 178
+    },
+    {
+      "name": "Rhyanne (Frozen champion quests; Grimoire spawn 1015)",
+      "template": 196,
+      "conversation": 195,
+      "zone": 7,
+      "x": 293.86,
+      "y": 0.1,
+      "z": -188.53,
+      "direction": 257
+    },
+    {
+      "name": "Carraden (Frozen champion quests; Grimoire spawn 1013)",
+      "template": 195,
+      "conversation": 194,
+      "zone": 7,
+      "x": 293.33,
+      "y": 0.63,
+      "z": -185.26,
+      "direction": 309
+    },
+    {
+      "name": "Niamh (Frozen champion quests; Grimoire spawn 1010)",
+      "template": 193,
+      "conversation": 192,
+      "zone": 7,
+      "x": 290.1,
+      "y": 0.94,
+      "z": -183.95,
+      "direction": 357
+    },
+    {
+      "name": "Kyna (Frozen champion quests; Grimoire spawn 1012)",
+      "template": 198,
+      "conversation": 197,
+      "zone": 7,
+      "x": 286.69,
+      "y": 0.75,
+      "z": -189.11,
+      "direction": 109
+    },
+    {
+      "name": "Elidyr (Frozen champion quests; Grimoire spawn 1011)",
+      "template": 194,
+      "conversation": 193,
+      "zone": 7,
+      "x": 286.93,
+      "y": 1.11,
+      "z": -183.56,
+      "direction": 35
+    },
+    {
+      "name": "[Luxury Item Trader] Quartermaster Lief (level 180 lux; Grimoire spawn 3343)",
+      "template": 882,
+      "conversation": 429,
+      "zone": 16,
+      "x": 260.15,
+      "y": -86,
+      "z": -158.62,
+      "direction": 90
+    },
+    {
+      "name": "[Luxury Item Trader] Quartermaster Dorian (level 200 lux; Grimoire spawn 3666)",
+      "template": 883,
+      "conversation": 430,
+      "zone": 18,
+      "x": 300.12,
+      "y": -77,
+      "z": 3.27,
+      "direction": 90
+    },
+    {
+      "name": "[Lichborne] Quartermaster Razzah (Corrupted Gardens; Grimoire spawn 6564)",
+      "template": 929,
+      "conversation": 716,
+      "zone": 24,
+      "x": 49.87,
+      "y": 58.76,
+      "z": -201.13,
+      "direction": 190
+    },
+    {
+      "name": "[Lichborne] Tactician Kyros (Corrupted Gardens; Grimoire spawn 6959)",
+      "template": 141959,
+      "conversation": 724,
+      "zone": 24,
+      "x": 52.38,
+      "y": 58.79,
+      "z": -192.94,
+      "direction": 210
+    },
+    {
+      "name": "[Reaver Battlemaster] Warlord Lagavul (Corrupted Gardens; Grimoire spawn 6960)",
+      "template": 141958,
+      "conversation": 722,
+      "zone": 24,
+      "x": -19.91,
+      "y": 48.27,
+      "z": -131.87,
+      "direction": 55
+    },
+    {
+      "name": "[Reaver] Quartermaster Rigvald (Corrupted Gardens; Grimoire spawn 6562)",
+      "template": 930,
+      "conversation": 718,
+      "zone": 24,
+      "x": -19.24,
+      "y": 47.99,
+      "z": -139.48,
+      "direction": 125
+    },
+    {
+      "name": "Saraid the Enchantress (Exalted Dragonlord upgrades, Bridge of Despair; Grimoire spawn 3112)",
+      "template": 102006,
+      "conversation": 413,
+      "zone": 15,
+      "x": -155.11,
+      "y": 27,
+      "z": 29.68,
+      "direction": 225
     }
   ],
   "adjust": [

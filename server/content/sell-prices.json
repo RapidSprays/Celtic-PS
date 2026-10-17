@@ -1,0 +1,10 @@
+{
+  "_comment": "Your own vendor sell prices, over everything else (restart the server after editing). Without an entry an item sells for half its lux-trader price if shop-extras.json gives it one, else its live price from Master's Grimoire (item-prices.json), else a quarter of the generated buy price. name is only a label for you.",
+  "prices": [
+    {
+      "id": 15054,
+      "name": "Sapphire (example: this is already its live price)",
+      "price": 500
+    }
+  ]
+}

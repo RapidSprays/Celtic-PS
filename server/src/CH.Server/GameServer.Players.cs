@@ -331,7 +331,11 @@ public sealed partial class GameServer
     /// shuffled drops go round them one at a time, so everyone gets one before anyone gets a second, and the extras land
     /// on random members.
     /// </summary>
-    private List<(Session Owner, int Item, int Quantity)> DealLoot(Session killer, IReadOnlyList<(int Item, int Quantity)> drops)
+    private List<(Session Owner, int Item, int Quantity)> DealLoot(Session killer, IReadOnlyList<(int Item, int Quantity)> drops) =>
+        LootDeal.Deal(KillGroup(killer), drops, Random.Shared).Select(d => (d.Owner, d.Drop.Item, d.Drop.Quantity)).ToList();
+
+    /// <summary>Who shares a kill: the killer and every party member in the zone, alive and within <see cref="PartyShareRange"/>.</summary>
+    private List<Session> KillGroup(Session killer)
     {
         var group = new List<Session> { killer };
         if (killer.Party is { } party)
@@ -340,22 +344,6 @@ public sealed partial class GameServer
             group.AddRange(party.Members.Where(m => !ReferenceEquals(m, killer) && m.InZone && !m.Dead && m.Position.Zone == zoneId
                 && Dist2D(m.Position.X, m.Position.Z, x, z) <= PartyShareRange));
         }
-        return LootDeal.Deal(group, drops, Random.Shared).Select(d => (d.Owner, d.Drop.Item, d.Drop.Quantity)).ToList();
-    }
-
-    private void SharePartyXp(Session killer, int xp, Mob mob)
-    {
-        if (killer.Party is not { } party) return;
-        var (zoneId, x, _, z, _) = killer.Position;
-        foreach (var m in party.Members.Where(m => !ReferenceEquals(m, killer) && m.InZone && !m.Dead && m.Position.Zone == zoneId
-                     && Dist2D(m.Position.X, m.Position.Z, x, z) <= PartyShareRange).ToList())
-        {
-            var before = m.Sheet!.Level;
-            var level = AddXp(m, xp, out var sheet);
-            if (level != before) AnnounceLevel(m, level);
-            else SendLiveStats(m);
-            Tell(m, $"+{xp} xp (party, {killer.Name}'s kill): {sheet.XpPercent:F0}% to next level.");
-            QuestKill(m, mob); // party members' kill and loot stages count too
-        }
+        return group;
     }
 }

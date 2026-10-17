@@ -73,7 +73,7 @@ public sealed partial class GameServer
                 foreach (var key in mob.Threat.Keys.ToList()) mob.Threat[key] *= Math.Max(0, 1 - Arg(1));
                 break;
             case 104: // call enemies within m
-                CallForHelp(zone, mob, (float)Arg(1), now);
+                CallForHelp(zone, mob, _callForHelp.Range(mob.Template.Id, (float)Arg(1)), now); // call-for-help.json
                 break;
             case 105: // stop attacking target
                 if (target is not null) LoseTarget(zone, mob, target, now);
@@ -183,7 +183,7 @@ public sealed partial class GameServer
         }
         if (level.InitialDamage == 0 && level.BaseDamage == 0 && skill.StatusEffectId <= 0 && !skill.IncludesWeaponAttack) return;
         var choice = new MobSkillChoice(skillId, 1, MobBrains.KindAttack, brain.RankOf(skillId));
-        foreach (var t in targets) MobCastsSkillArea(zone, mob, t, skill, choice, brain, now);
+        StartMobCast(zone, mob, targets, skill, choice, brain, now);
     }
 
     /// <summary>

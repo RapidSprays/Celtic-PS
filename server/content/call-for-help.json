@@ -1,0 +1,2330 @@
+{
+ "_comment": "How far a monster's call for help reaches (restart the server after editing). When a monster's script calls for help, every idle monster within the range joins the fight on its target. Each script's own range (scriptRange, from Master's Grimoire, in metres) is multiplied by rangeMultiplier (0.5 = half, 1 = as the data has it, 0 = nobody answers) and capped at maxRange (null = no cap). Give one monster its own range to override both (0 = it never calls for help). name, stars, zones and scriptRange are labels for you.",
+ "rangeMultiplier": 0.5,
+ "maxRange": null,
+ "monsters": [
+  {
+   "id": 70722,
+   "name": "Aggragoth",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 101020,
+   "name": "Akais the Venomous",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138691,
+   "name": "Banebrand Imperial",
+   "stars": 6,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141966,
+   "name": "Bloodthorn the Ravenous",
+   "stars": 6,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71148,
+   "name": "Cassel Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71161,
+   "name": "Cassel Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100219,
+   "name": "Comrak",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103019,
+   "name": "Cragskor",
+   "stars": 6,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138412,
+   "name": "Cronach Spitesap",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 142027,
+   "name": "Dhiothu",
+   "stars": 6,
+   "zones": "Lir's Reach",
+   "scriptRange": 22,
+   "range": null
+  },
+  {
+   "id": 71151,
+   "name": "Ebroch Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71162,
+   "name": "Ebroch Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 100002,
+   "name": "Efnisien the Necromancer",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 60,
+   "range": null
+  },
+  {
+   "id": 71869,
+   "name": "Firbolg Champion Sreng",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 100217,
+   "name": "Galar",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100220,
+   "name": "Garanak",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103049,
+   "name": "Garyn the Devastator",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140112,
+   "name": "Garyn the Devastator",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 102982,
+   "name": "Gelebron",
+   "stars": 6,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 103013,
+   "name": "General Gron",
+   "stars": 6,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71857,
+   "name": "Glashtyn Deepscale",
+   "stars": 6,
+   "zones": "Fingal's Cave",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71052,
+   "name": "Gnarlroot the Ancient",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 103047,
+   "name": "Goil the Marauder",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140110,
+   "name": "Goil the Marauder",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 101018,
+   "name": "Grath the Ugly",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71227,
+   "name": "Grommak the Stonelord",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138505,
+   "name": "Hawn the Afflicted",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71866,
+   "name": "High King Krem-Nor-Borok",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 73001,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73002,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73003,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73004,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73005,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73006,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73007,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73008,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73009,
+   "name": "High King Ymir",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 71863,
+   "name": "High Priest Bor-Ag-Valon",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 73817,
+   "name": "High Priestess of Morrigan",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Zone 21",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 73708,
+   "name": "Hrungnir",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 103007,
+   "name": "Ifryn Onyxclaw",
+   "stars": 6,
+   "zones": "Bridge of Despair",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71050,
+   "name": "Ignus the Lavalord",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138413,
+   "name": "Jalan Curseroot",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 73020,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73021,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73022,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73023,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73024,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73025,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73026,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73028,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73029,
+   "name": "King Askold",
+   "stars": 6,
+   "zones": "Lir's Reach, Otherworld, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 71872,
+   "name": "King Snorri Bonechewer",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71147,
+   "name": "Korgan Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71155,
+   "name": "Korgan Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71156,
+   "name": "Korgan Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71157,
+   "name": "Korgan Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71158,
+   "name": "Korgan Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71159,
+   "name": "Korgan Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 100218,
+   "name": "Kron",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103016,
+   "name": "Krothur the Condemned",
+   "stars": 6,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71149,
+   "name": "Leneth Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71160,
+   "name": "Leneth Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 73010,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73011,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73012,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73013,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73014,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73015,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73017,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73018,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 73019,
+   "name": "Lord Grimling",
+   "stars": 6,
+   "zones": "Lir's Reach, Murky Vaults, Zone 99",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 103010,
+   "name": "Magister Skath",
+   "stars": 6,
+   "zones": "Infernal Armouries",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138411,
+   "name": "Mallach Witherleaf",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138958,
+   "name": "Monolith of Blizzardgore",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138956,
+   "name": "Monolith of Frostshock",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101107,
+   "name": "Monolith of Hurricanes",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138957,
+   "name": "Monolith of Icescars",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101105,
+   "name": "Monolith of Tempests",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 101106,
+   "name": "Monolith of Tornadoes",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138959,
+   "name": "Monolith of the Blight Tomb",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101108,
+   "name": "Monolith of the Maelstrom",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 73000,
+   "name": "Mordris",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels, Zone 21",
+   "scriptRange": [
+    40,
+    50
+   ],
+   "range": null
+  },
+  {
+   "id": 138507,
+   "name": "Osan Marach",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138506,
+   "name": "Paradai the Blighted",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 73194,
+   "name": "Priestess of the Morrigan",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103027,
+   "name": "Proteus Base",
+   "stars": 6,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 22,
+   "range": null
+  },
+  {
+   "id": 103028,
+   "name": "Proteus Prime",
+   "stars": 6,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 22,
+   "range": null
+  },
+  {
+   "id": 71228,
+   "name": "Pyrus the Lavalord",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71051,
+   "name": "Ragnok the Stonelord",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 103022,
+   "name": "Revenant of Anguish",
+   "stars": 6,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 70720,
+   "name": "Shivercowl",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138414,
+   "name": "Skain Banebark",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103048,
+   "name": "Smoidrich the Destroyer",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140111,
+   "name": "Smoidrich the Destroyer",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 103050,
+   "name": "Smolach the Annihilator",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140113,
+   "name": "Smolach the Annihilator",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 71860,
+   "name": "Spider Queen Ulrob",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138504,
+   "name": "Srak the Scourge",
+   "stars": 6,
+   "zones": "Stonevale",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 101019,
+   "name": "Tarile the Chilling",
+   "stars": 6,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71055,
+   "name": "The All-Knowing One",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71223,
+   "name": "The All-Seeing One",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71053,
+   "name": "The Chained Emperor",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71225,
+   "name": "The Chained King",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71054,
+   "name": "The Swamp King",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71224,
+   "name": "The Swamp Lord",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103025,
+   "name": "Unox Mindrender",
+   "stars": 6,
+   "zones": "Forbidden Halls",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101021,
+   "name": "Urchaid the Overlord",
+   "stars": 6,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71150,
+   "name": "Veleron Blackstone",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71226,
+   "name": "Woodcrown the Ancient",
+   "stars": 6,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100003,
+   "name": "Acherus the Acolyte",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 101024,
+   "name": "Akais' Spawn",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102964,
+   "name": "Alcazzar the Insane",
+   "stars": 5,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 103018,
+   "name": "Ancient Cragwyrm",
+   "stars": 5,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102958,
+   "name": "Artemis the Vain",
+   "stars": 5,
+   "zones": "Bridge of Despair",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 138539,
+   "name": "Banebrand Heliant",
+   "stars": 5,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 142040,
+   "name": "Bladebane Spiritborne Troll",
+   "stars": 5,
+   "zones": "Lir's Reach",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141969,
+   "name": "Blazeroot",
+   "stars": 5,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 102956,
+   "name": "Bloodclaw",
+   "stars": 5,
+   "zones": "Bridge of Despair",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 71870,
+   "name": "Bloodguard Warchief",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71861,
+   "name": "Broodlord",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 102959,
+   "name": "Captain Ironfist",
+   "stars": 5,
+   "zones": "Infernal Armouries",
+   "scriptRange": 17,
+   "range": null
+  },
+  {
+   "id": 141970,
+   "name": "Causticroot",
+   "stars": 5,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 141972,
+   "name": "Chaosroot",
+   "stars": 5,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 102962,
+   "name": "Commander Steelheart",
+   "stars": 5,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 100215,
+   "name": "Comrak Acolyte",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138408,
+   "name": "Cronach Elder",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138834,
+   "name": "Darkwyrm Matriarch",
+   "stars": 5,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 73812,
+   "name": "Deepfire Sentinel",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels, Zone 21",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140139,
+   "name": "Elite Huntsman",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103054,
+   "name": "Emberdrake Annihilator",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels, Zone 99",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140117,
+   "name": "Emberdrake Annihilator",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 103052,
+   "name": "Emberdrake Destroyer",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140115,
+   "name": "Emberdrake Destroyer",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 103053,
+   "name": "Emberdrake Devastator",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140116,
+   "name": "Emberdrake Devastator",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 103051,
+   "name": "Emberdrake Marauder",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 140114,
+   "name": "Emberdrake Marauder",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 102965,
+   "name": "Erebon the Learned",
+   "stars": 5,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100007,
+   "name": "Eugaan the Acolyte",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 142035,
+   "name": "Firebane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "Lir's Reach",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142036,
+   "name": "Frostbane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "Lir's Reach",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141968,
+   "name": "Frostroot",
+   "stars": 5,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 100213,
+   "name": "Galar Acolyte",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100216,
+   "name": "Garanak Acolyte",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 71858,
+   "name": "Glashtyn Deeptalon",
+   "stars": 5,
+   "zones": "Fingal's Cave",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 102969,
+   "name": "Grand Orb",
+   "stars": 5,
+   "zones": "Forbidden Halls",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101022,
+   "name": "Grath's Spawn",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103012,
+   "name": "Gron's Elite",
+   "stars": 5,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102963,
+   "name": "Grubspittle",
+   "stars": 5,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 35,
+   "range": null
+  },
+  {
+   "id": 103015,
+   "name": "Guffug Firethrall",
+   "stars": 5,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138534,
+   "name": "Hawn's Cavalier",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138409,
+   "name": "Jalan Elder",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 142039,
+   "name": "Knifebane Spiritborne Troll",
+   "stars": 5,
+   "zones": "Lir's Reach",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 100214,
+   "name": "Kron Acolyte",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100274,
+   "name": "Kurzan the Mystic",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 138316,
+   "name": "Lord of Agony",
+   "stars": 5,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138407,
+   "name": "Mallach Elder",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138536,
+   "name": "Marach's Cavalier",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 102966,
+   "name": "Moonclaw",
+   "stars": 5,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102968,
+   "name": "Mordibrax the Eternal",
+   "stars": 5,
+   "zones": "Forbidden Halls",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103021,
+   "name": "Nightmare of Pain",
+   "stars": 5,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138954,
+   "name": "Obelisk of Blizzardgore",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138952,
+   "name": "Obelisk of Frostshock",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101110,
+   "name": "Obelisk of Gales",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138953,
+   "name": "Obelisk of Icescars",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101109,
+   "name": "Obelisk of Storms",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 101111,
+   "name": "Obelisk of Typhoons",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 101112,
+   "name": "Obelisk of Whirlwinds",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138955,
+   "name": "Obelisk of the Blight Tomb",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103006,
+   "name": "Onyxclaw Cur",
+   "stars": 5,
+   "zones": "Bridge of Despair",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138535,
+   "name": "Paradai's Cavalier",
+   "stars": 5,
+   "zones": "Otherworld",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 102960,
+   "name": "Reduxor the Gaunt",
+   "stars": 5,
+   "zones": "Infernal Armouries",
+   "scriptRange": 19,
+   "range": null
+  },
+  {
+   "id": 71864,
+   "name": "Revered Captain",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71873,
+   "name": "Rockhide",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 71867,
+   "name": "Royal Captain",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 141971,
+   "name": "Salveroot",
+   "stars": 5,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 100272,
+   "name": "Scallathrax the Mystic",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 102970,
+   "name": "Sentinel Omicron",
+   "stars": 5,
+   "zones": "Forbidden Halls",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102961,
+   "name": "Sentinel Theta",
+   "stars": 5,
+   "zones": "Infernal Armouries",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102957,
+   "name": "Sergeant Brass",
+   "stars": 5,
+   "zones": "Bridge of Despair",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138318,
+   "name": "Sigma Deathsbane",
+   "stars": 5,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138410,
+   "name": "Skain Elder",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103009,
+   "name": "Skath's Adept",
+   "stars": 5,
+   "zones": "Infernal Armouries",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 142037,
+   "name": "Soulbane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "Lir's Reach",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 138533,
+   "name": "Srak's Cavalier",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 101023,
+   "name": "Tarile's Spawn",
+   "stars": 5,
+   "zones": "Murky Vaults",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 102967,
+   "name": "Terminus the Undying",
+   "stars": 5,
+   "zones": "Summoning Chambers",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138317,
+   "name": "The Glaring Horror",
+   "stars": 5,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103024,
+   "name": "Unox Spawn",
+   "stars": 5,
+   "zones": "Forbidden Halls",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101025,
+   "name": "Urchaid's Spawn",
+   "stars": 5,
+   "zones": "Carrowmore Tunnels",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100273,
+   "name": "Vaarblad the Mystic",
+   "stars": 5,
+   "zones": "Stonevale",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141965,
+   "name": "Voltroot",
+   "stars": 5,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 138835,
+   "name": "Arcanum Inspector",
+   "stars": 4,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 141944,
+   "name": "Corrupted Obelisk",
+   "stars": 4,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141945,
+   "name": "Corrupted Obelisk",
+   "stars": 4,
+   "zones": "Corrupted Gardens",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 103059,
+   "name": "Fire Crystal",
+   "stars": 4,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138986,
+   "name": "Frenell Cruor",
+   "stars": 4,
+   "zones": "Stonevale",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 103060,
+   "name": "Ice Crystal",
+   "stars": 4,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 103061,
+   "name": "Poison Crystal",
+   "stars": 4,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138811,
+   "name": "Shadowhunt Master",
+   "stars": 4,
+   "zones": "Arcane Sanctum",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 100004,
+   "name": "Skeletal Guardian",
+   "stars": 4,
+   "zones": "Murky Vaults",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138686,
+   "name": "Baby Bear",
+   "stars": 1,
+   "zones": "Stonevale",
+   "scriptRange": 5,
+   "range": null
+  },
+  {
+   "id": 138687,
+   "name": "Bear Cub",
+   "stars": 1,
+   "zones": "Stonevale",
+   "scriptRange": 5,
+   "range": null
+  },
+  {
+   "id": 138688,
+   "name": "Bear Cub",
+   "stars": 1,
+   "zones": "Stonevale",
+   "scriptRange": 5,
+   "range": null
+  },
+  {
+   "id": 71970,
+   "name": "Boggan Lookout",
+   "stars": 1,
+   "zones": "Carrowmore Tunnels, Zone 99",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138427,
+   "name": "Alchemical Chest",
+   "stars": 0,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138202,
+   "name": "Argent Chest",
+   "stars": 0,
+   "zones": "Alchemical Quarters",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 140259,
+   "name": "Barrel of Grog",
+   "stars": 0,
+   "zones": "Fingal's Cave",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138425,
+   "name": "Despair Chest",
+   "stars": 0,
+   "zones": "Bridge of Despair",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138429,
+   "name": "Forbidden Chest",
+   "stars": 0,
+   "zones": "Forbidden Halls",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138315,
+   "name": "Gelebron's Casket",
+   "stars": 0,
+   "zones": "Arcane Sanctum, Zone 99",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138969,
+   "name": "Honey Barrel",
+   "stars": 0,
+   "zones": "Stonevale",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 138426,
+   "name": "Infernal Chest",
+   "stars": 0,
+   "zones": "Infernal Armouries",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138428,
+   "name": "Summoning Chest",
+   "stars": 0,
+   "zones": "Summoning Chambers",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138976,
+   "name": "Wine Barrel",
+   "stars": 0,
+   "zones": "Stonevale",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 141103,
+   "name": "Bloodthorn the Ravenous",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 138493,
+   "name": "Cragskor",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138491,
+   "name": "General Gron",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100014,
+   "name": "Ice Blue Jotun Test",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 138489,
+   "name": "Ifryn Onyxclaw",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138492,
+   "name": "Krothur the Condemned",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138490,
+   "name": "Magister Skath",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138494,
+   "name": "Revenant of Anguish",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138375,
+   "name": "Tower Raid Boss Minibron",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138495,
+   "name": "Unox Mindrender",
+   "stars": 6,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 142045,
+   "name": "Acidbane Spiritborne Troll",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142038,
+   "name": "Acidbane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142033,
+   "name": "Bladebane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101169,
+   "name": "Braich the Stag",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 73813,
+   "name": "Burri the Ugly",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101172,
+   "name": "Cabrach the Stag",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 101118,
+   "name": "Churg the Despoiler",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101166,
+   "name": "Criopus the Stag",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 101168,
+   "name": "Cullach the Boar",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 101171,
+   "name": "Dukar the Boar",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 142042,
+   "name": "Firebane Spiritborne Troll",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142043,
+   "name": "Frostbane Spiritborne Troll",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101170,
+   "name": "Goloko the Bear",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 100116,
+   "name": "Grand Icestorm Wyvern",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101138,
+   "name": "High Cleric Vrek Nem",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101123,
+   "name": "High Curate Hrek Var",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101141,
+   "name": "High Friar Brek Cran",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101142,
+   "name": "Irek Blizzard Blade",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142032,
+   "name": "Knifebane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101140,
+   "name": "Lurg the Plunderer",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 73815,
+   "name": "Nug the Savage",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101128,
+   "name": "Orek Sleet Blade",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101167,
+   "name": "Peither the Bear",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 141679,
+   "name": "Razortooth Bloodroot",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 40,
+   "range": null
+  },
+  {
+   "id": 141680,
+   "name": "Sawtooth Bloodroot",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 25,
+   "range": null
+  },
+  {
+   "id": 74065,
+   "name": "Shimmersun the Trickster",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 142041,
+   "name": "Smitebane Spiritborne Troll",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142034,
+   "name": "Smitebane Spiritborne Wyvern",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 142044,
+   "name": "Soulbane Spiritborne Troll",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101005,
+   "name": "Spider Lord Arachnus",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101003,
+   "name": "Spider Lord Corash",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101004,
+   "name": "Spider Lord Ronax",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 101165,
+   "name": "Thorch the Boar",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 101137,
+   "name": "Thurg the Marauder",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101139,
+   "name": "Urek Ice Blade",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 101173,
+   "name": "Ursor the Bear",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 14,
+   "range": null
+  },
+  {
+   "id": 73814,
+   "name": "Vorm the Bloody",
+   "stars": 5,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 141941,
+   "name": "Corrupted Obelisk",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141942,
+   "name": "Corrupted Obelisk",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 141943,
+   "name": "Corrupted Obelisk",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 15,
+   "range": null
+  },
+  {
+   "id": 138532,
+   "name": "Fiendish Bodyguard",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138511,
+   "name": "Fiendish Cavalier",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138530,
+   "name": "Haunted Bodyguard",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138509,
+   "name": "Haunted Cavalier",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138531,
+   "name": "Phantom Bodyguard",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138510,
+   "name": "Phantom Cavalier",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138529,
+   "name": "Wretched Bodyguard",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 138508,
+   "name": "Wretched Cavalier",
+   "stars": 4,
+   "zones": "not placed",
+   "scriptRange": 20,
+   "range": null
+  },
+  {
+   "id": 100322,
+   "name": "Alarm Fianna Captives",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 30,
+   "range": null
+  },
+  {
+   "id": 140030,
+   "name": "Beacon Colour Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140031,
+   "name": "Beacon Dye Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140032,
+   "name": "Beacon Paint Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138950,
+   "name": "Beacon Stain Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140033,
+   "name": "Beacon Veneer Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140034,
+   "name": "Guiding Colour Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140035,
+   "name": "Guiding Dye Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140036,
+   "name": "Guiding Paint Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138951,
+   "name": "Guiding Stain Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140037,
+   "name": "Guiding Veneer Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140026,
+   "name": "Signal Colour Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140027,
+   "name": "Signal Dye Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140028,
+   "name": "Signal Paint Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 138949,
+   "name": "Signal Stain Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  },
+  {
+   "id": 140029,
+   "name": "Signal Veneer Barrel",
+   "stars": 0,
+   "zones": "not placed",
+   "scriptRange": 10,
+   "range": null
+  }
+ ]
+}

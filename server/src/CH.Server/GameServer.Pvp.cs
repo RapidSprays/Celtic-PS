@@ -228,7 +228,7 @@ public sealed partial class GameServer
         if (!miss)
         {
             damage = Math.Max(1, (int)Math.Round(baseDamage * DamageRoll(s, kind) * (critical ? s.Sheet.CritMultiplier : 1)));
-            if (critical) SystemLine(s, CritLine(s, kind, skillId, damage));
+            if (critical) PartyLine(s, CritLine(s, kind, skillId, damage));
             damage = AbsorbWithShields(target, damage); // what's left after energy shields
         }
         LifeTap(s, damage);
