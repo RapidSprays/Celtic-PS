@@ -14,7 +14,6 @@ namespace CH.Server;
 /// </summary>
 public sealed partial class GameServer
 {
-    private const float TradeRange = 30f;
 
     private enum TradeOp
     {
@@ -81,8 +80,8 @@ public sealed partial class GameServer
         string? problem = other is null || IsBlockedBy(s, other) ? "That player is not online."
             : ReferenceEquals(other, s) ? "You can't trade with yourself."
             : s.Trade is not null || other.Trade is not null ? "One of you is already trading."
-            : !other.InZone || other.Position.Zone != s.Position.Zone
-              || Dist2D(s.Position.X, s.Position.Z, other.Position.X, other.Position.Z) > TradeRange ? $"{other.Name} is too far away to trade."
+            // Owner's rule (2026-10-18): trade with anyone in the same zone, however far.
+            : !other.InZone || other.Position.Zone != s.Position.Zone ? $"{other.Name} must be in the same zone to trade."
             : null;
         if (problem is not null)
         {
@@ -150,7 +149,7 @@ public sealed partial class GameServer
             var item = _store.ListItems(s.Character!.Id).FirstOrDefault(i => i.Id == itemId && i.Slot == ItemRecord.Backpack);
             if (!toTrade) side.Items.Remove(itemId);
             else if (item is null) problem = "That item isn't in your backpack.";
-            else if (_balance.Items.TryGetValue(item.TemplateId, out var info) && (!info.Tradeable || info.ImportantItem) || item.Bound)
+            else if (_balance.Items.TryGetValue(item.TemplateId, out var info) && !info.Tradeable || item.Bound) // ImportantItem only asks before selling (legacy boss gear has it)
                 problem = "That item can't be traded.";
             else side.Items[itemId] = Math.Clamp(side.Items.GetValueOrDefault(itemId) + Math.Max(1, quantity), 1, item.Quantity);
         }

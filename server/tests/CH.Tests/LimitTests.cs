@@ -141,7 +141,7 @@ public sealed class LimitTests
         var extras = Path.Combine(AppContext.BaseDirectory, "content", "shop-extras.json");
         var shops = new ShopCatalog(Data.Value, new Dictionary<int, ShopInfo>(), ShopCatalog.LoadExtras(extras), ShopCatalog.LoadReplaced(extras));
         Assert.Equal(12, shops.Stock(7000).Count);  // Offhand Weapons: grimoires, blades, quivers
-        Assert.Equal(24, shops.Stock(7310).Count);  // Shields and Armour: helms, crowns, shields
+        Assert.Equal(8, shops.Stock(7310).Count);   // Shields and Armour: helms, crowns, shields (owner cut it to 8, 2026-10-18)
         Assert.Contains(20808, shops.Stock(7000));  // Master's Grimoire
         Assert.Contains(20835, shops.Stock(7310));  // Golden Helm of Prowess
         Assert.Empty(shops.Stock(7311));            // Jewellery: nothing listed yet

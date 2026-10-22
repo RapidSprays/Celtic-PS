@@ -1,0 +1,187 @@
+{
+  "_comment": "Your own gear with your own numbers: rings, necklaces, bracelets, charms, armour, weapons, shields, offhands. After editing: close the game, run install-custom-gear.cmd (in chSERVER) so the game knows the items, then restart the server. Get one in game with .give <id>.",
+  "_fields": {
+    "id": "a new item id: 90100 and up (custom-items.json uses 90001-90099)",
+    "name": "shown in game",
+    "description": "tooltip text (optional)",
+    "type": "ring, necklace, bracelet or charm: picks a default look, so 'look' can be left out",
+    "look": "an existing item (id or exact name) whose model, icon, equip slot and weapon animations it copies; needed for armour, weapons, shields and offhands. None of its stats are kept.",
+    "level": "level needed to equip",
+    "classes": "[\"Warrior\", \"Druid\", \"Mage\", \"Ranger\", \"Rogue\"]; leave out for every class",
+    "armour": "armour value",
+    "damage": "weapons: damage by type, e.g. {\"Slash\": 300, \"Cold\": 120}. Types: Pierce, Slash, Crush, Heat (Fire), Cold (Ice), Magic, Poison, Divine, Chaos, True",
+    "speed": "weapons: attack delay in milliseconds (smaller is faster); leave out to keep the look's",
+    "range": "weapons: attack range in metres; leave out to keep the look's",
+    "stats": "{\"Strength\": 50, \"Dexterity\": 0, \"Focus\": 0, \"Vitality\": 0}",
+    "bonuses": "{\"Health\": 500, \"Energy\": 200, \"Attack\": 100, \"Defence\": 50, \"Concentration\": 10}",
+    "resists": "{\"Heat\": 25, \"Cold\": 25, \"Magic\": 25, \"Poison\": 25, \"Divine\": 25, \"Chaos\": 25, \"Pierce\": 10, \"Slash\": 10, \"Crush\": 10}",
+    "abilities": "any ability by name, e.g. {\"Treasure Hunter\": 800, \"Scholar\": 800, \"Fortitude\": 100, \"Sword\": 50, \"Critical Strike\": 100}",
+    "avoidance": "{\"Physical\": 25, \"Spell\": 25, \"Movement\": 25, \"Wounding\": 25, \"Weakening\": 25, \"Mental\": 25}",
+    "skills": "+ranks to skills by name, e.g. {\"Fire Bolt\": 2, \"Pummel\": 1}",
+    "proc": "a chance to cast a skill on hit: {\"skill\": \"Fire Bolt\", \"level\": 10, \"chance\": 5} (chance in percent)",
+    "equipSkill": "a skill the item gives while worn (name or id)",
+    "stars": "star level shown on the icon (optional)",
+    "tradeable": "false to make it untradeable (default true)",
+    "skillDamage": "flat damage added to a skill, e.g. {\"Double Shot\": 50} (skills gives ranks instead)",
+    "regen": "health and energy per tick, e.g. {\"health\": 25, \"energy\": 25}"
+  },
+  "gear": [
+    {
+      "id": 90100,
+      "name": "Ring of the Fortunate",
+      "type": "ring",
+      "description": "A ring for those who seek gold and wisdom.",
+      "level": 100,
+      "stats": {
+        "Dexterity": 20,
+        "Focus": 20
+      },
+      "bonuses": {
+        "Health": 150,
+        "Energy": 100
+      },
+      "resists": {
+        "Cold": 15,
+        "Heat": 15
+      },
+      "abilities": {
+        "Treasure Hunter": 800,
+        "Scholar": 800
+      }
+    },
+    {
+      "id": 90101,
+      "name": "Blade of the First Hero",
+      "look": "Sword of the Shining Sun",
+      "description": "Forged for the first hero of this realm.",
+      "level": 120,
+      "classes": [
+        "Warrior"
+      ],
+      "damage": {
+        "Slash": 260,
+        "Heat": 80
+      },
+      "stats": {
+        "Strength": 40
+      },
+      "abilities": {
+        "Sword": 60,
+        "Critical Strike": 60
+      },
+      "proc": {
+        "skill": "Fire Bolt",
+        "level": 20,
+        "chance": 5
+      }
+    },
+    {
+      "id": 90150,
+      "name": "Gilthral's Medal",
+      "look": 34870,
+      "description": "This medal has been taken from Gilthral the Gladiator. It may be of some interest to Moyna the Trainer, who can be found in the passageway leading to the Arena.",
+      "tradeable": false
+    },
+    {
+      "id": 90110,
+      "name": "Heretic's Ring of Venom",
+      "type": "ring",
+      "level": 90,
+      "description": "A ring taken from Denya the Heretic's servants, still slick with venom.",
+      "stats": {
+        "Strength": 30,
+        "Dexterity": 30
+      },
+      "damage": {
+        "Poison": 40
+      },
+      "skillDamage": {
+        "Double Shot": 50
+      }
+    },
+    {
+      "id": 90111,
+      "name": "Heretic's Band of Venom",
+      "type": "ring",
+      "level": 100,
+      "description": "A ring taken from Denya the Heretic's servants, still slick with venom.",
+      "stats": {
+        "Strength": 40,
+        "Dexterity": 40
+      },
+      "damage": {
+        "Poison": 60
+      },
+      "skillDamage": {
+        "Double Shot": 75
+      }
+    },
+    {
+      "id": 90112,
+      "name": "Heretic's Seal of Frostvenom",
+      "type": "ring",
+      "level": 115,
+      "description": "A seal of Denya the Heretic, cold to the touch and dripping venom.",
+      "stats": {
+        "Strength": 60,
+        "Dexterity": 60
+      },
+      "bonuses": {
+        "Attack": 200
+      },
+      "damage": {
+        "Poison": 70,
+        "Cold": 100
+      },
+      "skillDamage": {
+        "Double Shot": 100
+      }
+    },
+    {
+      "id": 90113,
+      "name": "Heretic's Signet of the Morrigan",
+      "type": "ring",
+      "level": 130,
+      "description": "Denya the Heretic's own signet, burning with frost, flame and venom.",
+      "stats": {
+        "Strength": 80,
+        "Dexterity": 80,
+        "Vitality": 80
+      },
+      "bonuses": {
+        "Attack": 300
+      },
+      "damage": {
+        "Poison": 100,
+        "Cold": 150,
+        "Heat": 150
+      },
+      "skillDamage": {
+        "Double Shot": 125
+      },
+      "regen": {
+        "health": 25,
+        "energy": 25
+      }
+    },
+    {
+      "id": 92000,
+      "name": "Charm of Crushing",
+      "type": "charm",
+      "look": 51039,
+      "level": 110,
+      "description": "This Charm was mended by the almighty BigBlackChicken",
+      "damage": {
+        "Crush": 200
+      },
+      "stats": {
+        "Strength": 50,
+        "Dexterity": 75,
+        "Vitality": 80
+      },
+      "classes": [
+        "Warrior"
+      ]
+    }
+  ]
+}

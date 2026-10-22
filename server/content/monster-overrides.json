@@ -1,0 +1,4 @@
+{
+ "_comment": "Changes to the game's own monsters (edit with ch-tool.cmd, Game monsters tab). Each entry is a monster id with only what you change: level, health, attack, defence, xp, gold, resists {\"all\": 400, \"Poison\": 300}, evasion {\"all\": 500}, scale (size: 1 = the game's, 2 = twice as big). Everything left out stays as the game has it, for every spawn of that monster. Drops and Divine Strike live in spawn-tuning.json. Restart the server after editing.",
+ "monsters": []
+}

@@ -1,0 +1,112 @@
+{
+ "_comment": "Your own monsters (restart the server after editing; run install-custom-gear.cmd with the game closed so the game knows them too). Each copies an existing monster's look ('base') under a new id and name. level and health are its own; xp (the same for everyone sharing the kill, at any level) and gold set its kill reward; attack, defence and damage are the base's unless set. resists {\"all\": 400, \"Poison\": 300} and evasion {\"all\": 500} set its own (types: Pierce, Slash, Crush, Heat, Cold, Magic, Poison, Chaos; evasion: Physical, Spell, Movement, Wounding, Weakening, Mental). scale multiplies its size. abilities (bosses): kind weaponBuff (damage/damageType added to its auto-attacks for duration s, recast recastAfter s after it ends), selfHot (heal every s, recast when it ends), selfHeal (a castTime s heal, once below each atHealth percent; interruptedBy skill names stop it), aoeStun (every cooldown s: damage and a stunSeconds stun to everyone within radius m, unless evaded with evadedBy). name is what the game shows; look is the existing skill whose animation and icon it copies, under its own skillId (and effectId for its icon), new ids the client mod adds. Place one with a saved spawn (the GM .spawn command, or ask Claude).",
+ "monsters": [
+  {
+   "id": 90300,
+   "base": 73804,
+   "name": "Gilthral the Gladiator",
+   "level": 210,
+   "health": 140000
+  },
+  {
+   "id": 90301,
+   "base": 73194,
+   "name": "Denya the Heretic",
+   "level": 115,
+   "health": 250000,
+   "attack": 600,
+   "defence": 850,
+   "xp": 200000,
+   "gold": 6500,
+   "scale": 3.0,
+   "resists": {
+    "all": 400,
+    "Poison": 300
+   },
+   "evasion": {
+    "all": 500
+   },
+   "abilities": [
+    {
+     "kind": "weaponBuff",
+     "name": "Venom Coat",
+     "skillId": 9501,
+     "effectId": 9601,
+     "look": 49,
+     "damageType": "Poison",
+     "damage": 75,
+     "duration": 60,
+     "recastAfter": 30
+    },
+    {
+     "kind": "selfHot",
+     "name": "Morrigan's Embrace",
+     "skillId": 9502,
+     "effectId": 9602,
+     "look": 37,
+     "heal": 50,
+     "every": 5,
+     "duration": 45
+    },
+    {
+     "kind": "selfHeal",
+     "name": "Dark Touch",
+     "skillId": 9503,
+     "look": 5,
+     "heal": 5000,
+     "castTime": 2,
+     "atHealth": [
+      85,
+      60,
+      40,
+      20,
+      10
+     ],
+     "interruptedBy": [
+      "Shield Bash"
+     ]
+    },
+    {
+     "kind": "aoeStun",
+     "name": "Priestess's Mezmorize",
+     "skillId": 9504,
+     "effectId": 9604,
+     "look": 2108,
+     "radius": 8,
+     "damage": 150,
+     "damageType": "Magic",
+     "stunSeconds": 4,
+     "cooldown": 45,
+     "evadedBy": "Movement"
+    }
+   ]
+  },
+  {
+   "id": 90302,
+   "base": 71377,
+   "name": "BigBlackChickens",
+   "level": 130,
+   "health": 120000,
+   "attack": 1500,
+   "defence": 1000,
+   "xp": 60000,
+   "gold": 3000,
+   "scale": 9.0,
+   "resists": {
+    "all": 600
+   },
+   "evasion": {
+    "all": 450
+   },
+   "colour": "#454545",
+   "petLook": "pet_chicken_black_6"
+  },
+  {
+   "id": 90303,
+   "base": 918,
+   "name": "[Ring Exchange] Ysolde the Ringwright",
+   "level": 100,
+   "health": 10000
+  }
+ ]
+}

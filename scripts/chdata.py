@@ -72,12 +72,17 @@ def text_assets(data, name_pattern=rb"[A-Za-z0-9_]+"):
     found = {}
     for m in re.finditer(name_pattern, data):
         i = m.start()
-        if i < 4 or struct.unpack_from("<i", data, i - 4)[0] != len(m.group(0)): continue
-        j = (m.end() + 3) & ~3
+        if i < 4: continue
+        # The name is length-prefixed; the match can run on into the size field when the name ends on a 4-byte boundary
+        # and the size's low bytes read as letters (cv_kyna_champion, 21,100 bytes = "lR"), so cut it to that length.
+        n = struct.unpack_from("<i", data, i - 4)[0]
+        if not 0 < n <= len(m.group(0)) or not re.fullmatch(name_pattern, m.group(0)[:n]): continue
+        name = m.group(0)[:n]
+        j = (i + n + 3) & ~3
         if j + 4 > len(data): continue
         size = struct.unpack_from("<i", data, j)[0]
         if not 0 <= size < 2_000_000: continue
-        found.setdefault(m.group(0).decode(), data[j + 4:j + 4 + size].decode("utf-8-sig", "replace"))
+        found.setdefault(name.decode(), data[j + 4:j + 4 + size].decode("utf-8-sig", "replace"))
     return found
 
 

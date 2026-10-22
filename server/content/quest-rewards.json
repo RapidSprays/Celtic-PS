@@ -1,5 +1,5 @@
 {
- "_comment": "Item rewards for quests (restart the server after editing). The game data has none (they're server-only), so a quest not listed here gets a 40% chance of a piece of gear for its level; a quest listed here gives exactly its items instead (an empty list gives none). id: the quest's id; quantity defaults to 1; an item with a class (Warrior, Druid, Mage, Ranger, Rogue) goes only to that class. name is a label for you. A quest that isn't listed and is named after a piece of gear (Astral Gauntlets, Dragonlord Helm…) gives that piece.",
+ "_comment": "Item rewards for quests (restart the server after editing). The game data has none (they're server-only), so a quest not listed here gives no items (only the gear it's named after, if any); a quest listed here gives exactly its items instead (an empty list gives none). id: the quest's id; quantity defaults to 1; an item with a class (Warrior, Druid, Mage, Ranger, Rogue) goes only to that class. name is a label for you. A quest that isn't listed and is named after a piece of gear (Astral Gauntlets, Dragonlord Helm…) gives that piece.",
  "quests": [
   {
    "id": 2434,
@@ -1197,6 +1197,386 @@
      "id": 17342,
      "name": "Totem of the Midnight Stars",
      "class": "Druid"
+    }
+   ]
+  },
+  {
+   "id": 298,
+   "name": "Red Crest of the Serpent (hand in the Astral Gauntlets)",
+   "items": [
+    {
+     "id": 20493,
+     "name": "Frozen Astral Gauntlets"
+    }
+   ]
+  },
+  {
+   "id": 299,
+   "name": "Red Crest of the Hound (hand in the Astral Boots)",
+   "items": [
+    {
+     "id": 20492,
+     "name": "Frozen Astral Boots"
+    }
+   ]
+  },
+  {
+   "id": 300,
+   "name": "Red Crest of the Hawk (hand in the Astral Helm)",
+   "items": [
+    {
+     "id": 20491,
+     "name": "Frozen Astral Helm"
+    }
+   ]
+  },
+  {
+   "id": 301,
+   "name": "Red Crest of the Stag (hand in the Astral Greaves)",
+   "items": [
+    {
+     "id": 20490,
+     "name": "Frozen Astral Greaves"
+    }
+   ]
+  },
+  {
+   "id": 302,
+   "name": "Red Crest of the Bear (hand in the Astral Breastplate)",
+   "items": [
+    {
+     "id": 20489,
+     "name": "Frozen Astral Breastplate"
+    }
+   ]
+  },
+  {
+   "id": 303,
+   "name": "Red Crest of the Lion (hand in the Meteoric Sword)",
+   "items": [
+    {
+     "id": 20484,
+     "name": "Frozen Meteoric Sword"
+    }
+   ]
+  },
+  {
+   "id": 304,
+   "name": "Green Crest of the Serpent (hand in the Cosmic Gloves)",
+   "items": [
+    {
+     "id": 20508,
+     "name": "Frozen Cosmic Gloves"
+    }
+   ]
+  },
+  {
+   "id": 305,
+   "name": "Green Crest of the Hound (hand in the Cosmic Sandals)",
+   "items": [
+    {
+     "id": 20507,
+     "name": "Frozen Cosmic Sandals"
+    }
+   ]
+  },
+  {
+   "id": 306,
+   "name": "Green Crest of the Hawk (hand in the Cosmic Cowl)",
+   "items": [
+    {
+     "id": 20506,
+     "name": "Frozen Cosmic Cowl"
+    }
+   ]
+  },
+  {
+   "id": 307,
+   "name": "Green Crest of the Stag (hand in the Cosmic Leggings)",
+   "items": [
+    {
+     "id": 20505,
+     "name": "Frozen Cosmic Leggings"
+    }
+   ]
+  },
+  {
+   "id": 308,
+   "name": "Green Crest of the Bear (hand in the Cosmic Robe)",
+   "items": [
+    {
+     "id": 20504,
+     "name": "Frozen Cosmic Robe"
+    }
+   ]
+  },
+  {
+   "id": 309,
+   "name": "Green Crest of the Lion (hand in the Meteoric Totem)",
+   "items": [
+    {
+     "id": 20488,
+     "name": "Frozen Meteoric Totem"
+    }
+   ]
+  },
+  {
+   "id": 310,
+   "name": "Yellow Crest of the Serpent (hand in the Lunar Gauntlets)",
+   "items": [
+    {
+     "id": 20498,
+     "name": "Frozen Lunar Gauntlets"
+    }
+   ]
+  },
+  {
+   "id": 311,
+   "name": "Yellow Crest of the Hound (hand in the Lunar Boots)",
+   "items": [
+    {
+     "id": 20497,
+     "name": "Frozen Lunar Boots"
+    }
+   ]
+  },
+  {
+   "id": 312,
+   "name": "Yellow Crest of the Hawk (hand in the Lunar Hood)",
+   "items": [
+    {
+     "id": 20496,
+     "name": "Frozen Lunar Hood"
+    }
+   ]
+  },
+  {
+   "id": 313,
+   "name": "Yellow Crest of the Stag (hand in the Lunar Greaves)",
+   "items": [
+    {
+     "id": 20495,
+     "name": "Frozen Lunar Greaves"
+    }
+   ]
+  },
+  {
+   "id": 314,
+   "name": "Yellow Crest of the Bear (hand in the Lunar Cuirass)",
+   "items": [
+    {
+     "id": 20494,
+     "name": "Frozen Lunar Cuirass"
+    }
+   ]
+  },
+  {
+   "id": 315,
+   "name": "Yellow Crest of the Lion (hand in the Meteoric Bow)",
+   "items": [
+    {
+     "id": 20485,
+     "name": "Frozen Meteoric Bow"
+    }
+   ]
+  },
+  {
+   "id": 316,
+   "name": "Blue Crest of the Serpent (hand in the Celestial Gloves)",
+   "items": [
+    {
+     "id": 20513,
+     "name": "Frozen Celestial Gloves"
+    }
+   ]
+  },
+  {
+   "id": 317,
+   "name": "Blue Crest of the Hound (hand in the Celestial Shoes)",
+   "items": [
+    {
+     "id": 20512,
+     "name": "Frozen Celestial Shoes"
+    }
+   ]
+  },
+  {
+   "id": 318,
+   "name": "Blue Crest of the Hawk (hand in the Celestial Cowl)",
+   "items": [
+    {
+     "id": 20511,
+     "name": "Frozen Celestial Cowl"
+    }
+   ]
+  },
+  {
+   "id": 319,
+   "name": "Blue Crest of the Stag (hand in the Celestial Skirt)",
+   "items": [
+    {
+     "id": 20510,
+     "name": "Frozen Celestial Skirt"
+    }
+   ]
+  },
+  {
+   "id": 320,
+   "name": "Blue Crest of the Bear (hand in the Celestial Gown)",
+   "items": [
+    {
+     "id": 20509,
+     "name": "Frozen Celestial Gown"
+    }
+   ]
+  },
+  {
+   "id": 321,
+   "name": "Blue Crest of the Lion (hand in the Meteoric Wand)",
+   "items": [
+    {
+     "id": 20487,
+     "name": "Frozen Meteoric Wand"
+    }
+   ]
+  },
+  {
+   "id": 322,
+   "name": "Purple Crest of the Serpent (hand in the Zodiac Gloves)",
+   "items": [
+    {
+     "id": 20503,
+     "name": "Frozen Zodiac Gloves"
+    }
+   ]
+  },
+  {
+   "id": 323,
+   "name": "Purple Crest of the Hound (hand in the Zodiac Boots)",
+   "items": [
+    {
+     "id": 20502,
+     "name": "Frozen Zodiac Boots"
+    }
+   ]
+  },
+  {
+   "id": 324,
+   "name": "Purple Crest of the Hawk (hand in the Zodiac Hood)",
+   "items": [
+    {
+     "id": 20501,
+     "name": "Frozen Zodiac Hood"
+    }
+   ]
+  },
+  {
+   "id": 325,
+   "name": "Purple Crest of the Stag (hand in the Zodiac Breeches)",
+   "items": [
+    {
+     "id": 20500,
+     "name": "Frozen Zodiac Breeches"
+    }
+   ]
+  },
+  {
+   "id": 326,
+   "name": "Purple Crest of the Bear (hand in the Zodiac Jerkin)",
+   "items": [
+    {
+     "id": 20499,
+     "name": "Frozen Zodiac Jerkin"
+    }
+   ]
+  },
+  {
+   "id": 327,
+   "name": "Purple Crest of the Lion (hand in the Meteoric Dagger)",
+   "items": [
+    {
+     "id": 20486,
+     "name": "Frozen Meteoric Dagger"
+    }
+   ]
+  },
+  {
+   "id": 479,
+   "name": "Back from the Dead (Jaryn the Smuggler: his half of the falling star)",
+   "items": [
+    {
+     "id": 17574,
+     "name": "Jaryn's Falling Star"
+    }
+   ]
+  },
+  {
+   "id": 478,
+   "name": "The Sea Chart (Torbin the Sailor: his half of the falling star)",
+   "items": [
+    {
+     "id": 17575,
+     "name": "Torbin's Falling Star"
+    }
+   ]
+  },
+  {
+   "id": 109,
+   "name": "Benedictions of Morrigan (Severina the Alchemist: her Focus of Enchantment, for Broon's Enchanted)",
+   "items": [
+    {
+     "id": 17586,
+     "name": "Focus of Enchantment"
+    }
+   ]
+  },
+  {
+   "id": 110,
+   "name": "Litanies of Morrigan (Severina the Alchemist: her Focus of Enchantment, for Broon's Enchanted)",
+   "items": [
+    {
+     "id": 17586,
+     "name": "Focus of Enchantment"
+    }
+   ]
+  },
+  {
+   "id": 111,
+   "name": "Invocations of Morrigan (Severina the Alchemist: her Focus of Enchantment, for Broon's Enchanted)",
+   "items": [
+    {
+     "id": 17586,
+     "name": "Focus of Enchantment"
+    }
+   ]
+  },
+  {
+   "id": 112,
+   "name": "Rites of Morrigan (Severina the Alchemist: her Focus of Enchantment, for Broon's Enchanted)",
+   "items": [
+    {
+     "id": 17586,
+     "name": "Focus of Enchantment"
+    }
+   ]
+  },
+  {
+   "id": 113,
+   "name": "Echoes of Morrigan (Severina the Alchemist: her Focus of Enchantment, for Broon's Enchanted)",
+   "items": [
+    {
+     "id": 17586,
+     "name": "Focus of Enchantment"
+    }
+   ]
+  },
+  {
+   "id": 106,
+   "name": "Enchanted (Broon the Mage: the Enchanted Sky Iron for Roarke's Meteoric Might)",
+   "items": [
+    {
+     "id": 17573,
+     "name": "Enchanted Sky Iron"
     }
    ]
   }

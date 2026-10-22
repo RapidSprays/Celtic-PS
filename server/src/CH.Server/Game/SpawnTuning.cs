@@ -17,6 +17,8 @@ public sealed class SpawnTuning
     private readonly Dictionary<int, double> _noDropChance = new();
     private readonly Dictionary<int, HashSet<int>> _removeDrops = new();
     private readonly Dictionary<int, double> _chestChance = new();
+    private readonly Dictionary<int, List<string>> _chests = new();
+    private List<string> _eventChests = [];
     private readonly HashSet<int> _divine = new();
     private readonly Dictionary<int, float> _pointY = new();
     private readonly Dictionary<int, float> _pointScale = new();
@@ -36,6 +38,7 @@ public sealed class SpawnTuning
             var root = doc.RootElement;
             if (root.TryGetProperty("useLiveRespawnTimes", out var live)) t._useLive = live.ValueKind == JsonValueKind.True;
             if (root.TryGetProperty("defaultRespawnSeconds", out var d) && d.ValueKind == JsonValueKind.Number) t._default = Math.Max(1, d.GetDouble());
+            if (root.TryGetProperty("eventChests", out var ec)) t._eventChests = Names(ec);
             if (root.TryGetProperty("monsters", out var monsters))
                 foreach (var m in monsters.EnumerateArray())
                 {
@@ -48,6 +51,7 @@ public sealed class SpawnTuning
                         t._removeDrops[id.GetInt32()] = rd.EnumerateArray().Select(e => e.ValueKind == JsonValueKind.Object && e.TryGetProperty("id", out var i) ? i : e)
                             .Where(e => e.ValueKind == JsonValueKind.Number).Select(e => e.GetInt32()).ToHashSet();
                     if (m.TryGetProperty("chestChance", out var cc) && cc.ValueKind == JsonValueKind.Number) t._chestChance[id.GetInt32()] = Math.Clamp(cc.GetDouble(), 0, 100);
+                    if (m.TryGetProperty("chests", out var ch) && Names(ch) is { Count: > 0 } own) t._chests[id.GetInt32()] = own;
                     if (m.TryGetProperty("extraDrops", out var x) && x.ValueKind == JsonValueKind.Array)
                         foreach (var drop in x.EnumerateArray())
                             if (drop.TryGetProperty("id", out var item) && drop.TryGetProperty("chance", out var chance) && chance.ValueKind == JsonValueKind.Number)
@@ -102,6 +106,17 @@ public sealed class SpawnTuning
         foreach (var (item, chance, quantity) in list)
             if (rng.NextDouble() * 100 < chance) yield return (item, quantity);
     }
+
+    /// <summary>Item ids or names in a JSON list (numbers and strings both allowed).</summary>
+    private static List<string> Names(JsonElement e) => e.ValueKind != JsonValueKind.Array ? []
+        : e.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.Number ? x.GetInt32().ToString() : x.ValueKind == JsonValueKind.String ? x.GetString() ?? "" : "")
+            .Where(x => x.Length > 0).ToList();
+
+    /// <summary>
+    /// The chests a monster's chestChance picks from (ids or names): its own "chests", else the file's "eventChests";
+    /// empty → every event Mystery Chest.
+    /// </summary>
+    public IReadOnlyList<string> ChestChoices(int templateId) => _chests.TryGetValue(templateId, out var own) ? own : _eventChests;
 
     /// <summary>Whether the owner took this item out of the monster's official loot (spawn-tuning.json "removeDrops").</summary>
     public bool Removed(int templateId, int item) => _removeDrops.TryGetValue(templateId, out var set) && set.Contains(item);

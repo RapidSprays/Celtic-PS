@@ -1,9 +1,28 @@
 {
- "_comment": "Damage over time (restart the server after editing). Every tick of a player's DoT does a random share of its normal amount, from minPercent to maxPercent (100 = its full tick), then the target's resist to its damage type cuts it. default covers every DoT; a DoT listed under dots with its own minPercent/maxPercent uses those instead (leave them out to keep the default). damageType sets the type resists use (pierce, slash, crush, heat, cold, magic, poison, divine, chaos, true): Rupture and Stinging Swarm have none in the game data, so without it they ignore resists. effect is the DoT's status effect id; Rend's effect is shared by the mount and pet skills Astral Rays, Death Charge, Horn Lance and Impale. Dragonlord and Eldritch Spite use their own range in divine-strike.json.",
+ "_comment": "Damage over time (restart the server after editing). Every tick of a player's DoT does a random share of its normal amount, from minPercent to maxPercent (100 = its full tick), then the target's resist to its damage type cuts it. default covers every DoT; a DoT listed under dots with its own minPercent/maxPercent uses those instead (leave them out to keep the default). damageType sets the type resists use (pierce, slash, crush, heat, cold, magic, poison, divine, chaos, true): Rupture and Stinging Swarm have none in the game data, so without it they ignore resists. effect is the DoT's status effect id; Rend's effect is shared by the mount and pet skills Astral Rays, Death Charge, Horn Lance and Impale. Dragonlord and Eldritch Spite use their own range in divine-strike.json. levelBands (against monsters): when the caster is below the monster's level, the first band that matches how many levels below (playerLevelsBelowMob min/max, max left out = no limit) sets the range instead, for every DoT: 5+ below rolls 40-50%, 4 below to the same level 45-70% (owner's rule, 2026-10-18). Above the monster the DoT's own range or default applies.",
  "default": {
-  "minPercent": 80,
-  "maxPercent": 100
+  "minPercent": 65,
+  "maxPercent": 90
  },
+ "levelBands": [
+  {
+   "name": "5 or more levels below the monster",
+   "playerLevelsBelowMob": {
+    "min": 5
+   },
+   "minPercent": 40,
+   "maxPercent": 65
+  },
+  {
+   "name": "from 4 levels below the monster up to its level",
+   "playerLevelsBelowMob": {
+    "min": 0,
+    "max": 4
+   },
+   "minPercent": 45,
+   "maxPercent": 70
+  }
+ ],
  "dots": [
   {
    "name": "Rend (Rogue; also Astral Rays, Death Charge, Horn Lance, Impale) - pierce",

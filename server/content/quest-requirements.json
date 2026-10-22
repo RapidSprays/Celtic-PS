@@ -1,6 +1,36 @@
 {
- "_comment": "Quest levels and requirements (restart the server after editing). minLevel: the level a quest opens at (below it the NPC shows a grey '!'); level: the quest's level for its reward XP (defaults to minLevel). requiresAnyItem: item ids, one of which the character must own (backpack, equipped or bank) to be offered the quest at all. The Warden armour (Brixos, Rhallai, Vinda, Eanan and Griga in Stonevale) needs a Warden weapon: Sword of the Shining Sun 17338, Bow of the Four Winds 17339, Dagger of the Darkest Night 17340, Wand of the Silver Moon 17341, Totem of the Midnight Stars 17342, or the Meteoric weapon it becomes (17587-17591). Gloves at 85 up to the chest at 100; Roarke's Meteoric Might (the Meteoric weapon) at 105.",
+ "_comment": "Quest levels and requirements (restart the server after editing). minLevel: the level a quest opens at (below it the NPC shows a grey '!'); level: the quest's level for its reward XP (defaults to minLevel). requiresAnyItem: item ids, one of which the character must own (backpack, equipped or bank) to be offered the quest at all. The Warden armour (Brixos, Rhallai, Vinda, Eanan and Griga in Stonevale) needs a Warden weapon: Sword of the Shining Sun 17338, Bow of the Four Winds 17339, Dagger of the Darkest Night 17340, Wand of the Silver Moon 17341, Totem of the Midnight Stars 17342, or the Meteoric weapon it becomes (17587-17591). Gloves at 85 up to the chest at 100; Roarke's Meteoric Might (the Meteoric weapon) at 105. Warden armour from the disc quests: gloves 60, boots 65, helm 70, legs 75, chest and the weapon 80. Frozen (the Tir na nOg champions' Crest quests, which freeze the Meteoric pieces): gloves 110 (Kyna), boots 115 (Davin), helm 120 (Rhyanne), legs 125 (Carraden), chest 130 (Elidyr), weapon 135 (Niamh). xp: the quest's XP, the same at any level (Segorax's gladiator dailies: Strog 20,000, Balmon 60,000, Crammok 120,000, Ragnor 350,000, Killain 700,000). xpPercentOfLevel instead gives that percent of the XP the player needs for their current level. Either replaces the quest's own XP. Daily quests (Segorax's spars and the other DayRepeat quests) can each be done once a day; finishing one doesn't stop the others. alwaysComplete: true makes every character count as having done the quest (it's never offered), opening whatever it gates: Vaultkeeper Renauld's legacy lux shop.",
  "quests": [
+  {
+   "id": 89,
+   "name": "Warden Brixos (Warden armour, gloves)",
+   "minLevel": 60
+  },
+  {
+   "id": 90,
+   "name": "Warden Rhallai (Warden armour, boots)",
+   "minLevel": 65
+  },
+  {
+   "id": 91,
+   "name": "Warden Vinda (Warden armour, helm)",
+   "minLevel": 70
+  },
+  {
+   "id": 92,
+   "name": "Warden Eanan (Warden armour, legs)",
+   "minLevel": 75
+  },
+  {
+   "id": 93,
+   "name": "Warden Griga (Warden armour, chest)",
+   "minLevel": 80
+  },
+  {
+   "id": 88,
+   "name": "Warden Oisin (the Warden weapon)",
+   "minLevel": 80
+  },
   {
    "id": 121,
    "name": "Astral Gauntlets (Warden armour, gloves)",
@@ -450,6 +480,204 @@
    "id": 105,
    "name": "Meteoric Might (Roarke the Blacksmith, Lir's Reach: the Meteoric weapon)",
    "minLevel": 105
+  },
+  {
+   "id": 298,
+   "name": "Red Crest of the Serpent (Kyna: Frozen gloves, Astral Gauntlets -> Frozen Astral Gauntlets)",
+   "minLevel": 110
+  },
+  {
+   "id": 299,
+   "name": "Red Crest of the Hound (Davin: Frozen boots, Astral Boots -> Frozen Astral Boots)",
+   "minLevel": 115
+  },
+  {
+   "id": 300,
+   "name": "Red Crest of the Hawk (Rhyanne: Frozen helm, Astral Helm -> Frozen Astral Helm)",
+   "minLevel": 120
+  },
+  {
+   "id": 301,
+   "name": "Red Crest of the Stag (Carraden: Frozen legs, Astral Greaves -> Frozen Astral Greaves)",
+   "minLevel": 125
+  },
+  {
+   "id": 302,
+   "name": "Red Crest of the Bear (Elidyr: Frozen chest, Astral Breastplate -> Frozen Astral Breastplate)",
+   "minLevel": 130
+  },
+  {
+   "id": 303,
+   "name": "Red Crest of the Lion (Niamh: Frozen weapon, Meteoric Sword -> Frozen Meteoric Sword)",
+   "minLevel": 135
+  },
+  {
+   "id": 304,
+   "name": "Green Crest of the Serpent (Kyna: Frozen gloves, Cosmic Gloves -> Frozen Cosmic Gloves)",
+   "minLevel": 110
+  },
+  {
+   "id": 305,
+   "name": "Green Crest of the Hound (Davin: Frozen boots, Cosmic Sandals -> Frozen Cosmic Sandals)",
+   "minLevel": 115
+  },
+  {
+   "id": 306,
+   "name": "Green Crest of the Hawk (Rhyanne: Frozen helm, Cosmic Cowl -> Frozen Cosmic Cowl)",
+   "minLevel": 120
+  },
+  {
+   "id": 307,
+   "name": "Green Crest of the Stag (Carraden: Frozen legs, Cosmic Leggings -> Frozen Cosmic Leggings)",
+   "minLevel": 125
+  },
+  {
+   "id": 308,
+   "name": "Green Crest of the Bear (Elidyr: Frozen chest, Cosmic Robe -> Frozen Cosmic Robe)",
+   "minLevel": 130
+  },
+  {
+   "id": 309,
+   "name": "Green Crest of the Lion (Niamh: Frozen weapon, Meteoric Totem -> Frozen Meteoric Totem)",
+   "minLevel": 135
+  },
+  {
+   "id": 310,
+   "name": "Yellow Crest of the Serpent (Kyna: Frozen gloves, Lunar Gauntlets -> Frozen Lunar Gauntlets)",
+   "minLevel": 110
+  },
+  {
+   "id": 311,
+   "name": "Yellow Crest of the Hound (Davin: Frozen boots, Lunar Boots -> Frozen Lunar Boots)",
+   "minLevel": 115
+  },
+  {
+   "id": 312,
+   "name": "Yellow Crest of the Hawk (Rhyanne: Frozen helm, Lunar Hood -> Frozen Lunar Hood)",
+   "minLevel": 120
+  },
+  {
+   "id": 313,
+   "name": "Yellow Crest of the Stag (Carraden: Frozen legs, Lunar Greaves -> Frozen Lunar Greaves)",
+   "minLevel": 125
+  },
+  {
+   "id": 314,
+   "name": "Yellow Crest of the Bear (Elidyr: Frozen chest, Lunar Cuirass -> Frozen Lunar Cuirass)",
+   "minLevel": 130
+  },
+  {
+   "id": 315,
+   "name": "Yellow Crest of the Lion (Niamh: Frozen weapon, Meteoric Bow -> Frozen Meteoric Bow)",
+   "minLevel": 135
+  },
+  {
+   "id": 316,
+   "name": "Blue Crest of the Serpent (Kyna: Frozen gloves, Celestial Gloves -> Frozen Celestial Gloves)",
+   "minLevel": 110
+  },
+  {
+   "id": 317,
+   "name": "Blue Crest of the Hound (Davin: Frozen boots, Celestial Shoes -> Frozen Celestial Shoes)",
+   "minLevel": 115
+  },
+  {
+   "id": 318,
+   "name": "Blue Crest of the Hawk (Rhyanne: Frozen helm, Celestial Cowl -> Frozen Celestial Cowl)",
+   "minLevel": 120
+  },
+  {
+   "id": 319,
+   "name": "Blue Crest of the Stag (Carraden: Frozen legs, Celestial Skirt -> Frozen Celestial Skirt)",
+   "minLevel": 125
+  },
+  {
+   "id": 320,
+   "name": "Blue Crest of the Bear (Elidyr: Frozen chest, Celestial Gown -> Frozen Celestial Gown)",
+   "minLevel": 130
+  },
+  {
+   "id": 321,
+   "name": "Blue Crest of the Lion (Niamh: Frozen weapon, Meteoric Wand -> Frozen Meteoric Wand)",
+   "minLevel": 135
+  },
+  {
+   "id": 322,
+   "name": "Purple Crest of the Serpent (Kyna: Frozen gloves, Zodiac Gloves -> Frozen Zodiac Gloves)",
+   "minLevel": 110
+  },
+  {
+   "id": 323,
+   "name": "Purple Crest of the Hound (Davin: Frozen boots, Zodiac Boots -> Frozen Zodiac Boots)",
+   "minLevel": 115
+  },
+  {
+   "id": 324,
+   "name": "Purple Crest of the Hawk (Rhyanne: Frozen helm, Zodiac Hood -> Frozen Zodiac Hood)",
+   "minLevel": 120
+  },
+  {
+   "id": 325,
+   "name": "Purple Crest of the Stag (Carraden: Frozen legs, Zodiac Breeches -> Frozen Zodiac Breeches)",
+   "minLevel": 125
+  },
+  {
+   "id": 326,
+   "name": "Purple Crest of the Bear (Elidyr: Frozen chest, Zodiac Jerkin -> Frozen Zodiac Jerkin)",
+   "minLevel": 130
+  },
+  {
+   "id": 327,
+   "name": "Purple Crest of the Lion (Niamh: Frozen weapon, Meteoric Dagger -> Frozen Meteoric Dagger)",
+   "minLevel": 135
+  },
+  {
+   "id": 354,
+   "name": "Spar with Strog (Segorax's daily gladiator, level 20)",
+   "minLevel": 15,
+   "xp": 20000
+  },
+  {
+   "id": 355,
+   "name": "Spar with Balmon (Segorax's daily gladiator, level 50)",
+   "minLevel": 45,
+   "xp": 60000
+  },
+  {
+   "id": 356,
+   "name": "Spar with Crammok (Segorax's daily gladiator, level 90)",
+   "minLevel": 85,
+   "xp": 120000
+  },
+  {
+   "id": 357,
+   "name": "Spar with Ragnor (Segorax's daily gladiator, level 130)",
+   "minLevel": 125,
+   "xp": 350000
+  },
+  {
+   "id": 506,
+   "name": "Spar with Killain (Segorax's daily gladiator, level 170)",
+   "minLevel": 165,
+   "xp": 700000
+  },
+  {
+   "id": 2658,
+   "name": "Vaultkeeper Renauld's shady task (legacy lux trader, Dunskeig): done for everyone, so his shop is open from the start",
+   "alwaysComplete": true
+  },
+  {
+   "id": 9001,
+   "name": "Spar with Gilthral (Segorax's daily gladiator, level 210)",
+   "minLevel": 205,
+   "xp": 1250000,
+   "notWhileActive": [
+    354,
+    355,
+    356,
+    357,
+    506
+   ]
   }
  ]
 }

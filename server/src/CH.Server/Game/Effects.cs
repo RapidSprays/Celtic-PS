@@ -35,7 +35,22 @@ public sealed class ActiveEffect
     /// <summary>The caster's level in the skill's ability (the client's effect formula scales with it).</summary>
     public float AbilityLevel { get; init; } = CasterAbilityLevel;
 
-    public int Amount => Level?.ModifiedAmount(AbilityLevel, (float)StatRatio) ?? 0;
+    public int Amount => FixedAmount ?? Level?.ModifiedAmount(AbilityLevel, (float)StatRatio) ?? 0;
+
+    /// <summary>A skill's damage turned into damage over time (skill-overrides.json damageAsDot): this much per tick, resists already applied.</summary>
+    public int? FixedAmount { get; init; }
+
+    /// <summary>
+    /// A player's heal over time (Nature's Embrace): this much health per tick (gear healing bonuses applied at the
+    /// cast), healed and shown as a heal number on each tick by GameServer.TickEffects instead of adding to regen.
+    /// </summary>
+    public int? HealPerTick { get; init; }
+
+    /// <summary>The skill a heal over time came from (its heal numbers show under that skill, as Nature's Touch's do).</summary>
+    public int HealSkillId { get; init; }
+
+    /// <summary>Seconds between ticks for <see cref="FixedAmount"/> effects (else the effect's own).</summary>
+    public double? TickSeconds { get; init; }
 
     /// <summary>The caster's attribute ÷ the skill's divisor when it was cast (<see cref="CharacterSheet.StatRatio"/>); 0 for none.</summary>
     public double StatRatio { get; init; }
@@ -106,6 +121,7 @@ public sealed record EffectModifiers
         foreach (var e in list)
         {
             if (ElixirRules.Current.TryGet(e.Info.Id, e.LevelIndex, out _, out _)) continue; // applied above
+            if (e.HealPerTick is not null) continue; // heals over time tick on their own (GameServer.TickEffects)
             var a = e.Amount;
             m = e.Type switch
             {

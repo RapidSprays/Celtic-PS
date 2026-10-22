@@ -24,6 +24,12 @@ public static class SkillOverrides
             {
                 Levels = Change(skill.Levels, o), PvpLevels = Change(skill.PvpLevels, o),
                 CastWithWeaponDelay = o.TryGetProperty("castWithWeaponDelay", out var wd) ? wd.ValueKind == JsonValueKind.True : skill.CastWithWeaponDelay,
+                WeaponDelayOffset = o.TryGetProperty("weaponDelayOffset", out var wo) && wo.ValueKind == JsonValueKind.Number ? wo.GetDouble() : skill.WeaponDelayOffset,
+                EvasionPercent = o.TryGetProperty("evasionPercent", out var ep) && ep.ValueKind == JsonValueKind.Number ? Math.Max(0, ep.GetDouble()) : skill.EvasionPercent,
+                MinLandChance = o.TryGetProperty("minLandChance", out var ml) && ml.ValueKind == JsonValueKind.Number ? Math.Clamp(ml.GetDouble(), 0, 100) : skill.MinLandChance,
+                DamageAsDot = o.TryGetProperty("damageAsDot", out var dd) && dd.ValueKind == JsonValueKind.Object && dd.TryGetProperty("effect", out var de)
+                    ? (de.GetInt32(), Math.Max(1, dd.TryGetProperty("ticks", out var dt) ? dt.GetInt32() : 5), Math.Max(0.5, dd.TryGetProperty("seconds", out var ds) ? ds.GetDouble() : 10))
+                    : skill.DamageAsDot,
             });
             if (skill.StatusEffectId > 0 && balance.StatusEffects.TryGetValue(skill.StatusEffectId, out var effect) && HasDotFields(o))
                 balance.ReplaceStatusEffect(ChangeEffect(effect, o));

@@ -62,6 +62,9 @@ public sealed class Mob
     /// <summary>Official attack, defence and damage (null → the MobStats formulas).</summary>
     public MobCombat? Combat { get; set; }
 
+    /// <summary>A custom boss's abilities and their timers (custom-monsters.json "abilities"), else null.</summary>
+    public BossState? Boss { get; set; }
+
     /// <summary>The client's "Chaos Aura" status (2136): "Its attacks deal additional Chaos Damage, but it is vulnerable to Divine Damage".</summary>
     public const int ChaosAuraEffect = 2136;
 
@@ -190,6 +193,7 @@ public sealed class Mob
         Threat.Clear();
         Effects.Clear();
         Scripts.Clear();
+        Boss?.Reset();
         FromX = ToX = HomeX;
         FromZ = ToZ = HomeZ;
         LegStart = LegEta = now;
@@ -269,7 +273,7 @@ public sealed class OfficialMobStats
 
     private OfficialMobStats(Dictionary<int, MobCombat> mobs) => _mobs = mobs;
 
-    public static OfficialMobStats Empty { get; } = new([]);
+    public static OfficialMobStats Empty => new([]); // new each time: ApplyOverrides changes it
 
     public int Count => _mobs.Count;
 
@@ -295,4 +299,34 @@ public sealed class OfficialMobStats
     }
 
     public bool TryGet(int template, out MobCombat combat) => _mobs.TryGetValue(template, out combat!);
+
+    /// <summary>
+    /// The owner's changes to existing monsters (server/content/monster-overrides.json, edited with scripts/ch-tool.py):
+    /// level, health, attack, defence, kill XP and gold, resists and skill evasion (its "scale", the size, is GameServer's). Anything left out stays as the game has
+    /// it. Every spawn of the monster uses them.
+    /// </summary>
+    public int ApplyOverrides(string? path)
+    {
+        var changed = 0;
+        foreach (var o in CustomContent.LoadMonsters(path))
+        {
+            if (!_mobs.TryGetValue(o.Id, out var b))
+            {
+                if (!o.LevelSet || !o.HealthSet) continue; // not in the game data: only a full entry makes stats
+                b = new MobCombat(o.Level, o.Health, 0, 0, []);
+            }
+            var resists = b.Resists.ToDictionary(r => r.Key, r => r.Value);
+            foreach (var (type, flat) in o.Resists ?? new Dictionary<int, int>())
+                resists[type] = (flat, resists.TryGetValue(type, out var had) && had.Share > 0 ? had.Share : 1.0);
+            var evade = b.Evade.ToDictionary(x => x.Key, x => x.Value);
+            foreach (var (type, value) in o.Evade ?? new Dictionary<int, int>()) evade[type] = value;
+            _mobs[o.Id] = new MobCombat(o.LevelSet ? o.Level : b.Level, o.HealthSet ? o.Health : b.Health, o.Attack ?? b.Attack, o.Defence ?? b.Defence,
+                o.Damage(b.Damage))
+            {
+                Xp = o.Xp ?? b.Xp, Gold = o.Gold is { } g ? (g, g) : b.Gold, Resists = resists, Evade = evade,
+            };
+            changed++;
+        }
+        return changed;
+    }
 }

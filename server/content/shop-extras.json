@@ -1,528 +1,716 @@
 {
- "_comment": "Our own additions to merchant stock, at fixed prices (docs/economy-notes.md). shops: the shop ids one vendor opens (one per class). replace: true makes the listed items a shop's whole stock. An item without a price uses the usual price formula.",
- "extras": [
-  {
-   "vendor": "[Skill Merchant] Glamora the Warrior (Highshore Village, Lir's Reach)",
-   "shops": [
-    5,
-    1031,
-    1036,
-    1041,
-    1046,
-    1051,
-    1056
-   ],
-   "items": [
-    {
-     "id": 34781,
-     "name": "Sigils of Health Crate",
-     "price": 5000
-    },
-    {
-     "id": 34782,
-     "name": "Sigils of Energy Crate",
-     "price": 5000
-    }
-   ]
-  },
-  {
-   "vendor": "The Scavenger (Otherworld): Offhand Weapons, as on live 2026-10-16",
-   "shops": [
-    7000
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 20806,
-     "name": "Acolyte's Grimoire"
-    },
-    {
-     "id": 20807,
-     "name": "Sage's Grimoire",
-     "price": 150000
-    },
-    {
-     "id": 20808,
-     "name": "Master's Grimoire",
-     "price": 200000
-    },
-    {
-     "id": 20818,
-     "name": "Bronze Blade of Fire",
-     "price": 125000
-    },
-    {
-     "id": 20819,
-     "name": "Silver Blade of Fire",
-     "price": 175000
-    },
-    {
-     "id": 20820,
-     "name": "Golden Blade of Fire",
-     "price": 250000
-    },
-    {
-     "id": 20821,
-     "name": "Bronze Blade of Ice"
-    },
-    {
-     "id": 20822,
-     "name": "Silver Blade of Ice"
-    },
-    {
-     "id": 20823,
-     "name": "Golden Blade of Ice"
-    },
-    {
-     "id": 20857,
-     "name": "Bronze Quiver of Fire"
-    },
-    {
-     "id": 20858,
-     "name": "Silver Quiver of Fire"
-    },
-    {
-     "id": 20859,
-     "name": "Golden Quiver of Fire"
-    }
-   ]
-  },
-  {
-   "vendor": "The Scavenger (Otherworld): Shields and Armour, as on live 2026-10-16",
-   "shops": [
-    7310
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 20833,
-     "name": "Bronze Helm of Prowess"
-    },
-    {
-     "id": 20834,
-     "name": "Silver Helm of Prowess"
-    },
-    {
-     "id": 20835,
-     "name": "Golden Helm of Prowess"
-    },
-    {
-     "id": 20870,
-     "name": "Bronze Helm of Intensity"
-    },
-    {
-     "id": 20871,
-     "name": "Silver Helm of Intensity"
-    },
-    {
-     "id": 20872,
-     "name": "Golden Helm of Intensity"
-    },
-    {
-     "id": 20873,
-     "name": "Bronze Helm of Severity"
-    },
-    {
-     "id": 20874,
-     "name": "Silver Helm of Severity"
-    },
-    {
-     "id": 20875,
-     "name": "Golden Helm of Severity"
-    },
-    {
-     "id": 20836,
-     "name": "Bronze Helm of Regeneration"
-    },
-    {
-     "id": 20837,
-     "name": "Silver Helm of Regeneration"
-    },
-    {
-     "id": 20838,
-     "name": "Golden Helm of Regeneration"
-    },
-    {
-     "id": 20842,
-     "name": "Bronze Crown of Wizardry"
-    },
-    {
-     "id": 20843,
-     "name": "Silver Crown of Wizardry"
-    },
-    {
-     "id": 20844,
-     "name": "Golden Crown of Wizardry"
-    },
-    {
-     "id": 20845,
-     "name": "Bronze Crown of Energisation"
-    },
-    {
-     "id": 20846,
-     "name": "Silver Crown of Energisation"
-    },
-    {
-     "id": 20847,
-     "name": "Golden Crown of Energisation"
-    },
-    {
-     "id": 20812,
-     "name": "Shield of the Mountain"
-    },
-    {
-     "id": 20813,
-     "name": "Courtly Shield of the Mountain"
-    },
-    {
-     "id": 20814,
-     "name": "Royal Shield of the Mountain"
-    },
-    {
-     "id": 20815,
-     "name": "Shield of the Wind"
-    },
-    {
-     "id": 20816,
-     "name": "Courtly Shield of the Wind"
-    },
-    {
-     "id": 20817,
-     "name": "Royal Shield of the Wind"
-    }
-   ]
-  },
-  {
-   "vendor": "The Scavenger (Otherworld): Jewellery (nothing listed yet)",
-   "shops": [
-    7311
-   ],
-   "replace": true,
-   "items": []
-  },
-  {
-   "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Offhand Weapons",
-   "shops": [
-    10017
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 22253,
-     "name": "Focus of the Seer"
-    },
-    {
-     "id": 22256,
-     "name": "Idol of Illusion"
-    },
-    {
-     "id": 22262,
-     "name": "Arcane Quiver of Beasts"
-    },
-    {
-     "id": 34987,
-     "name": "Fiery Quiver of Beasts"
-    },
-    {
-     "id": 34989,
-     "name": "Freezing Quiver of Beasts"
-    },
-    {
-     "id": 22265,
-     "name": "Arcane Axe of Triumph"
-    },
-    {
-     "id": 34979,
-     "name": "Fiery Axe of Triumph"
-    },
-    {
-     "id": 34981,
-     "name": "Freezing Axe of Triumph"
-    },
-    {
-     "id": 22268,
-     "name": "Dagger of Slaying"
-    },
-    {
-     "id": 34983,
-     "name": "Fiery Dagger of Haste"
-    },
-    {
-     "id": 34985,
-     "name": "Freezing Dagger of Haste"
-    }
-   ]
-  },
-  {
-   "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Shields and Armour",
-   "shops": [
-    10023
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 22259,
-     "name": "Shield of the Rampart"
-    },
-    {
-     "id": 22295,
-     "name": "Arcane Helm of the Veteran"
-    },
-    {
-     "id": 34975,
-     "name": "Fiery Helm of the Veteran"
-    },
-    {
-     "id": 34977,
-     "name": "Freezing Helm of the Veteran"
-    },
-    {
-     "id": 22292,
-     "name": "Crown of the Warlock"
-    },
-    {
-     "id": 34991,
-     "name": "Crown of the Master"
-    },
-    {
-     "id": 34993,
-     "name": "Helm of the Giant"
-    }
-   ]
-  },
-  {
-   "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Jewellery",
-   "shops": [
-    10024
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 22271,
-     "name": "Talisman of the Earth"
-    },
-    {
-     "id": 22274,
-     "name": "Bracer of Cloaking"
-    },
-    {
-     "id": 22277,
-     "name": "Bracer of Constitution"
-    },
-    {
-     "id": 22280,
-     "name": "Ring of Battle"
-    },
-    {
-     "id": 22283,
-     "name": "Ring of Cunning"
-    },
-    {
-     "id": 22286,
-     "name": "Ring of Vigour"
-    },
-    {
-     "id": 22289,
-     "name": "Ring of Reflex"
-    },
-    {
-     "id": 34971,
-     "name": "Amulet of Slaying"
-    }
-   ]
-  },
-  {
-   "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Offhand Weapons",
-   "shops": [
-    10000
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 22254,
-     "name": "Focus of the Mystic"
-    },
-    {
-     "id": 22257,
-     "name": "Idol of Sorcery"
-    },
-    {
-     "id": 22263,
-     "name": "Arcane Quiver of the Wild"
-    },
-    {
-     "id": 34988,
-     "name": "Fiery Quiver of the Wild"
-    },
-    {
-     "id": 34990,
-     "name": "Freezing Quiver of the Wild"
-    },
-    {
-     "id": 22266,
-     "name": "Arcane Axe of Conquest"
-    },
-    {
-     "id": 34980,
-     "name": "Fiery Axe of Conquest"
-    },
-    {
-     "id": 34982,
-     "name": "Freezing Axe of Conquest"
-    },
-    {
-     "id": 22269,
-     "name": "Dagger of Bounty"
-    },
-    {
-     "id": 34984,
-     "name": "Fiery Dagger of Celerity"
-    },
-    {
-     "id": 34986,
-     "name": "Freezing Dagger of Celerity"
-    }
-   ]
-  },
-  {
-   "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Shields and Armour",
-   "shops": [
-    10021
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 22260,
-     "name": "Shield of the Bastion"
-    },
-    {
-     "id": 22296,
-     "name": "Arcane Helm of the Champion"
-    },
-    {
-     "id": 34976,
-     "name": "Fiery Helm of the Champion"
-    },
-    {
-     "id": 34978,
-     "name": "Freezing Helm of the Champion"
-    },
-    {
-     "id": 22293,
-     "name": "Crown of the Sorcerer"
-    },
-    {
-     "id": 34992,
-     "name": "Crown of the Grandmaster"
-    },
-    {
-     "id": 34994,
-     "name": "Helm of the Titan"
-    }
-   ]
-  },
-  {
-   "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Jewellery",
-   "shops": [
-    10022
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 22272,
-     "name": "Talisman of the Stars"
-    },
-    {
-     "id": 22275,
-     "name": "Bracer of Shrouding"
-    },
-    {
-     "id": 22278,
-     "name": "Bracer of Endurance"
-    },
-    {
-     "id": 22281,
-     "name": "Ring of War"
-    },
-    {
-     "id": 22284,
-     "name": "Ring of Artifice"
-    },
-    {
-     "id": 22287,
-     "name": "Ring of Might"
-    },
-    {
-     "id": 22290,
-     "name": "Ring of Force"
-    },
-    {
-     "id": 34972,
-     "name": "Amulet of Annihilation"
-    },
-    {
-     "id": 34970,
-     "name": "Bracelet of Souls"
-    }
-   ]
-  },
-  {
-   "vendor": "Token shop: Sedric the Pet Vendor's \"Buy tokens, eggs, seeds, bells and coins\" (client patch P17)",
-   "shops": [
-    9100
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 56051,
-     "name": "Pet Token",
-     "price": 15000
-    },
-    {
-     "id": 65953,
-     "name": "Cursed Coin",
-     "price": 150000
-    },
-    {
-     "id": 65047,
-     "name": "Phoenix Egg",
-     "price": 150000
-    },
-    {
-     "id": 65455,
-     "name": "Corrupted Seed",
-     "price": 150000
-    },
-    {
-     "id": 65934,
-     "name": "Magical Bell",
-     "price": 150000
-    }
-   ]
-  },
-  {
-   "vendor": "Token shop: Remus the Mount Vendor's \"Buy Mount Tokens and essences\" (client patch P17)",
-   "shops": [
-    9101
-   ],
-   "replace": true,
-   "items": [
-    {
-     "id": 60145,
-     "name": "Mount Token",
-     "price": 35000
-    },
-    {
-     "id": 65776,
-     "name": "Dark Essence",
-     "price": 150000
-    },
-    {
-     "id": 66317,
-     "name": "Nightmare Essence",
-     "price": 150000
-    }
-   ]
-  }
- ]
+  "_comment": "Our own additions to merchant stock (lux traders: set each \"price\" in gold; 0 = the game's normal formula price), at fixed prices (docs/economy-notes.md). shops: the shop ids one vendor opens (one per class). replace: true makes the listed items a shop's whole stock. An item without a price uses the usual price formula.",
+  "extras": [
+    {
+      "vendor": "[Skill Merchant] Glamora the Warrior (Highshore Village, Lir's Reach)",
+      "shops": [
+        5,
+        1031,
+        1036,
+        1041,
+        1046,
+        1051,
+        1056
+      ],
+      "items": [
+        {
+          "id": 34781,
+          "name": "Sigils of Health Crate",
+          "price": 5000
+        },
+        {
+          "id": 34782,
+          "name": "Sigils of Energy Crate",
+          "price": 5000
+        }
+      ]
+    },
+    {
+      "vendor": "The Scavenger (Otherworld): Offhand Weapons, as on live 2026-10-16",
+      "shops": [
+        7000
+      ],
+      "replace": true,
+      "items": [
+        {
+          "id": 20806,
+          "name": "Acolyte's Grimoire",
+          "price": 120000
+        },
+        {
+          "id": 20807,
+          "name": "Sage's Grimoire",
+          "price": 150000
+        },
+        {
+          "id": 20808,
+          "name": "Master's Grimoire",
+          "price": 200000
+        },
+        {
+          "id": 20818,
+          "name": "Bronze Blade of Fire",
+          "price": 125000
+        },
+        {
+          "id": 20819,
+          "name": "Silver Blade of Fire",
+          "price": 175000
+        },
+        {
+          "id": 20820,
+          "name": "Golden Blade of Fire",
+          "price": 250000
+        },
+        {
+          "id": 20821,
+          "name": "Bronze Blade of Ice",
+          "price": 125000
+        },
+        {
+          "id": 20822,
+          "name": "Silver Blade of Ice",
+          "price": 175000
+        },
+        {
+          "id": 20823,
+          "name": "Golden Blade of Ice",
+          "price": 250000
+        },
+        {
+          "id": 20857,
+          "name": "Bronze Quiver of Fire",
+          "price": 175000
+        },
+        {
+          "id": 20858,
+          "name": "Silver Quiver of Fire",
+          "price": 200000
+        },
+        {
+          "id": 20859,
+          "name": "Golden Quiver of Fire",
+          "price": 225000
+        }
+      ]
+    },
+    {
+      "vendor": "The Scavenger (Otherworld): Shields and Armour, as on live 2026-10-16",
+      "shops": [
+        7310
+      ],
+      "replace": true,
+      "items": [
+        {
+          "id": 20833,
+          "name": "Bronze Helm of Prowess"
+        },
+        {
+          "id": 20834,
+          "name": "Silver Helm of Prowess"
+        },
+        {
+          "id": 20835,
+          "name": "Golden Helm of Prowess"
+        },
+        {
+          "id": 20872,
+          "name": "Golden Helm of Intensity"
+        },
+        {
+          "id": 20875,
+          "name": "Golden Helm of Severity"
+        },
+        {
+          "id": 20838,
+          "name": "Golden Helm of Regeneration"
+        },
+        {
+          "id": 20814,
+          "name": "Royal Shield of the Mountain"
+        },
+        {
+          "id": 20817,
+          "name": "Royal Shield of the Wind"
+        }
+      ]
+    },
+    {
+      "vendor": "The Scavenger (Otherworld): Jewellery (nothing listed yet)",
+      "shops": [
+        7311
+      ],
+      "replace": true,
+      "items": []
+    },
+    {
+      "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Offhand Weapons",
+      "shops": [
+        10017
+      ],
+      "replace": true,
+      "items": [
+        {"id": 34995, "name": "Primal Blade", "price": 0},
+        {"id": 23527, "name": "Arcane Dagger of Haste", "price": 0},
+        {"id": 23530, "name": "Quiver of the Air", "price": 0},
+        {
+          "id": 22253,
+          "name": "Focus of the Seer",
+          "price": 350000
+        },
+        {
+          "id": 34987,
+          "name": "Fiery Quiver of Beasts",
+          "price": 375000
+        },
+        {
+          "id": 34989,
+          "name": "Freezing Quiver of Beasts",
+          "price": 375000
+        },
+        {
+          "id": 22265,
+          "name": "Arcane Axe of Triumph",
+          "price": 350000
+        },
+        {
+          "id": 34979,
+          "name": "Fiery Axe of Triumph",
+          "price": 350000
+        },
+        {
+          "id": 34981,
+          "name": "Freezing Axe of Triumph",
+          "price": 350000
+        },
+        {
+          "id": 22268,
+          "name": "Dagger of Slaying",
+          "price": 375000
+        }
+      ]
+    },
+    {
+      "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Shields and Armour",
+      "shops": [
+        10023
+      ],
+      "replace": true,
+      "items": [
+        {"id": 23524, "name": "Shield of the Reaver", "price": 0},
+        {
+          "id": 22259,
+          "name": "Shield of the Rampart",
+          "price": 350000
+        },
+        {
+          "id": 34975,
+          "name": "Fiery Helm of the Veteran",
+          "price": 275000
+        },
+        {
+          "id": 34977,
+          "name": "Freezing Helm of the Veteran",
+          "price": 275000
+        },
+        {
+          "id": 34993,
+          "name": "Helm of the Giant",
+          "price": 300000
+        }
+      ]
+    },
+    {
+      "vendor": "[Luxury Item Trader] Cabry the Squire (level 100 lux set): Jewellery",
+      "shops": [
+        10024
+      ],
+      "replace": true,
+      "items": [
+        {
+          "id": 22271,
+          "name": "Talisman of the Earth",
+          "price": 325000
+        },
+        {
+          "id": 22274,
+          "name": "Bracer of Cloaking",
+          "price": 250000
+        },
+        {
+          "id": 22277,
+          "name": "Bracer of Constitution",
+          "price": 200000
+        },
+        {
+          "id": 34971,
+          "name": "Amulet of Slaying",
+          "price": 250000
+        }
+      ]
+    },
+    {
+      "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Offhand Weapons",
+      "shops": [
+        10000
+      ],
+      "replace": true,
+      "items": [
+        {"id": 34996, "name": "Elder Blade", "price": 0},
+        {"id": 23528, "name": "Arcane Dagger of Celerity", "price": 0},
+        {"id": 23531, "name": "Quiver of the Wind", "price": 0},
+        {
+          "id": 22254,
+          "name": "Focus of the Mystic",
+          "price": 375000
+        },
+        {
+          "id": 22263,
+          "name": "Arcane Quiver of the Wild",
+          "price": 375000
+        },
+        {
+          "id": 34988,
+          "name": "Fiery Quiver of the Wild",
+          "price": 375000
+        },
+        {
+          "id": 34990,
+          "name": "Freezing Quiver of the Wild",
+          "price": 375000
+        },
+        {
+          "id": 22266,
+          "name": "Arcane Axe of Conquest",
+          "price": 400000
+        },
+        {
+          "id": 34980,
+          "name": "Fiery Axe of Conquest",
+          "price": 400000
+        },
+        {
+          "id": 34982,
+          "name": "Freezing Axe of Conquest",
+          "price": 400000
+        },
+        {
+          "id": 22269,
+          "name": "Dagger of Bounty",
+          "price": 450000
+        },
+        {
+          "id": 34984,
+          "name": "Fiery Dagger of Celerity",
+          "price": 300000
+        },
+        {
+          "id": 34986,
+          "name": "Freezing Dagger of Celerity",
+          "price": 300000
+        }
+      ]
+    },
+    {
+      "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Shields and Armour",
+      "shops": [
+        10021
+      ],
+      "replace": true,
+      "items": [
+        {"id": 23525, "name": "Shield of the Ravager", "price": 0},
+        {
+          "id": 22260,
+          "name": "Shield of the Bastion",
+          "price": 450000
+        },
+        {
+          "id": 22296,
+          "name": "Arcane Helm of the Champion",
+          "price": 300000
+        },
+        {
+          "id": 34976,
+          "name": "Fiery Helm of the Champion",
+          "price": 300000
+        },
+        {
+          "id": 34978,
+          "name": "Freezing Helm of the Champion",
+          "price": 300000
+        },
+        {
+          "id": 22293,
+          "name": "Crown of the Sorcerer"
+        },
+        {
+          "id": 34992,
+          "name": "Crown of the Grandmaster"
+        },
+        {
+          "id": 34994,
+          "name": "Helm of the Titan",
+          "price": 340000
+        }
+      ]
+    },
+    {
+      "vendor": "[Luxury Item Trader] Lord Ealdwin (level 150 lux set): Jewellery",
+      "shops": [
+        10022
+      ],
+      "replace": true,
+      "items": [
+        {
+          "id": 22272,
+          "name": "Talisman of the Stars",
+          "price": 400000
+        },
+        {
+          "id": 22275,
+          "name": "Bracer of Shrouding",
+          "price": 300000
+        },
+        {
+          "id": 22278,
+          "name": "Bracer of Endurance",
+          "price": 300000
+        },
+        {
+          "id": 34972,
+          "name": "Amulet of Annihilation",
+          "price": 400000
+        },
+        {
+          "id": 34970,
+          "name": "Bracelet of Souls",
+          "price": 425000
+        }
+      ]
+    },
+    {
+      "vendor": "Token shop: Sedric the Pet Vendor's \"Buy tokens, eggs, seeds, bells and coins\" (client patch P17)",
+      "shops": [
+        9100
+      ],
+      "replace": true,
+      "items": [
+        {
+          "id": 56051,
+          "name": "Pet Token",
+          "price": 15000
+        },
+        {
+          "id": 65953,
+          "name": "Cursed Coin",
+          "price": 150000
+        },
+        {
+          "id": 65047,
+          "name": "Phoenix Egg",
+          "price": 150000
+        },
+        {
+          "id": 65455,
+          "name": "Corrupted Seed",
+          "price": 150000
+        },
+        {
+          "id": 65934,
+          "name": "Magical Bell",
+          "price": 150000
+        }
+      ]
+    },
+    {
+      "vendor": "Token shop: Remus the Mount Vendor's \"Buy Mount Tokens and essences\" (client patch P17)",
+      "shops": [
+        9101
+      ],
+      "replace": true,
+      "items": [
+        {
+          "id": 60145,
+          "name": "Mount Token",
+          "price": 35000
+        },
+        {
+          "id": 65776,
+          "name": "Dark Essence",
+          "price": 150000
+        },
+        {
+          "id": 66317,
+          "name": "Nightmare Essence",
+          "price": 150000
+        }
+      ]
+    },
+    {"vendor": "[Time-Lost Luxury Trader] Vaultkeeper Renauld (legacy lux, Dunskeig): Show me your wares (every legacy set)", "shops": [15053], "replace": true, "items": [
+      {"id": 58050, "name": "Wayfarer's Ring of Falcon  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58051, "name": "Wayfarer's Ring of Eagle  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58052, "name": "Wayfarer's Ring of Raven  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58053, "name": "Wayfarer's Ring of Hawk  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58038, "name": "Wayfarer's Band of the Falcon  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58039, "name": "Wayfarer's Band of the Eagle  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58040, "name": "Wayfarer's Band of the Raven  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58041, "name": "Wayfarer's Band of the Hawk  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58026, "name": "Wayfarer's Amulet of the Falcon  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58027, "name": "Wayfarer's Amulet of the Eagle  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58028, "name": "Wayfarer's Amulet of the Raven  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58029, "name": "Wayfarer's Amulet of the Hawk  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58054, "name": "Pathfinder's Ring of Falcon  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58055, "name": "Pathfinder's Ring of Eagle  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58056, "name": "Pathfinder's Ring of Raven  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58057, "name": "Pathfinder's Ring of Hawk  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58042, "name": "Pathfinder's Band of the Falcon  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58043, "name": "Pathfinder's Band of the Eagle  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58044, "name": "Pathfinder's Band of the Raven  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58045, "name": "Pathfinder's Band of the Hawk  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58030, "name": "Pathfinder's Amulet of the Falcon  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58031, "name": "Pathfinder's Amulet of the Eagle  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58032, "name": "Pathfinder's Amulet of the Raven  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58033, "name": "Pathfinder's Amulet of the Hawk  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 0},
+      {"id": 58058, "name": "Trailblazer's Ring of Falcon  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58059, "name": "Trailblazer's Ring of Eagle  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58060, "name": "Trailblazer's Ring of Raven  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58061, "name": "Trailblazer's Ring of Hawk  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58046, "name": "Trailblazer's Band of the Falcon  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58047, "name": "Trailblazer's Band of the Eagle  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58048, "name": "Trailblazer's Band of the Raven  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58049, "name": "Trailblazer's Band of the Hawk  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58034, "name": "Trailblazer's Amulet of the Falcon  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58035, "name": "Trailblazer's Amulet of the Eagle  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58036, "name": "Trailblazer's Amulet of the Raven  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 58037, "name": "Trailblazer's Amulet of the Hawk  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 0},
+      {"id": 56697, "name": "Keen Perceptor Ring of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56698, "name": "Honed Perceptor Ring of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56693, "name": "Vital Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56694, "name": "Potent Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56695, "name": "Sanguine Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56696, "name": "Dynamic Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56689, "name": "Vital Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56690, "name": "Potent Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56691, "name": "Sanguine Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 56692, "name": "Dynamic Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 0},
+      {"id": 54900, "name": "Wyldgrove Ring of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54901, "name": "Wyldgrove Ring of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54902, "name": "Wyldgrove Ring of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54903, "name": "Wyldgrove Ring of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54904, "name": "Wyldshrine Ring of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54905, "name": "Wyldshrine Ring of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54906, "name": "Wyldshrine Ring of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54907, "name": "Wyldshrine Ring of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54892, "name": "Wyldgrove Bracelet of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54893, "name": "Wyldgrove Bracelet of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54894, "name": "Wyldgrove Bracelet of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54895, "name": "Wyldgrove Bracelet of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54896, "name": "Wyldshrine Bracelet of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54897, "name": "Wyldshrine Bracelet of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54898, "name": "Wyldshrine Bracelet of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54899, "name": "Wyldshrine Bracelet of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54884, "name": "Wyldgrove Amulet of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54885, "name": "Wyldgrove Amulet of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54886, "name": "Wyldgrove Amulet of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54887, "name": "Wyldgrove Amulet of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 53649, "name": "Starstone Ring of the Wolf  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53650, "name": "Starstone Ring of the Bear  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53651, "name": "Starstone Ring of the Hawk  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53652, "name": "Starstone Ring of the Stag  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53653, "name": "Stargem Ring of the Wolf  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53654, "name": "Stargem Ring of the Bear  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53655, "name": "Stargem Ring of the Hawk  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53656, "name": "Stargem Ring of the Stag  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53640, "name": "Starstone Bracelet of the Raider  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53641, "name": "Starstone Bracelet of the Knight  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53642, "name": "Starstone Bracelet of the Assassin  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53643, "name": "Starstone Bracelet of the Mystic  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53645, "name": "Stargem Bracelet of the Raider  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53646, "name": "Stargem Bracelet of the Knight  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53647, "name": "Stargem Bracelet of the Assassin  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53648, "name": "Stargem Bracelet of the Mystic  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53632, "name": "Starstone Necklace of the Stormcaller  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53633, "name": "Starstone Necklace of the Windrider  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53634, "name": "Starstone Necklace of the Frostgiant  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 53635, "name": "Starstone Necklace of the Snowspirit  (Ansgar of Glenmor (Starstone, Stargem))", "price": 0},
+      {"id": 52498, "name": "Arachnus Ring of Protection  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 52499, "name": "Arachnus Ring of Resistance  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 52500, "name": "Arachnus Ring of Defence  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 52501, "name": "Arachnus Ring of Evasion  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 52506, "name": "Arachnus Pendant of the Cocoon  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 52507, "name": "Arachnus Pendant of the Hive  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 52504, "name": "Unhallowed Necklace of Venom  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 0},
+      {"id": 50651, "name": "Spectral Ring of the Reaper  (Extras)", "price": 1500000},
+      {"id": 50652, "name": "Spectral Ring of the Huntsman  (Extras)", "price": 1500000},
+      {"id": 51039, "name": "Icecrystal Brooch of the Spark  (Extras)", "price": 500000},
+      {"id": 51038, "name": "Icecrystal Brooch of the Hearth  (Extras)", "price": 500000},
+      {"id": 52503, "name": "Unhallowed Necklace of the Behemoth  (Extras)", "price": 1500000}
+    ]},
+    {"vendor": "[Time-Lost Luxury Trader] Vaultkeeper Renauld (legacy lux, Dunskeig): Rings", "shops": [15055], "replace": true, "items": [
+      {"id": 58050, "name": "Wayfarer's Ring of Falcon  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 400000},
+      {"id": 58051, "name": "Wayfarer's Ring of Eagle  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 400000},
+      {"id": 58052, "name": "Wayfarer's Ring of Raven  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 400000},
+      {"id": 58053, "name": "Wayfarer's Ring of Hawk  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 400000},
+      {"id": 58054, "name": "Pathfinder's Ring of Falcon  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 600000},
+      {"id": 58055, "name": "Pathfinder's Ring of Eagle  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 600000},
+      {"id": 58056, "name": "Pathfinder's Ring of Raven  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 600000},
+      {"id": 58057, "name": "Pathfinder's Ring of Hawk  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 600000},
+      {"id": 58058, "name": "Trailblazer's Ring of Falcon  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 58059, "name": "Trailblazer's Ring of Eagle  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 58060, "name": "Trailblazer's Ring of Raven  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 58061, "name": "Trailblazer's Ring of Hawk  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 56697, "name": "Keen Perceptor Ring of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 675000},
+      {"id": 56698, "name": "Honed Perceptor Ring of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 675000},
+      {"id": 54900, "name": "Wyldgrove Ring of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54901, "name": "Wyldgrove Ring of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54902, "name": "Wyldgrove Ring of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54903, "name": "Wyldgrove Ring of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 0},
+      {"id": 54904, "name": "Wyldshrine Ring of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 1250000},
+      {"id": 54905, "name": "Wyldshrine Ring of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 1250000},
+      {"id": 54906, "name": "Wyldshrine Ring of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 1250000},
+      {"id": 54907, "name": "Wyldshrine Ring of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 1250000},
+      {"id": 53649, "name": "Starstone Ring of the Wolf  (Ansgar of Glenmor (Starstone, Stargem))", "price": 450000},
+      {"id": 53650, "name": "Starstone Ring of the Bear  (Ansgar of Glenmor (Starstone, Stargem))", "price": 450000},
+      {"id": 53651, "name": "Starstone Ring of the Hawk  (Ansgar of Glenmor (Starstone, Stargem))", "price": 450000},
+      {"id": 53652, "name": "Starstone Ring of the Stag  (Ansgar of Glenmor (Starstone, Stargem))", "price": 450000},
+      {"id": 53653, "name": "Stargem Ring of the Wolf  (Ansgar of Glenmor (Starstone, Stargem))", "price": 850000},
+      {"id": 53654, "name": "Stargem Ring of the Bear  (Ansgar of Glenmor (Starstone, Stargem))", "price": 850000},
+      {"id": 53655, "name": "Stargem Ring of the Hawk  (Ansgar of Glenmor (Starstone, Stargem))", "price": 850000},
+      {"id": 53656, "name": "Stargem Ring of the Stag  (Ansgar of Glenmor (Starstone, Stargem))", "price": 850000},
+      {"id": 52498, "name": "Arachnus Ring of Protection  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 450000},
+      {"id": 52499, "name": "Arachnus Ring of Resistance  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 450000},
+      {"id": 52500, "name": "Arachnus Ring of Defence  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 450000},
+      {"id": 52501, "name": "Arachnus Ring of Evasion  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed, Phoenix Crest))", "price": 450000},
+      {"id": 50651, "name": "Spectral Ring of the Reaper  (Extras)", "price": 0},
+      {"id": 50652, "name": "Spectral Ring of the Huntsman  (Extras)", "price": 0}
+    ]},
+    {"vendor": "[Time-Lost Luxury Trader] Vaultkeeper Renauld (legacy lux, Dunskeig): Bracelets and Misc", "shops": [15056], "replace": true, "items": [
+      {"id": 58038, "name": "Wayfarer's Band of the Falcon  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 450000},
+      {"id": 58039, "name": "Wayfarer's Band of the Eagle  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 450000},
+      {"id": 58040, "name": "Wayfarer's Band of the Raven  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 450000},
+      {"id": 58041, "name": "Wayfarer's Band of the Hawk  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 0},
+      {"id": 58042, "name": "Pathfinder's Band of the Falcon  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 650000},
+      {"id": 58043, "name": "Pathfinder's Band of the Eagle  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 650000},
+      {"id": 58044, "name": "Pathfinder's Band of the Raven  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 650000},
+      {"id": 58045, "name": "Pathfinder's Band of the Hawk  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 650000},
+      {"id": 58046, "name": "Trailblazer's Band of the Falcon  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 58047, "name": "Trailblazer's Band of the Eagle  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 58048, "name": "Trailblazer's Band of the Raven  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 58049, "name": "Trailblazer's Band of the Hawk  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 800000},
+      {"id": 56693, "name": "Vital Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 650000},
+      {"id": 56694, "name": "Potent Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 650000},
+      {"id": 56695, "name": "Sanguine Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 650000},
+      {"id": 56696, "name": "Dynamic Perceptor Bracer of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 650000},
+      {"id": 54892, "name": "Wyldgrove Bracelet of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54893, "name": "Wyldgrove Bracelet of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54894, "name": "Wyldgrove Bracelet of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54895, "name": "Wyldgrove Bracelet of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 500000},
+      {"id": 54896, "name": "Wyldshrine Bracelet of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 650000},
+      {"id": 54897, "name": "Wyldshrine Bracelet of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 650000},
+      {"id": 54898, "name": "Wyldshrine Bracelet of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 650000},
+      {"id": 54899, "name": "Wyldshrine Bracelet of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 650000},
+      {"id": 53640, "name": "Starstone Bracelet of the Raider  (Ansgar of Glenmor (Starstone, Stargem))", "price": 500000},
+      {"id": 53641, "name": "Starstone Bracelet of the Knight  (Ansgar of Glenmor (Starstone, Stargem))", "price": 500000},
+      {"id": 53642, "name": "Starstone Bracelet of the Assassin  (Ansgar of Glenmor (Starstone, Stargem))", "price": 500000},
+      {"id": 53643, "name": "Starstone Bracelet of the Mystic  (Ansgar of Glenmor (Starstone, Stargem))", "price": 500000},
+      {"id": 53645, "name": "Stargem Bracelet of the Raider  (Ansgar of Glenmor (Starstone, Stargem))", "price": 750000},
+      {"id": 53646, "name": "Stargem Bracelet of the Knight  (Ansgar of Glenmor (Starstone, Stargem))", "price": 750000},
+      {"id": 53647, "name": "Stargem Bracelet of the Assassin  (Ansgar of Glenmor (Starstone, Stargem))", "price": 750000},
+      {"id": 53648, "name": "Stargem Bracelet of the Mystic  (Ansgar of Glenmor (Starstone, Stargem))", "price": 750000},
+      {"id": 51039, "name": "Icecrystal Brooch of the Spark  (Extras)", "price": 450000},
+      {"id": 51038, "name": "Icecrystal Brooch of the Hearth  (Extras)", "price": 450000}
+    ]},
+    {"vendor": "[Time-Lost Luxury Trader] Vaultkeeper Renauld (legacy lux, Dunskeig): Necklaces", "shops": [15057], "replace": true, "items": [
+      {"id": 58026, "name": "Wayfarer's Amulet of the Falcon  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 500000},
+      {"id": 58027, "name": "Wayfarer's Amulet of the Eagle  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 500000},
+      {"id": 58028, "name": "Wayfarer's Amulet of the Raven  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 500000},
+      {"id": 58029, "name": "Wayfarer's Amulet of the Hawk  (Donnan Cranfyre, Yule 2015 lvl 90 (Wayfarer))", "price": 500000},
+      {"id": 58030, "name": "Pathfinder's Amulet of the Falcon  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 750000},
+      {"id": 58031, "name": "Pathfinder's Amulet of the Eagle  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 750000},
+      {"id": 58032, "name": "Pathfinder's Amulet of the Raven  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 750000},
+      {"id": 58033, "name": "Pathfinder's Amulet of the Hawk  (Brietta Icesheen, Yule 2015 lvl 140 (Pathfinder))", "price": 750000},
+      {"id": 58034, "name": "Trailblazer's Amulet of the Falcon  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 1000000},
+      {"id": 58035, "name": "Trailblazer's Amulet of the Eagle  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 1000000},
+      {"id": 58036, "name": "Trailblazer's Amulet of the Raven  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 1000000},
+      {"id": 58037, "name": "Trailblazer's Amulet of the Hawk  (Kristen Greenleaf, Yule 2015 lvl 190 (Trailblazer))", "price": 1000000},
+      {"id": 56689, "name": "Vital Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 750000},
+      {"id": 56690, "name": "Potent Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 750000},
+      {"id": 56691, "name": "Sanguine Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 750000},
+      {"id": 56692, "name": "Dynamic Perceptor Pendant of Perception  (Fraser MacTavish, Samhain 2015 lvl 140 (Perceptor))", "price": 750000},
+      {"id": 54884, "name": "Wyldgrove Amulet of the Mountain  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 750000},
+      {"id": 54885, "name": "Wyldgrove Amulet of the Sun  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 750000},
+      {"id": 54886, "name": "Wyldgrove Amulet of the River  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 750000},
+      {"id": 54887, "name": "Wyldgrove Amulet of the Zephyr  (Gayle the Hunter (Wyldgrove, Wyldshrine))", "price": 750000},
+      {"id": 53632, "name": "Starstone Necklace of the Stormcaller  (Ansgar of Glenmor (Starstone, Stargem))", "price": 1500000},
+      {"id": 53633, "name": "Starstone Necklace of the Windrider  (Ansgar of Glenmor (Starstone, Stargem))", "price": 1500000},
+      {"id": 53634, "name": "Starstone Necklace of the Frostgiant  (Ansgar of Glenmor (Starstone, Stargem))", "price": 1500000},
+      {"id": 53635, "name": "Starstone Necklace of the Snowspirit  (Ansgar of Glenmor (Starstone, Stargem))", "price": 1500000},
+      {"id": 52506, "name": "Arachnus Pendant of the Cocoon  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed))", "price": 750000},
+      {"id": 52507, "name": "Arachnus Pendant of the Hive  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed))", "price": 750000},
+      {"id": 52504, "name": "Unhallowed Necklace of Venom  (Miruna, Samhain 2014 Deluxe (Arachnus, Unhallowed))", "price": 1500000},
+      {"id": 52503, "name": "Unhallowed Necklace of the Behemoth  (Extras)", "price": 1500000}
+    ]},
+    {"vendor": "[Luxury Item Trader] Quartermaster Lief (level 180 lux): Equipment", "shops": [15014], "replace": true, "items": [
+      {"id": 54230, "name": "Eldritch Crown of Valour  (Eldritch crown)", "price": 0},
+      {"id": 54232, "name": "Eldritch Crown of Secrets  (Eldritch crown)", "price": 0},
+      {"id": 54234, "name": "Eldritch Crown of Alchemy  (Eldritch crown)", "price": 0}
+    ]},
+    {"vendor": "[Luxury Item Trader] Quartermaster Lief (level 180 lux): Offhand Weapons", "shops": [15015], "replace": true, "items": [
+      {"id": 54236, "name": "Eldritch Axe of Grudges  (Eldritch offhand)", "price": 800000},
+      {"id": 54238, "name": "Fiery Axe of Might  (Eldritch offhand)", "price": 850000},
+      {"id": 54240, "name": "Freezing Axe of Might  (Eldritch offhand)", "price": 875000},
+      {"id": 54242, "name": "Sorcerous Axe of Might  (Eldritch offhand)", "price": 875000},
+      {"id": 54244, "name": "Eldritch Dagger of Spite  (Eldritch offhand)", "price": 850000},
+      {"id": 54246, "name": "Fiery Dagger of Shadows  (Eldritch offhand)", "price": 825000},
+      {"id": 54248, "name": "Freezing Dagger of Shadows  (Eldritch offhand)", "price": 825000},
+      {"id": 54250, "name": "Sorcerous Dagger of Shadows  (Eldritch offhand)", "price": 825000},
+      {"id": 54252, "name": "Eldritch Shield of Endurance  (Eldritch offhand)", "price": 850000},
+      {"id": 54254, "name": "Eldritch Shield of Fortitude  (Eldritch offhand)", "price": 825000},
+      {"id": 54256, "name": "Eldritch Quiver of Vigilance  (Eldritch offhand)", "price": 850000},
+      {"id": 54258, "name": "Eldritch Quiver of Savagery  (Eldritch offhand)", "price": 850000},
+      {"id": 54260, "name": "Fiery Quiver of Thorns  (Eldritch offhand)", "price": 800000},
+      {"id": 54262, "name": "Freezing Quiver of Thorns  (Eldritch offhand)", "price": 800000},
+      {"id": 54264, "name": "Sorcerous Quiver of Thorns  (Eldritch offhand)", "price": 850000},
+      {"id": 54266, "name": "Eldritch Grimoire of Knowledge  (Eldritch offhand)", "price": 850000},
+      {"id": 54268, "name": "Eldritch Grimoire of Mystery  (Eldritch offhand)", "price": 850000}
+    ]},
+    {"vendor": "[Luxury Item Trader] Quartermaster Dorian (level 200 lux): Other items", "shops": [15012], "replace": true, "items": [
+      {"id": 54231, "name": "Runic Crown of Valour  (Runic crown)", "price": 0},
+      {"id": 54233, "name": "Runic Crown of Secrets  (Runic crown)", "price": 0},
+      {"id": 54235, "name": "Runic Crown of Alchemy  (Runic crown)", "price": 0}
+    ]},
+    {"vendor": "[Luxury Item Trader] Quartermaster Dorian (level 200 lux): Weapons", "shops": [15013], "replace": true, "items": [
+      {"id": 54237, "name": "Runic Axe of Grudges  (Runic offhand)", "price": 0},
+      {"id": 54239, "name": "Flaming Axe of Might  (Runic offhand)", "price": 0},
+      {"id": 54241, "name": "Glacial Axe of Might  (Runic offhand)", "price": 0},
+      {"id": 54243, "name": "Hexforged Axe of Might  (Runic offhand)", "price": 0},
+      {"id": 54245, "name": "Runic Dagger of Spite  (Runic offhand)", "price": 0},
+      {"id": 54247, "name": "Flaming Dagger of Shadows  (Runic offhand)", "price": 0},
+      {"id": 54249, "name": "Glacial Dagger of Shadows  (Runic offhand)", "price": 0},
+      {"id": 54251, "name": "Hexforged Dagger of Shadows  (Runic offhand)", "price": 0},
+      {"id": 54253, "name": "Runic Shield of Endurance  (Runic offhand)", "price": 0},
+      {"id": 54255, "name": "Runic Shield of Fortitude  (Runic offhand)", "price": 0},
+      {"id": 54257, "name": "Runic Quiver of Vigilance  (Runic offhand)", "price": 0},
+      {"id": 54259, "name": "Runic Quiver of Savagery  (Runic offhand)", "price": 0},
+      {"id": 54261, "name": "Flaming Quiver of Thorns  (Runic offhand)", "price": 0},
+      {"id": 54263, "name": "Glacial Quiver of Thorns  (Runic offhand)", "price": 0},
+      {"id": 54265, "name": "Hexforged Quiver of Thorns  (Runic offhand)", "price": 0},
+      {"id": 54267, "name": "Runic Grimoire of Knowledge  (Runic offhand)", "price": 0},
+      {"id": 54269, "name": "Runic Grimoire of Mystery  (Runic offhand)", "price": 0}
+    ]},
+    {"vendor": "[Time-Lost Luxury Trader] Vaultkeeper Renauld (legacy lux, Dunskeig): Luxury Mount Items (a choice the client mod adds to his shop list)", "shops": [9102], "replace": true, "items": [
+      {"id": 52249, "name": "Exalted Karpati Nightflyer", "price": 0},
+      {"id": 54501, "name": "Exalted Eagle Glider", "price": 0},
+      {"id": 54502, "name": "Ascendant Eagle Glider", "price": 0},
+      {"id": 56117, "name": "Idolised Crowspine Skirr", "price": 0},
+      {"id": 56118, "name": "Exalted Crowspine Skirr", "price": 0},
+      {"id": 56150, "name": "Ascendant Archfiend Wings", "price": 0},
+      {"id": 55417, "name": "Ascendant Spirit Cape", "price": 0},
+      {"id": 53403, "name": "Exalted Polar Wings", "price": 0},
+      {"id": 53631, "name": "Ascendant Arctic Wings", "price": 0},
+      {"id": 35125, "name": "Wizard's Thunder Dragonstaff", "price": 0},
+      {"id": 35126, "name": "Wizard's Celestial Dragonstaff", "price": 0},
+      {"id": 62424, "name": "Mythic Aeon Winterwing", "price": 0}
+    ]}
+  ]
 }

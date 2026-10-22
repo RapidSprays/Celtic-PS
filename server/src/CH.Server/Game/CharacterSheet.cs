@@ -190,6 +190,16 @@ public sealed class CharacterSheet
     /// <summary>Pierce, slash and crush damage of everything worn: the part Steady Aim and Frenzy raise by a percentage.</summary>
     public int PhysicalDamage => Gear.Sum(g => g.PhysicalDamage);
 
+    /// <summary>
+    /// A skill protection: the defensive ability for the avoidance type (0 physical: Fortitude, 1 spell: Warding,
+    /// 2 movement: Reflex, 3 wounding: Vigour, 4 weakening and 5 mental: Willpower) plus gear avoidance. Evasion buffs
+    /// (Bless) add on top when a skill is rolled.
+    /// </summary>
+    public int SkillProtection(int avoidanceType) => Math.Max(0, AbilityLevel(avoidanceType switch
+    {
+        0 => GameServer.Fortitude, 1 => GameServer.Warding, 2 => GameServer.Reflex, 3 => GameServer.Vigour, _ => GameServer.Willpower,
+    }) + Avoidance(avoidanceType));
+
     /// <summary>Gear avoidance (AvoidanceBonuses) against one avoidance type (0 physical … 5 mental).</summary>
     public int Avoidance(int avoidanceType) => Gear.SelectMany(g => g.AvoidanceBonuses).Where(a => a.Id == avoidanceType).Sum(a => a.Amount);
 
@@ -217,6 +227,13 @@ public sealed class CharacterSheet
     /// <summary>Flat damage (or healing, as a size) gear adds to a skill.</summary>
     public int SkillBonusDamage(int skillId) =>
         Gear.SelectMany(g => g.SkillBonuses.Where(b => b.Id == skillId && IsDamageBonus(g, b))).Sum(b => Math.Abs(b.Amount));
+
+    /// <summary>
+    /// Healing gear grants when a skill that isn't a heal is cast (negative bonuses: Ring of Vested Might "Grant 200
+    /// healing upon casting Rapid Shot", Ring of Vested Vigour's Shield Wall).
+    /// </summary>
+    public int GearCastHealing(int skillId) =>
+        Gear.SelectMany(g => g.SkillBonuses.Where(b => b.Id == skillId && b.Amount < 0 && IsDamageBonus(g, b))).Sum(b => -b.Amount);
 
     /// <summary>Damage of everything worn, by type (see <see cref="ItemInfo.DamageTypeIds"/>).</summary>
     public IReadOnlyDictionary<int, int> DamageByType => Gear.SelectMany(g => g.DamageByType)
@@ -391,7 +408,9 @@ public sealed class CharacterSheet
             AttackRange = AttackRange, FastTravelItemLimit = FastTravelItemLimit, SoloBankItemLimit = BankLimit, MaxSpeed = 5f * (100 + MountSpeedPercent) / 100f, Scale = 1f,
             CompiledAbilities = Abilities(),
             CompiledSkills = UsableSkills.Select(s => new IdValue(s.SkillId, EffectiveRank(s.SkillId, s.Level))).ToList(),
-            Avoidances = Gear.SelectMany(g => g.AvoidanceBonuses).GroupBy(a => a.Id).Select(g => new IdValue(g.Key, g.Sum(a => a.Amount))).ToList(),
+            // All six skill protections (owner's report, 2026-10-18: only the gear's two showed), each the evasion the
+            // server rolls against: the defensive ability for the type plus gear avoidance.
+            Avoidances = Enumerable.Range(0, 6).Select(t => new IdValue(t, SkillProtection(t))).ToList(),
             Bonuses = GearBonuses(),
         };
     }

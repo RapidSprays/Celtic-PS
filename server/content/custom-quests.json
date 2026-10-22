@@ -1,0 +1,17 @@
+{
+ "_comment": "Your own quests (restart the server; run install-custom-gear.cmd with the game closed). Each copies an existing quest ('base') under a new id: replace swaps text and ids everywhere (names, stage targets, the monster and items), and conversation copies that NPC's lines for the base quest the same way so the NPC offers it too. Its level, XP and the like go in quest-requirements.json as for any quest.",
+ "quests": [
+  {
+   "id": 9001,
+   "base": 506,
+   "name": "Spar with Gilthral (Segorax's daily, level 210 gladiator)",
+   "replace": {
+    "Killain": "Gilthral",
+    "73804": "90300",
+    "34870": "90150",
+    "EXTREME": "LEGEND"
+   },
+   "conversation": "cv_gladiator_arena_daily"
+  }
+ ]
+}

@@ -23,6 +23,15 @@ namespace CHPrivateMods
             Log("server list: " + string.Join(", ", Skills));
         }
 
+        // Seconds added to each skill's weapon-delay cast (skill-overrides.json weaponDelayOffset, sent after the ids).
+        private static Dictionary<int, float> Offsets = new Dictionary<int, float>();
+
+        public static void SetOffsets(Dictionary<int, float> offsets)
+        {
+            Offsets = offsets;
+            Log("server offsets: " + string.Join(", ", offsets));
+        }
+
         private static PropertyInfo _player;
         private static FieldInfo _playerField;
         private static MethodInfo _attackSpeed, _template;
@@ -60,7 +69,7 @@ namespace CHPrivateMods
                 // The client's time already holds 35% of the weapon delay for skills it marks as using the weapon; take its
                 // template's own cast time and add the whole delay instead.
                 var own = OwnCastTime(skill, clientTime);
-                var result = own + delayMs / 1000f;
+                var result = Math.Max(0f, own + delayMs / 1000f + (Offsets.TryGetValue(id, out var offset) ? offset : 0f));
                 if (_logged < 20) Log("skill " + id + ": client " + clientTime.ToString("F2") + " s, own cast " + own.ToString("F2") + " s, weapon delay " + delayMs + " ms -> " + result.ToString("F2") + " s");
                 return result;
             }

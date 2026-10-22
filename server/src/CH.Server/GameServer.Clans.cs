@@ -342,7 +342,7 @@ public sealed partial class GameServer
         var info = item is null ? null : _balance.Items.GetValueOrDefault(item.TemplateId);
         if (!Permission(clan, rank, 2)) return "Your rank can't donate to the clan bank.";
         if (item is null || info is null) return "That item isn't in your backpack.";
-        if (item.Bound || !info.Tradeable || info.ImportantItem) return "That item can't go in the clan bank.";
+        if (item.Bound || !info.Tradeable) return "That item can't go in the clan bank.";
         quantity = Math.Clamp(quantity, 1, item.Quantity);
         var bank = _store.ListClanBank(clan.Id);
         var stack = info.Stackable ? bank.FirstOrDefault(i => i.TemplateId == item.TemplateId) : null;

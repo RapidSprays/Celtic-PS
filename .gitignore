@@ -36,3 +36,7 @@ logs/
 # Personal Claude Code settings
 .claude/settings.local.json
 __pycache__/
+
+# Local working files: the tool's backups and content generated from the client (scripts/gen-quest-exclusions.py)
+server/content/.backup/
+server/content/quest-exclusions.json

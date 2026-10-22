@@ -12,7 +12,7 @@ public static class PrivateOpcode
     public const Opcode TreeLayout = (Opcode)31000;
     public const Opcode TreeState = (Opcode)31001;
 
-    /// <summary>Skills whose casting circle takes the weapon's delay (skill-overrides.json castWithWeaponDelay): varint n × varint id.</summary>
+    /// <summary>Skills whose casting circle takes the weapon's delay (skill-overrides.json castWithWeaponDelay): varint n × varint id, then n × float weaponDelayOffset (seconds).</summary>
     public const Opcode WeaponDelaySkills = (Opcode)31002;
 
     /// <summary>
@@ -20,6 +20,9 @@ public static class PrivateOpcode
     /// 1 = the monster's target, 2 = you).
     /// </summary>
     public const Opcode AggroMeter = (Opcode)31003;
+
+    /// <summary>The aggro meter's look (content/aggro-meter.json): varint n × (string key, string value).</summary>
+    public const Opcode AggroMeterStyle = (Opcode)31004;
 }
 
 /// <summary>Node kinds on the wire.</summary>

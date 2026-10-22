@@ -103,11 +103,32 @@ public sealed partial class GameServer
         for (var i = 0; i < Math.Min(quantity, 50); i++) _store.AddItem(characterId, templateId, 1);
     }
 
-    /// <summary>A random event Mystery Chest (Beltane, Samhain, Icebound…), placeholders left out.</summary>
-    private int? RandomEventChest()
+    /// <summary>
+    /// A random chest for a monster's chestChance: one of spawn-tuning.json's "chests" for it (or "eventChests"), by item id
+    /// or name, each equally likely; with no list, any event Mystery Chest (Beltane, Samhain, Icebound…), placeholders left out.
+    /// </summary>
+    private int? RandomEventChest(int templateId)
     {
+        var choices = _spawnTuning.ChestChoices(templateId);
+        if (choices.Count > 0)
+        {
+            var ids = choices.Select(ChestItemId).OfType<int>().ToList();
+            return ids.Count == 0 ? null : ids[Random.Shared.Next(ids.Count)];
+        }
         var chests = ChestCatalog.Chests.Values.Where(c => c.Kind == ChestKind.Mystery && !_balance.Items[c.ItemId].IsPlaceholder).ToList();
         return chests.Count == 0 ? null : chests[Random.Shared.Next(chests.Count)].ItemId;
+    }
+
+    private readonly Dictionary<string, int?> _chestNames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>An item id from spawn-tuning.json's chest lists: a number, or an item's exact name (unknown ones are logged once and skipped).</summary>
+    private int? ChestItemId(string idOrName)
+    {
+        if (_chestNames.TryGetValue(idOrName, out var known)) return known;
+        int? id = int.TryParse(idOrName, out var n) && _balance.Items.ContainsKey(n) ? n
+            : _balance.Items.Values.Where(i => i.Name.Equals(idOrName, StringComparison.OrdinalIgnoreCase)).Select(i => (int?)i.Id).Min();
+        if (id is null) _log.LogWarning("spawn-tuning.json: no item \"{Chest}\" for a chest list; skipped", idOrName);
+        return _chestNames[idOrName] = id;
     }
 
     /// <summary>A small chance for a kill to drop a random Mystery Chest or random-item box.</summary>

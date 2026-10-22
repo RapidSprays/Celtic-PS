@@ -41,7 +41,7 @@ public sealed partial class GameServer
         ".who - who is online | .gm <account> [off] - grant or remove GM | .resetpassword <account> - forget a password",
         TreeHelp);
 
-    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree", "battleground", "tutorial", "aggro"];
+    private static readonly HashSet<string> PlayerCommands = ["help", "who", "where", "zones", "tree", "battleground", "tutorial", "aggro", "quests", "dropquest", "invite", "trade"];
 
     private static readonly string PlayerHelp = string.Join("\n",
         "Commands:",
@@ -49,6 +49,8 @@ public sealed partial class GameServer
         ".battleground - enter or leave the Clan Battleground (clan members; everyone outside your clan is an enemy)",
         ".tutorial on|off - the new-player tutorial hints (off by default)",
         ".aggro on|off - the aggro meter on the left of the screen (needs the client mod)",
+        ".quests - your quests in progress | .dropquest <id or name> - abandon one (it can be taken again)",
+        ".invite <name> - invite a player in your zone to your party | .trade <name> - ask a player in your zone to trade (any distance)",
         ".where - your zone and position",
         ".zones - list the zones",
         TreeHelp,
@@ -333,6 +335,16 @@ public sealed partial class GameServer
 
             case "aggro":
                 AggroCommand(s, args);
+                break;
+
+            case "invite":
+            case "trade":
+                InviteOrTradeCommand(s, verb, args);
+                break;
+
+            case "quests":
+            case "dropquest":
+                QuestCommand(s, verb, args);
                 break;
 
             case "gold":

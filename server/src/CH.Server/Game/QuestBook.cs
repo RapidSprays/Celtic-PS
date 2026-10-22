@@ -81,6 +81,9 @@ public sealed class QuestBook
     /// This book with the owner's extra NPCs added and placed NPCs adjusted (server/content/npc-extras.json: "npcs" and
     /// "adjust", the latter by mob template: direction, x, y, z).
     /// </summary>
+    /// <summary>The owner's own quests (custom-quests.json), copies of existing ones.</summary>
+    public QuestBook WithCustomQuests(IEnumerable<CustomContent.Quest> quests) => new(CustomContent.ApplyQuests(Quests, quests), Npcs);
+
     /// <summary>The quests with the owner's levels (quest-requirements.json).</summary>
     public QuestBook WithRequirements(QuestRequirements requirements) =>
         new(Quests.ToDictionary(q => q.Key, q => requirements.Apply(q.Value)), Npcs);

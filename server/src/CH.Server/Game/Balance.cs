@@ -164,6 +164,23 @@ public sealed record SkillInfo(int Id, string Name, int AbilityId, float CastRan
     /// </summary>
     public bool CastWithWeaponDelay { get; init; }
 
+    /// <summary>skill-overrides.json "weaponDelayOffset": seconds added to a weapon-delay cast (−0.5 = half a second sooner).</summary>
+    public double WeaponDelayOffset { get; init; }
+
+    /// <summary>
+    /// skill-overrides.json "evasionPercent": how much of a monster's evasion counts against this skill (50 = half; 100,
+    /// the default, as the game has it). "minLandChance": the lowest chance (percent) it lands on a monster, whatever the
+    /// monster's evasion (0 = no floor).
+    /// </summary>
+    public double EvasionPercent { get; init; } = 100;
+    public double MinLandChance { get; init; }
+
+    /// <summary>
+    /// skill-overrides.json "damageAsDot": the hit's damage (same formula) is dealt as damage over time instead, in
+    /// equal ticks under the status effect <c>Effect</c> (its icon and type; Pounce: Snakebite's poison), the first on the hit.
+    /// </summary>
+    public (int Effect, int Ticks, double Seconds)? DamageAsDot { get; init; }
+
     /// <summary>What evades the skill: 0 physical, 1 spell, 2 movement, 3 wounding, 4 weakening, 5 mental; −1 nothing.</summary>
     public int AvoidanceType { get; init; } = -1;
 
@@ -536,6 +553,12 @@ public sealed class Balance
         var abilityNames = Entries(root, "Abilities").Select(x => x.Item2)
             .Where(e => e.TryGetProperty("Id", out var aid) && aid.ValueKind == JsonValueKind.Number)
             .GroupBy(e => e.GetProperty("Id").GetInt32()).ToDictionary(g => g.Key, g => Str(g.First(), "Name"));
+        // The owner's own monsters (content/custom-monsters.json: Gilthral the Gladiator), copies of existing templates.
+        if (customItemsPath is not null)
+            CustomContent.ApplyMonsters(mobs, CustomContent.LoadMonsters(Path.Combine(Path.GetDirectoryName(customItemsPath) ?? ".", "custom-monsters.json")));
+        // The owner's gear with typed-in numbers, beside custom-items.json (content/custom-gear.json).
+        if (customItemsPath is not null)
+            CustomGear.Apply(items, Path.Combine(Path.GetDirectoryName(customItemsPath) ?? ".", "custom-gear.json"), abilityNames, skills);
         return new Balance(items, skills, mobs, zones, mobSets, version, conversations, spawnIcons, statusEffects)
             { Recipes = recipes, RecipeTemplates = recipeTemplates, Factions = factions, AbilityNames = abilityNames };
     }

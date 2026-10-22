@@ -44,7 +44,18 @@ namespace CHPrivateMods
             public int ModelBase = -1;
             public int ModelId = -1;
             public List<Particle> Particles = new List<Particle>();
+
+            /// <summary>Custom gear (CHPrivateMods.gear.txt): template fields to set, "Field=value" or "Field=key:amount,key:amount".</summary>
+            public List<KeyValuePair<string, string>> Overrides = new List<KeyValuePair<string, string>>();
         }
+
+        /// <summary>The member each bonus list's entries are keyed by (the rest is "Amount").</summary>
+        private static readonly Dictionary<string, string> ListKeys = new Dictionary<string, string>
+        {
+            { "BonusTypes", "BonusType" }, { "DamageTypes", "DamageType" }, { "PrimaryStatBonuses", "PrimaryStatType" },
+            { "AbilityBonuses", "AbilityType" }, { "AvoidanceBonuses", "AbilityType" }, { "SkillBonuses", "SkillType" },
+            { "RequirementTypes", "RequirementType" },
+        };
 
         private static List<Entry> _entries;
         private static readonly HashSet<int> Rainbow = new HashSet<int>();
@@ -60,6 +71,7 @@ namespace CHPrivateMods
         public static void Register(object balanceClient)
         {
             SkillRanks.Extend(balanceClient);
+            CustomContent.Register(balanceClient); // the owner's monsters and quests (CHPrivateMods.extras.txt)
             try
             {
                 Load();
@@ -84,6 +96,11 @@ namespace CHPrivateMods
                     R.Field(type, "Name")?.SetValue(copy, e.Name);
                     if (!string.IsNullOrEmpty(e.Description)) R.Field(type, "Description")?.SetValue(copy, e.Description);
                     if (e.ModelId >= 0) R.Field(type, "ModelID")?.SetValue(copy, e.ModelId);
+                    foreach (var o in e.Overrides)
+                    {
+                        try { SetOverride(copy, type, o.Key, o.Value); }
+                        catch (Exception ex) { Debug.LogWarning("[CHPrivateMods] custom gear " + e.Id + " " + o.Key + ": " + ex.Message); }
+                    }
                     templates[e.Id] = copy;
                 }
             }
@@ -168,11 +185,95 @@ namespace CHPrivateMods
             return copy;
         }
 
-        /// <summary>Lines of <c>id|base|effect|name|description|stats|modelBase|modelId|particles</c>.</summary>
+        private static object Value(Type t, string text)
+        {
+            if (t.IsEnum) return int.TryParse(text, out var n) ? System.Enum.ToObject(t, n) : R.Enum(t, text);
+            if (t == typeof(string)) return text;
+            if (t == typeof(bool)) return text == "1" || text.Equals("true", StringComparison.OrdinalIgnoreCase);
+            return Convert.ChangeType(text, t, CultureInfo.InvariantCulture);
+        }
+
+        private static void SetMember(object o, string name, string text)
+        {
+            var t = o.GetType();
+            var f = R.Field(t, name);
+            if (f != null) { f.SetValue(o, Value(f.FieldType, text)); return; }
+            var p = R.Property(t, name);
+            if (p != null && p.CanWrite) p.SetValue(o, Value(p.PropertyType, text));
+        }
+
+        private static object NewElement(Type t)
+        {
+            try { return Activator.CreateInstance(t, true); }
+            catch { return System.Runtime.Serialization.FormatterServices.GetUninitializedObject(t); }
+        }
+
+        /// <summary>Sets a template field: a number, or a list (bonuses, damage, requirements, classes) rebuilt from the text.</summary>
+        private static void SetOverride(object item, Type type, string field, string value)
+        {
+            var f = R.Field(type, field);
+            if (f == null) return;
+            var ft = f.FieldType;
+            var elementType = ft.IsArray ? ft.GetElementType() : ft.IsGenericType ? ft.GetGenericArguments()[0] : null;
+            if (elementType == null || ft == typeof(string)) { f.SetValue(item, Value(ft, value)); return; }
+            var parts = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var elements = new List<object>();
+            foreach (var part in parts)
+            {
+                if (ListKeys.TryGetValue(field, out var key))
+                {
+                    var kv = part.Split(':');
+                    if (kv.Length != 2) continue;
+                    var el = NewElement(elementType);
+                    SetMember(el, key, kv[0]);
+                    SetMember(el, "Amount", kv[1]);
+                    elements.Add(el);
+                }
+                else elements.Add(Value(elementType, part)); // ClassTypes
+            }
+            if (ft.IsArray)
+            {
+                var array = Array.CreateInstance(elementType, elements.Count);
+                for (var i = 0; i < elements.Count; i++) array.SetValue(elements[i], i);
+                f.SetValue(item, array);
+            }
+            else
+            {
+                var list = (IList)Activator.CreateInstance(ft);
+                foreach (var el in elements) list.Add(el);
+                f.SetValue(item, list);
+            }
+        }
+
+        /// <summary>
+        /// Lines of <c>id|base|effect|name|description|stats|modelBase|modelId|particles</c> (CHPrivateMods.items.txt), then
+        /// custom gear lines <c>id|look|name|description|Field=value;…</c> (CHPrivateMods.gear.txt, scripts/install-custom-gear.py).
+        /// </summary>
         private static void Load()
         {
             if (_entries != null) return;
             _entries = new List<Entry>();
+            try
+            {
+                var gearFile = Path.Combine(Path.GetDirectoryName(typeof(CustomItems).Assembly.Location) ?? ".", "CHPrivateMods.gear.txt");
+                if (File.Exists(gearFile))
+                    foreach (var line in File.ReadAllLines(gearFile))
+                    {
+                        var f = line.Split('|');
+                        if (f.Length < 5 || !int.TryParse(f[0], out var id) || !int.TryParse(f[1], out var look)) continue;
+                        var entry = new Entry { Id = id, Base = look, Effect = "", Name = f[2], Description = f[3] };
+                        foreach (var spec in f[4].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            var eq = spec.IndexOf('=');
+                            if (eq > 0) entry.Overrides.Add(new KeyValuePair<string, string>(spec.Substring(0, eq), spec.Substring(eq + 1)));
+                        }
+                        _entries.Add(entry);
+                    }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[CHPrivateMods] custom gear list unreadable: " + ex);
+            }
             try
             {
                 var dir = Path.GetDirectoryName(typeof(CustomItems).Assembly.Location);

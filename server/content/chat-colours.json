@@ -1,0 +1,7 @@
+{
+  "_comment": "Colours of combat lines in chat (restart the server after editing). #RRGGBB hex colours, e.g. #FF0000 red, #00FF00 green, #3399FF blue, #FFFF00 yellow, #FF00FF pink, #FFFFFF white. Leave a colour empty (\"\") to keep the game's normal chat colour. critStrike: 'lands a critical hit' (auto-attacks). critSkill: 'lands a critical <skill>' (skills, pet and mount skills, damage-over-time ticks). critHeal: 'lands a critical <heal> for N healing'. divineGlow: '<name>'s weapon glows with a Divine light.' (the line everyone sees).",
+  "critStrike": "#FF5050",
+  "critSkill": "#FFB020",
+  "critHeal": "#50FF80",
+  "divineGlow": "#FFF080"
+}

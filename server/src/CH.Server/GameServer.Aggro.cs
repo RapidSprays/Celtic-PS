@@ -1,6 +1,7 @@
 using CH.Protocol.Messages;
 using CH.Server.Game;
 using Lidgren.Network;
+using Microsoft.Extensions.Logging;
 
 namespace CH.Server;
 
@@ -64,6 +65,37 @@ public sealed partial class GameServer
             if (listed is null || m.Threat[s] > listed.Threat[s]) listed = m;
         }
         return listed;
+    }
+
+    /// <summary>
+    /// The aggro meter's look from server/content/aggro-meter.json (sizes, position, colours), sent at log-in so the
+    /// client mod draws it that way: edit and restart the server, no mod rebuild.
+    /// </summary>
+    private void SendAggroMeterStyle(Session s)
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "content", "aggro-meter.json");
+        if (!File.Exists(path)) return;
+        List<(string, string)> pairs;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path), new System.Text.Json.JsonDocumentOptions { AllowTrailingCommas = true });
+            pairs = doc.RootElement.EnumerateObject().Where(p => !p.Name.StartsWith('_'))
+                .Select(p => (p.Name, p.Value.ValueKind == System.Text.Json.JsonValueKind.String ? p.Value.GetString() ?? "" : p.Value.GetRawText())).ToList();
+        }
+        catch (Exception e)
+        {
+            _log.LogWarning("aggro-meter.json unreadable: {Error}", e.Message);
+            return;
+        }
+        Send(s, PrivateOpcode.AggroMeterStyle, b =>
+        {
+            b.WriteVariableInt32(pairs.Count);
+            foreach (var (k, v) in pairs)
+            {
+                b.Write(k);
+                b.Write(v);
+            }
+        });
     }
 
     private void AggroCommand(Session s, string[] args)

@@ -37,6 +37,14 @@ public sealed class QuestRewards
     /// The owner's items for a quest, for this class (an item with a "class" goes only to that class: the armour quests
     /// give each class its own piece); null → not listed (the gear named after the quest, else the approximated chance).
     /// </summary>
+    /// <summary>Every item some quest gives as its reward (Jaryn's and Torbin's Falling Stars, Severina's Focus…).</summary>
+    public IReadOnlySet<int> RewardItems => _rewardItems ??= _items.Values.SelectMany(l => l.Select(i => i.Item)).ToHashSet();
+
+    private HashSet<int>? _rewardItems;
+
+    /// <summary>The quest's listed items with their class (null = every class); null → the quest isn't listed.</summary>
+    public IReadOnlyList<(int Item, int Quantity, CharacterClass? Class)>? Listed(int questId) => _items.TryGetValue(questId, out var list) ? list : null;
+
     public IReadOnlyList<(int Item, int Quantity)>? For(int questId, CharacterClass characterClass) =>
         _items.TryGetValue(questId, out var list) ? list.Where(i => i.Class is null || i.Class == characterClass).Select(i => (i.Item, i.Quantity)).ToList() : null;
 }

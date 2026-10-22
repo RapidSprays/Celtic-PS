@@ -1,8 +1,84 @@
 {
- "_comment": "Spawn odds, respawn times and extra drops (restart the server after editing). Each spawn point picks its next monster by weight every time it respawns; weightMultiplier multiplies a monster's weight at every point it can appear at (2 = about twice as likely there, 1 = unchanged, 0 = never). respawnSeconds: seconds from the kill until that spawn point comes back when this monster died (null = the default below). Under spawnPoints, a respawnSeconds for one spawn point (by spawnId) beats both. now: the monster's chance at its best spawn point today and the live respawn time Master's Grimoire lists, for reference. useLiveRespawnTimes true uses those live times for every spawn point without a value here; false keeps defaultRespawnSeconds for all of them. extraDrops: items added to the monster's own loot, each rolled on every kill, e.g. {\"id\": 15057, \"name\": \"Diamond\", \"chance\": 25, \"quantity\": 1} (chance in percent, 0-100; quantity defaults to 1); they're dealt out among a group like the rest of the loot. Each extra drop is rolled on its own (a kill can give several, or none); give the monster a noDropChance (percent) instead to get at most one: that percent gives nothing, otherwise one of its extraDrops, picked with their chances as weights (null = each rolled on its own). Under spawnPoints, y sets the height whatever spawns there stands at (a monster stuck in the floor or roof) and scale its model size (1 = normal), for that spot only. startHighTier: true = at every server start the spot begins with a random 4, 5 or 6 star (an equal chance for each star it has), then respawns with the usual odds. startAnyTier: true = the same over every star the spot has, placeholders included (the Carrowmore gold bosses start as the boss or its placeholder, even odds). divine: true = takes Divine Strike (the set weapons' proc and the set auras' glows with a Divine light strike); every monster not marked true takes none. Add an entry with divine true to give one more monster the weakness. Any monster can be added by its id. removeDrops: item ids taken out of the monster's official loot (the 3* Stonevale placeholders: the six Disc Fragments). chestChance: percent chance of a random event Mystery Chest per kill.",
+ "_comment": "Spawn odds, respawn times and extra drops (restart the server after editing). Each spawn point picks its next monster by weight every time it respawns; weightMultiplier multiplies a monster's weight at every point it can appear at (2 = about twice as likely there, 1 = unchanged, 0 = never). respawnSeconds: seconds from the kill until that spawn point comes back when this monster died (null = the default below). Under spawnPoints, a respawnSeconds for one spawn point (by spawnId) beats both. now: the monster's chance at its best spawn point today and the live respawn time Master's Grimoire lists, for reference. useLiveRespawnTimes true uses those live times for every spawn point without a value here; false keeps defaultRespawnSeconds for all of them. extraDrops: items added to the monster's own loot, each rolled on every kill, e.g. {\"id\": 15057, \"name\": \"Diamond\", \"chance\": 25, \"quantity\": 1} (chance in percent, 0-100; quantity defaults to 1); they're dealt out among a group like the rest of the loot. Each extra drop is rolled on its own (a kill can give several, or none); give the monster a noDropChance (percent) instead to get at most one: that percent gives nothing, otherwise one of its extraDrops, picked with their chances as weights (null = each rolled on its own). Under spawnPoints, y sets the height whatever spawns there stands at (a monster stuck in the floor or roof) and scale its model size (1 = normal), for that spot only. startHighTier: true = at every server start the spot begins with a random 4, 5 or 6 star (an equal chance for each star it has), then respawns with the usual odds. startAnyTier: true = the same over every star the spot has, placeholders included (the Carrowmore gold bosses start as the boss or its placeholder, even odds). divine: true = takes Divine Strike (the set weapons' proc and the set auras' glows with a Divine light strike); every monster not marked true takes none. Add an entry with divine true to give one more monster the weakness. Any monster can be added by its id. removeDrops: item ids taken out of the monster's official loot (the 3* Stonevale placeholders: the six Disc Fragments). chestChance: percent chance (0-100) of a chest per kill. It picks one chest from the monster's own \"chests\" list if it has one, else from \"eventChests\" at the top of this file, each equally likely; both take item ids or exact names, e.g. [\"Beltane Mystery Chest\", 50122]. With both empty it picks any event Mystery Chest. See SPAWN-TUNING-AND-ITEMS.md in chSERVER for everything in this file.",
  "useLiveRespawnTimes": false,
  "defaultRespawnSeconds": 45,
+ "eventChests": [
+  "Ancient Mystery Chest *Beltane Edition*",
+  "Sunburst Mystery Chest",
+  "Mystery Chest",
+  "Spooky Mystery Chest",
+  "Icebound Mystery Chest",
+  "Suncrest Mystery Chest",
+  "Phoenix Mystery Chest",
+  "Arachnid Mystery Chest",
+  "Legacy Mystery Chest",
+  "Frostbound Mystery Chest",
+  "Springleaf Mystery Chest",
+  "Lustrous Mystery Chest",
+  "Nightrider Mystery Chest",
+  "Frostbreath Mystery Chest",
+  "Evergreen Mystery Chest",
+  "Solstice Mystery Chest",
+  "Rimebound Mystery Chest",
+  "Firebreath Mystery Chest",
+  "Snowstorm Mystery Chest",
+  "Overgrowth Mystery Chest",
+  "Thunder God Mystery Chest",
+  "Snowfall Mystery Chest",
+  "Everbloom Mystery Chest",
+  "Witchbane Mystery Chest",
+  "Everfrost Mystery Chest",
+  "Demontide Mystery Chest",
+  "Snowtwist Mystery Chest",
+  "Legacy of Icebound Mystery Chest",
+  "Legacy of Frostbound Mystery Chest",
+  "Legacy of Frostbreath Mystery Chest",
+  "Dragon Mystery Chest",
+  "Dark Dragon Mystery Chest",
+  "Lugh Mystery Chest",
+  "Samhain 2023 Mystery Chest",
+  "Legacy Samhain Mystery Chest",
+  "Beltane Mystery Chest",
+  "Nightmare Mystery Chest",
+  "Samhain Beoite Mystery Chest",
+  "Yule Beoite Mystery Chest",
+  "Siofra Mystery Chest",
+  "Enchanted Siofra Mystery Chest",
+  "Crowsight 2024 Mystery Chest",
+  "Crowsight 2025 Mystery Chest",
+  "Hellborne Fortified Mystery Chest",
+  "Elderfrost Mystery Chest",
+  "Sunfire Mystery Chest",
+  "Voidsworn Mystery Chest"
+ ],
  "monsters": [
+  {
+   "id": 90302,
+   "name": "BigBlackChickens (custom)",
+   "divine": true,
+   "extraDrops": [],
+   "noDropChance": null
+  },
+  {
+   "id": 90301,
+   "name": "Denya the Heretic (custom boss, custom-monsters.json)",
+   "divine": true,
+   "extraDrops": [
+    {
+     "id": 92000,
+     "name": "Charm of Crushing",
+     "chance": 90.0,
+     "quantity": 1
+    },
+    {
+     "id": 90110,
+     "name": "Heretic's Ring of Venom",
+     "chance": 70.0,
+     "quantity": 1
+    }
+   ],
+   "noDropChance": null
+  },
   {
    "id": 73328,
    "name": "Bloodbrood Queen",
@@ -11,7 +87,7 @@
    "set": "Carrowmore gold bosses",
    "divine": false,
    "now": "10.0% at its best spawn point (1 point); live respawn 15m00s-45m00s",
-   "weightMultiplier": 1,
+   "weightMultiplier": 2,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": []
@@ -37,7 +113,7 @@
    "set": "Carrowmore gold bosses",
    "divine": false,
    "now": "10.0% at its best spawn point (1 point); live respawn 15m00s-45m00s",
-   "weightMultiplier": 1,
+   "weightMultiplier": 2,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": []
@@ -154,10 +230,11 @@
    "set": "Carrowmore gold bosses",
    "divine": false,
    "now": "10.0% at its best spawn point (1 point); live respawn 15m00s-45m00s",
-   "weightMultiplier": 1,
+   "weightMultiplier": 2,
    "respawnSeconds": null,
    "noDropChance": null,
-   "extraDrops": []
+   "extraDrops": [],
+   "chestChance": 25
   },
   {
    "id": 70669,
@@ -172,7 +249,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 25
   },
   {
    "id": 70602,
@@ -187,7 +264,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 70614,
@@ -247,7 +324,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 60
   },
   {
    "id": 70667,
@@ -337,7 +414,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 70615,
@@ -352,7 +429,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 15
   },
   {
    "id": 70603,
@@ -367,7 +444,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 25
   },
   {
    "id": 70612,
@@ -382,7 +459,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 15
   },
   {
    "id": 70713,
@@ -396,7 +473,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 80
   },
   {
    "id": 70764,
@@ -410,7 +487,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 40
   },
   {
    "id": 70784,
@@ -536,7 +613,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 70
   },
   {
    "id": 70767,
@@ -743,7 +820,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 20
   },
   {
    "id": 70773,
@@ -781,11 +858,11 @@
    "set": "Meteoric",
    "divine": true,
    "now": "33.2% at its best spawn point (1 point); live respawn 15m00s-31m30s",
-   "weightMultiplier": 1.2,
+   "weightMultiplier": 2,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 20
   },
   {
    "id": 70719,
@@ -967,7 +1044,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 40
   },
   {
    "id": 70755,
@@ -1051,7 +1128,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 60
   },
   {
    "id": 70762,
@@ -1177,7 +1254,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 60
   },
   {
    "id": 70786,
@@ -1187,11 +1264,11 @@
    "set": "Meteoric",
    "divine": true,
    "now": "1.1% at its best spawn point (1 point); live respawn 16m30s-57m45s",
-   "weightMultiplier": 1,
+   "weightMultiplier": 2,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 40
   },
   {
    "id": 70756,
@@ -1199,7 +1276,7 @@
    "stars": 4,
    "zones": "Stonevale",
    "set": "Meteoric",
-   "divine": false,
+   "divine": true,
    "now": "4.5% at its best spawn point (1 point); live respawn 16m30s-57m45s",
    "weightMultiplier": 1,
    "respawnSeconds": null,
@@ -1397,7 +1474,7 @@
    "set": "Frozen",
    "divine": true,
    "now": "50.0% at its best spawn point (1 point); live respawn 33m30s-36m30s",
-   "weightMultiplier": 1,
+   "weightMultiplier": 0.7,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
@@ -1481,7 +1558,7 @@
    "set": "Frozen",
    "divine": true,
    "now": "15.0% at its best spawn point (1 point); live respawn 28m30s-31m30s",
-   "weightMultiplier": 1,
+   "weightMultiplier": 1.5,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
@@ -1793,7 +1870,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 71860,
@@ -1834,15 +1911,7 @@
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
-   "extraDrops": [],
-   "removeDrops": [
-    17307,
-    17308,
-    17309,
-    17311,
-    17312,
-    17313
-   ]
+   "extraDrops": []
   },
   {
    "id": 70621,
@@ -1855,15 +1924,7 @@
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
-   "extraDrops": [],
-   "removeDrops": [
-    17307,
-    17308,
-    17309,
-    17311,
-    17312,
-    17313
-   ]
+   "extraDrops": []
   },
   {
    "id": 70617,
@@ -1876,15 +1937,7 @@
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
-   "extraDrops": [],
-   "removeDrops": [
-    17307,
-    17308,
-    17309,
-    17311,
-    17312,
-    17313
-   ]
+   "extraDrops": []
   },
   {
    "id": 70620,
@@ -1897,15 +1950,7 @@
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
-   "extraDrops": [],
-   "removeDrops": [
-    17307,
-    17308,
-    17309,
-    17311,
-    17312,
-    17313
-   ]
+   "extraDrops": []
   },
   {
    "id": 70618,
@@ -1913,20 +1958,12 @@
    "stars": 3,
    "zones": "Stonevale",
    "divine": true,
-   "drops": "Crown Disc Fragment, Dragon Disc Fragment, Elm Disc Fragment, Moon Disc Fragment, Oak Disc Fragment, Sun Disc Fragment",
+   "drops": "Crown Disc Fragment, Elm Disc Fragment, Moon Disc Fragment, Oak Disc Fragment, Sun Disc Fragment",
    "now": "38.5% at its best spawn point (1 point); live respawn 18m00s-50m00s",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
-   "extraDrops": [],
-   "removeDrops": [
-    17307,
-    17308,
-    17309,
-    17311,
-    17312,
-    17313
-   ]
+   "extraDrops": []
   },
   {
    "id": 103013,
@@ -2251,7 +2288,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 50
   },
   {
    "id": 138414,
@@ -2297,20 +2334,20 @@
    "name": "Urchaid the Overlord",
    "stars": 6,
    "zones": "Carrowmore Tunnels",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (1 point); live respawn 1m40s",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 100
   },
   {
    "id": 100036,
    "name": "Anmoch",
    "stars": 6,
    "zones": "Carrowmore Tunnels, Fingal's Cave",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (2 points); live respawn 1m40s, 5h00m",
    "weightMultiplier": 1,
    "respawnSeconds": null,
@@ -2563,7 +2600,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 100010,
@@ -2583,20 +2620,20 @@
    "name": "Prince Corvax Dreadbone",
    "stars": 6,
    "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (3 points); live respawn 1m40s, 5h00m",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 60
   },
   {
    "id": 74059,
    "name": "Synak Sunclaw",
    "stars": 6,
    "zones": "Carrowmore Tunnels, Lir's Reach, Zone 99",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (3 points); live respawn 1m40s, 5h00m",
    "weightMultiplier": 1,
    "respawnSeconds": null,
@@ -2615,7 +2652,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 40
   },
   {
    "id": 100045,
@@ -2628,20 +2665,20 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 73817,
    "name": "High Priestess of Morrigan",
    "stars": 6,
    "zones": "Carrowmore Tunnels, Zone 21",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (2 points); live respawn 5m00s-15m00s",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 73000,
@@ -2706,7 +2743,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 100251,
@@ -2719,7 +2756,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 100252,
@@ -2732,7 +2769,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 100253,
@@ -2745,33 +2782,33 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 100254,
    "name": "Domnall the Exile",
    "stars": 6,
    "zones": "Dunskeig Sewers",
-   "divine": false,
+   "divine": true,
    "now": "20.0% at its best spawn point (1 point); live respawn 19h12m",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 30
   },
   {
    "id": 100043,
    "name": "Witchfinder Cornelius",
    "stars": 6,
    "zones": "Dunskeig Sewers, Murky Vaults",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (2 points); live respawn 1m40s, 5h00m",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 50
   },
   {
    "id": 70199,
@@ -2856,13 +2893,13 @@
    "name": "Captain Blackstorm",
    "stars": 6,
    "zones": "Fingal's Cave",
-   "divine": false,
+   "divine": true,
    "now": "100.0% at its best spawn point (1 point); live respawn 10m00s-30m00s",
    "weightMultiplier": 1,
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 40
   },
   {
    "id": 100035,
@@ -2914,7 +2951,7 @@
    "respawnSeconds": null,
    "noDropChance": null,
    "extraDrops": [],
-   "chestChance": 10
+   "chestChance": 95
   },
   {
    "id": 103010,

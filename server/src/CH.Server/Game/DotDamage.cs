@@ -15,6 +15,7 @@ public sealed class DotDamage
     private (double Min, double Max) _default = (100, 100);
     private readonly Dictionary<int, (double Min, double Max)> _own = new();
     private readonly Dictionary<int, int> _types = new();
+    private readonly List<(int Min, int? Max, double MinPct, double MaxPct)> _bands = new();
 
     public static DotDamage None { get; } = new();
 
@@ -25,6 +26,14 @@ public sealed class DotDamage
         using var doc = JsonDocument.Parse(File.ReadAllBytes(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
         var root = doc.RootElement;
         if (root.TryGetProperty("default", out var def)) d._default = Range(def, d._default);
+        if (root.TryGetProperty("levelBands", out var bands) && bands.ValueKind == JsonValueKind.Array)
+            foreach (var b in bands.EnumerateArray())
+            {
+                if (!b.TryGetProperty("playerLevelsBelowMob", out var below)) continue;
+                int? Lv(string n) => below.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : null;
+                var r = Range(b, (-1, -1));
+                if (r.Min >= 0) d._bands.Add((Lv("min") ?? int.MinValue, Lv("max"), r.Min, r.Max));
+            }
         if (root.TryGetProperty("dots", out var dots))
             foreach (var e in dots.EnumerateArray())
             {
@@ -51,10 +60,21 @@ public sealed class DotDamage
         return (Math.Min(lo, hi), Math.Max(lo, hi));
     }
 
-    /// <summary>This tick's share of the DoT's normal amount (1 = all of it).</summary>
-    public double Factor(int effectId, Random rng)
+    /// <summary>
+    /// This tick's share of the DoT's normal amount (1 = all of it). Against a monster, a level band that matches how far
+    /// the caster is below it (levelBands: the owner's 40-50% at 5+ levels under, 45-70% from 4 under to level) comes first;
+    /// then the DoT's own range, then the default.
+    /// </summary>
+    public double Factor(int effectId, Random rng, int? playerLevelsBelowMob = null)
     {
         var (min, max) = _own.TryGetValue(effectId, out var own) ? own : _default;
+        if (playerLevelsBelowMob is { } below)
+            foreach (var band in _bands)
+                if (below >= band.Min && (band.Max is null || below <= band.Max))
+                {
+                    (min, max) = (band.MinPct, band.MaxPct);
+                    break;
+                }
         return (min + rng.NextDouble() * (max - min)) / 100.0;
     }
 

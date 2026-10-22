@@ -9,7 +9,7 @@ public sealed record Account(long Id, string Username, bool IsGm = false);
 public sealed record QuestStageRecord(bool Done, bool Active, int Sum);
 
 /// <summary>A character's quest: in progress, or completed (stages then don't matter).</summary>
-public sealed record QuestRecord(int QuestId, bool Completed, IReadOnlyList<QuestStageRecord> Stages, bool Tracked);
+public sealed record QuestRecord(int QuestId, bool Completed, IReadOnlyList<QuestStageRecord> Stages, bool Tracked, string? CompletedOn = null);
 
 /// <summary>Outcome of checking a login secret against an account.</summary>
 public enum PasswordCheck
@@ -411,6 +411,10 @@ public sealed class GameStore : IDisposable
         """
         UPDATE characters SET show_fashion = 0;
         """,
+        // The day a quest was last completed (yyyy-MM-dd, server time): daily quests open again the next day.
+        """
+        ALTER TABLE quests ADD COLUMN completed_on TEXT;
+        """,
     ];
 
     private const int PasswordIterations = 100_000;
@@ -652,14 +656,14 @@ public sealed class GameStore : IDisposable
 
     public IReadOnlyList<QuestRecord> ListQuests(long characterId)
     {
-        using var cmd = Command("SELECT quest_id, completed, stages, tracked FROM quests WHERE character_id = $c ORDER BY quest_id", null, ("$c", characterId));
+        using var cmd = Command("SELECT quest_id, completed, stages, tracked, completed_on FROM quests WHERE character_id = $c ORDER BY quest_id", null, ("$c", characterId));
         using var r = cmd.ExecuteReader();
         var list = new List<QuestRecord>();
         while (r.Read())
         {
             var stages = System.Text.Json.JsonSerializer.Deserialize<int[][]>(r.GetString(2)) ?? [];
             list.Add(new QuestRecord(r.GetInt32(0), r.GetInt64(1) != 0,
-                stages.Select(s => new QuestStageRecord(s[0] != 0, s[1] != 0, s[2])).ToList(), r.GetInt64(3) != 0));
+                stages.Select(s => new QuestStageRecord(s[0] != 0, s[1] != 0, s[2])).ToList(), r.GetInt64(3) != 0, r.IsDBNull(4) ? null : r.GetString(4)));
         }
         return list;
     }
@@ -668,9 +672,10 @@ public sealed class GameStore : IDisposable
     {
         var stages = System.Text.Json.JsonSerializer.Serialize(quest.Stages.Select(s => new[] { s.Done ? 1 : 0, s.Active ? 1 : 0, s.Sum }));
         Exec("""
-            INSERT INTO quests(character_id, quest_id, completed, stages, tracked) VALUES ($c, $q, $done, $s, $t)
-            ON CONFLICT(character_id, quest_id) DO UPDATE SET completed = $done, stages = $s, tracked = $t
-            """, null, ("$c", characterId), ("$q", quest.QuestId), ("$done", quest.Completed ? 1 : 0), ("$s", stages), ("$t", quest.Tracked ? 1 : 0));
+            INSERT INTO quests(character_id, quest_id, completed, stages, tracked, completed_on) VALUES ($c, $q, $done, $s, $t, $on)
+            ON CONFLICT(character_id, quest_id) DO UPDATE SET completed = $done, stages = $s, tracked = $t, completed_on = $on
+            """, null, ("$c", characterId), ("$q", quest.QuestId), ("$done", quest.Completed ? 1 : 0), ("$s", stages), ("$t", quest.Tracked ? 1 : 0),
+            ("$on", (object?)quest.CompletedOn ?? DBNull.Value));
     }
 
     /// <summary>The pet's Well Fed effect and how much feeding time is left (it only runs while online).</summary>

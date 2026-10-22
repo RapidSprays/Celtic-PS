@@ -44,8 +44,23 @@ public sealed partial class GameServer
     /// </summary>
     private double _combatAbilityChance = 0.01;
 
-    /// <summary>Critical Strike and Critical Skills have their own chance (owner's rule, 2026-10-15: 20%).</summary>
-    private double _criticalAbilityChance = 0.20;
+    /// <summary>Critical Strike and Critical Skills have their own chances (owner's rule, 2026-10-15: 20%; ability-gain.json
+    /// criticalStrikeChance and criticalSkillsChance, each falling back to criticalChance).</summary>
+    private double _criticalStrikeGain = 0.20, _criticalSkillsGain = 0.20;
+
+    /// <summary>
+    /// The base crit chances before the ability-level formula (content/crit-chances.json): auto-attacks 8%, skills,
+    /// damage-over-time ticks and heals 12% (Master's Grimoire), all owner-editable.
+    /// </summary>
+    private double _critStrikeBase = 0.08, _critSkillBase = 0.12, _critDotBase = 0.12, _critHealBase = 0.12;
+
+    private void LoadCritChances(string? path)
+    {
+        _critStrikeBase = LoadAbilityChance(path, "critStrike", 0.08);
+        _critSkillBase = LoadAbilityChance(path, "critSkill", 0.12);
+        _critDotBase = LoadAbilityChance(path, "critDot", 0.12);
+        _critHealBase = LoadAbilityChance(path, "critHeal", 0.12);
+    }
 
     /// <summary>Critical Skills' chance per damage-over-time tick from a player's skill (owner's rule, 2026-10-15: 5%).</summary>
     private double _dotCriticalChance = 0.05;
@@ -53,16 +68,17 @@ public sealed partial class GameServer
     private static double LoadAbilityChance(string? path, string key, double fallback)
     {
         if (path is null || !File.Exists(path)) return fallback;
-        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path));
-        return doc.RootElement.TryGetProperty(key, out var c) ? c.GetDouble() : fallback;
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(path),
+            new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true });
+        return doc.RootElement.TryGetProperty(key, out var c) && c.ValueKind == System.Text.Json.JsonValueKind.Number ? c.GetDouble() : fallback;
     }
 
     /// <summary>
-    /// Combat training: a flat chance per action, up to the cap: <see cref="_criticalAbilityChance"/> for Critical Strike
-    /// and Critical Skills, <see cref="_combatAbilityChance"/> for the rest. Elixirs of Wisdom multiply it.
+    /// Combat training: a flat chance per action, up to the cap: <see cref="_criticalStrikeGain"/> for Critical Strike,
+    /// <see cref="_criticalSkillsGain"/> for Critical Skills, <see cref="_combatAbilityChance"/> for the rest. Elixirs of Wisdom multiply it.
     /// </summary>
     private void TrainCombatAbility(Session s, int abilityId) =>
-        TrainAbility(s, abilityId, (abilityId is CriticalStrike or CriticalSkills ? _criticalAbilityChance : _combatAbilityChance)
+        TrainAbility(s, abilityId, (abilityId switch { CriticalStrike => _criticalStrikeGain, CriticalSkills => _criticalSkillsGain, _ => _combatAbilityChance })
             * (s.Sheet is null ? 1 : Modifiers(s).AbilityGainMultiplier));
 
     /// <summary>

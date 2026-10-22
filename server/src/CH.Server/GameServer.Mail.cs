@@ -120,7 +120,7 @@ public sealed partial class GameServer
             var item = backpack.FirstOrDefault(i => i.Id == inv && i.TemplateId == template);
             var info = _balance.Items.GetValueOrDefault(template);
             if (item is null || qty > item.Quantity) problem ??= "You don't have that item any more.";
-            else if (item.Bound || info is null || !info.Tradeable || info.ImportantItem) problem ??= $"{info?.Name ?? "That item"} can't be sent.";
+            else if (item.Bound || info is null || !info.Tradeable) problem ??= $"{info?.Name ?? "That item"} can't be sent.";
             else items.Add(new MailItem(0, template, qty, false, item.Charges));
         }
         if (attached.Select(a => a.InventoryId).Distinct().Count() != attached.Count) problem ??= "That item is attached twice.";

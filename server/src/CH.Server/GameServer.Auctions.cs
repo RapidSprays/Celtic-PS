@@ -100,7 +100,7 @@ public sealed partial class GameServer
         var (hours, rate) = AuctionDurations[Math.Clamp(duration, 0, AuctionDurations.Length - 1)];
         var deposit = Math.Max(AuctionMinDeposit, (int)Math.Round(startBid * rate));
         var problem = item is null || quantity < 1 || quantity > item.Quantity ? "You don't have that item."
-            : info is null || !info.Tradeable || info.ImportantItem || item.Bound ? "That item can't be sold."
+            : info is null || !info.Tradeable || item.Bound ? "That item can't be sold."
             : mine >= AuctionSlots(c.Id) ? "All your auction slots are in use."
             : startBid < 1 || startBid > AuctionMaxBid || (buyout > 0 && buyout <= startBid) ? "That price isn't allowed."
             : _store.GetProgress(c.Id).Coins < deposit ? $"You need {deposit:N0} gold for the deposit."

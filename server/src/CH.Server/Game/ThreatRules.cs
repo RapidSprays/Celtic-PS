@@ -14,6 +14,7 @@ public sealed class ThreatRules
     private readonly Dictionary<int, double> _class = new();
     private readonly Dictionary<int, double> _flat = new();
     private readonly Dictionary<int, double> _skillMultiplier = new();
+    private readonly Dictionary<int, double> _reduce = new();
 
     public static ThreatRules Defaults { get; } = new();
 
@@ -34,6 +35,8 @@ public sealed class ThreatRules
                 if (!s.TryGetProperty("id", out var id)) continue;
                 if (s.TryGetProperty("flatThreat", out var f) && f.ValueKind == JsonValueKind.Number) t._flat[id.GetInt32()] = Math.Max(0, f.GetDouble());
                 if (s.TryGetProperty("multiplier", out var x) && x.ValueKind == JsonValueKind.Number) t._skillMultiplier[id.GetInt32()] = Math.Max(0, x.GetDouble());
+                if (s.TryGetProperty("reduceThreatPercent", out var rd) && rd.ValueKind == JsonValueKind.Number && rd.GetDouble() > 0)
+                    t._reduce[id.GetInt32()] = Math.Clamp(rd.GetDouble(), 0, 100);
             }
         return t;
     }
@@ -44,6 +47,12 @@ public sealed class ThreatRules
     /// <summary>A skill's flat threat per cast: the owner's number, else the data's, times the owner's multiplier.</summary>
     public double SkillFlat(int skillId, double dataThreat) =>
         (_flat.TryGetValue(skillId, out var own) ? own : dataThreat) * _skillMultiplier.GetValueOrDefault(skillId, 1);
+
+    /// <summary>
+    /// A threat-lowering skill's cut, in percent (0 = none): Distract takes it off the caster's threat on its target,
+    /// Calm off the helped ally's threat on every monster fighting them. Such a skill adds no threat of its own.
+    /// </summary>
+    public double ReducePercent(int skillId) => _reduce.GetValueOrDefault(skillId);
 
     /// <summary>The multiplier on threat from a skill's damage (and Taunt/Warcry's damage-as-threat).</summary>
     public double SkillDamageMultiplier(int skillId) => _skillMultiplier.GetValueOrDefault(skillId, 1);

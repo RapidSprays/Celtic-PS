@@ -1,0 +1,17 @@
+{
+  "_comment": "Look of the aggro meter (the threat box on the left). Restart the server after editing; it's sent to the game when you log in, no rebuild needed. Colours are #RRGGBB or #RRGGBBAA (AA = opacity, 00 see-through to FF solid). x and y move the box from the middle of the left edge (x: right, y: up; negative y goes down), in screen units of a 1920x1080 screen.",
+  "width": 300,
+  "rowHeight": 26,
+  "titleHeight": 30,
+  "fontSize": 17,
+  "titleFontSize": 20,
+  "maxRows": 8,
+  "x": 16,
+  "y": 60,
+  "background": "#0A0A0FB8",
+  "titleColour": "#EBEBF2",
+  "textColour": "#FFFFFF",
+  "barYou": "#F2B833E6",
+  "barTarget": "#D94033E6",
+  "barOthers": "#5973A6D9"
+}

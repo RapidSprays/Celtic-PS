@@ -20,12 +20,53 @@ namespace CHPrivateMods
             public bool IsTarget, IsYou;
         }
 
-        private const int MaxRows = 8;
-        private const float Width = 300f, RowHeight = 26f, TitleHeight = 30f;
-        private static readonly Color Back = new Color(0.04f, 0.04f, 0.06f, 0.72f);
-        private static readonly Color BarOther = new Color(0.35f, 0.45f, 0.65f, 0.85f);
-        private static readonly Color BarYou = new Color(0.95f, 0.72f, 0.2f, 0.9f);
-        private static readonly Color BarTarget = new Color(0.85f, 0.25f, 0.2f, 0.9f);
+        // The look: these defaults until the server sends aggro-meter.json (message 31004, at log-in).
+        private static int MaxRows = 8;
+        private static float Width = 300f, RowHeight = 26f, TitleHeight = 30f, FontSize = 17f, TitleFontSize = 20f, X = 16f, Y = 60f;
+        private static Color Back = new Color(0.04f, 0.04f, 0.06f, 0.72f);
+        private static Color BarOther = new Color(0.35f, 0.45f, 0.65f, 0.85f);
+        private static Color BarYou = new Color(0.95f, 0.72f, 0.2f, 0.9f);
+        private static Color BarTarget = new Color(0.85f, 0.25f, 0.2f, 0.9f);
+        private static Color TitleColour = new Color(0.92f, 0.92f, 0.95f);
+        private static Color TextColour = Color.white;
+        private static string _lastMonster;
+        private static List<Row> _lastRows;
+
+        /// <summary>Message 31004: varint n × (string key, string value) from the server's aggro-meter.json; the box is rebuilt.</summary>
+        internal static void ReadStyle(Func<string> readString, Func<int> readInt)
+        {
+            for (int i = 0, n = readInt(); i < n; i++)
+            {
+                var key = readString();
+                var value = readString();
+                float F(float fallback) => float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f) ? f : fallback;
+                Color C(Color fallback) => ColorUtility.TryParseHtmlString(value.StartsWith("#") ? value : "#" + value, out var c) ? c : fallback;
+                switch (key)
+                {
+                    case "width": Width = Mathf.Max(80, F(Width)); break;
+                    case "rowHeight": RowHeight = Mathf.Max(10, F(RowHeight)); break;
+                    case "titleHeight": TitleHeight = Mathf.Max(10, F(TitleHeight)); break;
+                    case "fontSize": FontSize = Mathf.Max(6, F(FontSize)); break;
+                    case "titleFontSize": TitleFontSize = Mathf.Max(6, F(TitleFontSize)); break;
+                    case "maxRows": MaxRows = Mathf.Clamp((int)F(MaxRows), 1, 20); break;
+                    case "x": X = F(X); break;
+                    case "y": Y = F(Y); break;
+                    case "background": Back = C(Back); break;
+                    case "titleColour": TitleColour = C(TitleColour); break;
+                    case "textColour": TextColour = C(TextColour); break;
+                    case "barYou": BarYou = C(BarYou); break;
+                    case "barTarget": BarTarget = C(BarTarget); break;
+                    case "barOthers": BarOther = C(BarOther); break;
+                }
+            }
+            if (_instance != null)
+            {
+                var shown = _instance.gameObject.activeSelf;
+                Destroy(_instance.gameObject);
+                _instance = null;
+                if (shown && _lastRows != null) Show(_lastMonster, _lastRows);
+            }
+        }
 
         private static AggroMeter _instance;
 
@@ -52,6 +93,13 @@ namespace CHPrivateMods
                 row.IsYou = (flags & 2) != 0;
                 rows.Add(row);
             }
+            Show(monster, rows);
+        }
+
+        private static void Show(string monster, List<Row> rows)
+        {
+            _lastMonster = monster;
+            _lastRows = rows;
             if (_instance == null)
             {
                 var root = new GameObject("CHAggroMeter", typeof(RectTransform));
@@ -60,7 +108,7 @@ namespace CHPrivateMods
                 _instance.Build();
             }
             _instance.gameObject.SetActive(true);
-            _instance.Show(monster, rows);
+            _instance.Fill(monster, rows);
         }
 
         private void Build()
@@ -84,16 +132,16 @@ namespace CHPrivateMods
             _panel = (RectTransform)panelGo.transform;
             _panel.anchorMin = _panel.anchorMax = new Vector2(0f, 0.5f);
             _panel.pivot = new Vector2(0f, 0.5f);
-            _panel.anchoredPosition = new Vector2(16f, 60f);
+            _panel.anchoredPosition = new Vector2(X, Y);
 
-            _title = Text("Title", _panel, font, 20, TextAlignmentOptions.Left);
+            _title = Text("Title", _panel, font, TitleFontSize, TextAlignmentOptions.Left);
             var tr = _title.rectTransform;
             tr.anchorMin = new Vector2(0, 1);
             tr.anchorMax = new Vector2(1, 1);
             tr.pivot = new Vector2(0.5f, 1);
             tr.offsetMin = new Vector2(10, -TitleHeight);
             tr.offsetMax = new Vector2(-10, -4);
-            _title.color = new Color(0.92f, 0.92f, 0.95f);
+            _title.color = TitleColour;
 
             for (var i = 0; i < MaxRows; i++)
             {
@@ -116,15 +164,16 @@ namespace CHPrivateMods
                 br.pivot = new Vector2(0, 0.5f);
                 br.offsetMin = br.offsetMax = Vector2.zero;
 
-                var name = Text("Name", rr, font, 17, TextAlignmentOptions.Left);
-                Fill(name.rectTransform, 6, -70);
-                var value = Text("Value", rr, font, 17, TextAlignmentOptions.Right);
-                Fill(value.rectTransform, 0, -6);
+                var name = Text("Name", rr, font, FontSize, TextAlignmentOptions.Left);
+                Stretch(name.rectTransform, 6, -70);
+                var value = Text("Value", rr, font, FontSize, TextAlignmentOptions.Right);
+                Stretch(value.rectTransform, 0, -6);
+                name.color = value.color = TextColour;
                 _rows.Add((br, bar, name, value, rowGo));
             }
         }
 
-        private void Show(string monster, List<Row> rows)
+        private void Fill(string monster, List<Row> rows)
         {
             _title.text = monster;
             var top = 1;
@@ -162,7 +211,7 @@ namespace CHPrivateMods
             return t;
         }
 
-        private static void Fill(RectTransform r, float left, float right)
+        private static void Stretch(RectTransform r, float left, float right)
         {
             r.anchorMin = Vector2.zero;
             r.anchorMax = Vector2.one;

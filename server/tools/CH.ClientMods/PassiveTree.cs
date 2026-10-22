@@ -15,7 +15,7 @@ namespace CHPrivateMods
     /// </summary>
     public static class PassiveTree
     {
-        private const uint LayoutOpcode = 31000, StateOpcode = 31001, WeaponDelayOpcode = 31002, AggroOpcode = 31003;
+        private const uint LayoutOpcode = 31000, StateOpcode = 31001, WeaponDelayOpcode = 31002, AggroOpcode = 31003, AggroStyleOpcode = 31004;
         private const BindingFlags Any = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         internal sealed class Node
@@ -36,7 +36,7 @@ namespace CHPrivateMods
         internal static string[] Summary = new string[0];
 
         private static PropertyInfo _position;
-        private static MethodInfo _readVarUInt, _readVarInt, _readString, _readByte;
+        private static MethodInfo _readVarUInt, _readVarInt, _readString, _readByte, _readFloat;
 
         /// <summary>Called at the start of NetworkManager.processCommand(msg) (patch P14). Always leaves the read position as it was.</summary>
         public static void OnMessage(object msg)
@@ -56,8 +56,17 @@ namespace CHPrivateMods
                     var ids = new System.Collections.Generic.List<int>();
                     for (var i = 0; i < count; i++) ids.Add((int)_readVarInt.Invoke(msg, null));
                     WeaponDelayCast.SetSkills(ids);
+                    try
+                    {
+                        _readFloat = _readFloat ?? R.Method(msg.GetType(), "ReadSingle", 0) ?? R.Method(msg.GetType(), "ReadFloat", 0);
+                        var offsets = new Dictionary<int, float>();
+                        foreach (var id in ids) offsets[id] = (float)_readFloat.Invoke(msg, null);
+                        WeaponDelayCast.SetOffsets(offsets);
+                    }
+                    catch (Exception) { } // an older server sends no offsets
                 }
                 else if (opcode == AggroOpcode) AggroMeter.Read(() => Byte(msg), () => Str(msg), () => Int(msg));
+                else if (opcode == AggroStyleOpcode) AggroMeter.ReadStyle(() => Str(msg), () => Int(msg));
             }
             catch (Exception e)
             {

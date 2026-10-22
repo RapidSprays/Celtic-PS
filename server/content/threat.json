@@ -1,6 +1,6 @@
 {
- "_comment": "Threat (aggro), restart the server after editing. Every point of damage a player deals adds damageMultiplier threat (auto-attacks, skills, damage-over-time ticks), times their class's multiplier. Some skills also add flat threat every cast (dataThreat: the Grimoire's table by rank). A monster turns to whoever gets above switchMargin times its current target's threat (1.1 = 10% more). skills: flatThreat replaces the data's flat threat for that skill at every rank (null = the data's, 0 = none); multiplier scales the skill's flat threat and the threat from its hits (1 = unchanged, 2 = double, 0.5 = half; Taunt and Warcry: their damage-as-threat). A DoT's ticks use the multiplier of its status effect id, listed by that id. Being more than 50 levels above a monster still cuts all threat to 10%.",
- "damageMultiplier": 1.5,
+ "_comment": "Threat (aggro), restart the server after editing. Every point of damage a player deals adds damageMultiplier threat (auto-attacks, skills, damage-over-time ticks), times their class's multiplier. Some skills also add flat threat every cast (dataThreat: the Grimoire's table by rank). A monster turns to whoever gets above switchMargin times its current target's threat (1.1 = 10% more). skills: flatThreat replaces the data's flat threat for that skill at every rank (null = the data's, 0 = none); multiplier scales the skill's flat threat and the threat from its hits (1 = unchanged, 2 = double, 0.5 = half; Taunt and Warcry: their damage-as-threat). A DoT's ticks use the multiplier of its status effect id, listed by that id. reduceThreatPercent (Distract, Calm): the skill lowers threat instead of adding any: Distract cuts your own threat on its target by that percent, Calm cuts the ally's threat on every monster fighting them (50 = halves it). Every player and pet skill is listed (ability says which); dataThreat is only a reminder of the game's own numbers. Being more than 50 levels above a monster still cuts all threat to 10%.",
+ "damageMultiplier": 1,
  "switchMargin": 1.1,
  "classMultipliers": {
   "Warrior": 1,
@@ -11,8 +11,25 @@
  },
  "skills": [
   {
+   "id": 7871,
+   "name": "[Pet Skill] Guard Dog",
+   "ability": "Dog Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7872,
+   "name": "[Pet Skill] Keen Senses",
+   "ability": "Rabbit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
    "id": 39,
    "name": "Abundance",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 16, rank 25: 386, top: 996",
    "flatThreat": null,
    "multiplier": 1
@@ -20,111 +37,745 @@
   {
    "id": 142,
    "name": "Abundant Aura",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2021,
+   "name": "Apply Toxins",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8035,
+   "name": "Arcane Blast",
+   "ability": "Spirit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8041,
+   "name": "Arcane Blast",
+   "ability": "Spirit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8042,
+   "name": "Arcane Blast",
+   "ability": "Spirit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8043,
+   "name": "Arcane Blast",
+   "ability": "Spirit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8044,
+   "name": "Arcane Blast",
+   "ability": "Spirit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8320,
+   "name": "Arcane Breath",
+   "ability": "Phoenix Taming",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 143,
    "name": "Assassinate",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 109, rank 25: 2570, top: 6640",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 115,
+   "name": "Astral Rays",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 4,
+   "name": "Bandage Wounds",
+   "ability": "First Aid",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 52,
+   "name": "Barbed Shot",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2233,
+   "name": "Beast Bite",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2023,
+   "name": "Beatdown",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2010,
+   "name": "Berserker Rage",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 223,
+   "name": "Bless",
+   "ability": "Nature Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8471,
+   "name": "Blightbound Smash",
+   "ability": "Imp Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8469,
+   "name": "Bloodbound Sever",
+   "ability": "Imp Taming",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 15,
    "name": "Bolas",
+   "ability": "Ranged Combat",
    "dataThreat": "rank 1: 44, rank 25: 1028, top: 2656",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2013,
+   "name": "Buffeting Gale",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 32,
+   "name": "Calm",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1,
+   "reduceThreatPercent": 50
+  },
+  {
+   "id": 50,
+   "name": "Camouflage",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7878,
+   "name": "Canine Bite",
+   "ability": "Dog Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7471,
+   "name": "Carrion Claw",
+   "ability": "Novelty",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8034,
+   "name": "Catch",
+   "ability": "Bear Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2030,
+   "name": "Choking Vines",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 12,
    "name": "Cloak of Fire",
+   "ability": "Fire Magic",
    "dataThreat": "rank 1: 55, rank 25: 1285, top: 3320",
    "flatThreat": null,
    "multiplier": 1
   },
   {
+   "id": 120,
+   "name": "Cloak of the Remnant",
+   "ability": "Novelty",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 129,
+   "name": "Conceal",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8318,
+   "name": "Corrosive Breath",
+   "ability": "Phoenix Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 119,
+   "name": "Cosmic Barrier",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8178,
+   "name": "Crushing Talons",
+   "ability": "Eagle Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2001,
+   "name": "Dark Abundance",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 99,
+   "name": "Death Charge",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 227,
+   "name": "Defensive Formation",
+   "ability": "Melee Combat",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 0
+  },
+  {
    "id": 130,
    "name": "Defensive Spikes",
+   "ability": "Ranged Combat",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 34,
+   "name": "Distract",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1,
+   "reduceThreatPercent": 20
+  },
+  {
+   "id": 8148,
+   "name": "Draconic Roar",
+   "ability": "Dragon Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2031,
+   "name": "Dragon Fire",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2012,
+   "name": "Earthen Bonds",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 112,
+   "name": "Eldritch Regeneration",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 110,
+   "name": "Electroshocker",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8317,
+   "name": "Ember Breath",
+   "ability": "Phoenix Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7382,
+   "name": "Emberdrake Breath",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 147,
+   "name": "Enduring Guard",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 56,
    "name": "Energy Boost",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 38, rank 25: 900, top: 2324",
    "flatThreat": null,
-   "multiplier": 1
+   "multiplier": 0.1
   },
   {
    "id": 156,
    "name": "Energy Harvest",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 7, rank 25: 55, top: 105",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 43,
+   "name": "Energy Shield",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 44,
    "name": "Energy Well",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 11, rank 25: 257, top: 664",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2029,
+   "name": "Enhanced Precision",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 132,
    "name": "Entangle",
+   "ability": "Ranged Combat",
    "dataThreat": "rank 1: 28, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 217,
+   "name": "Explosive Arrow",
+   "ability": "Ranged Combat",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 220,
+   "name": "Expose Weakness",
+   "ability": "Cunning",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 48,
+   "name": "Fast Reflexes",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8064,
+   "name": "Feral Protection",
+   "ability": "Boar Taming",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2004,
+   "name": "Fetter",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 226,
+   "name": "Fire Attunement",
+   "ability": "Fire Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 11,
+   "name": "Fire Bolt",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 126,
    "name": "Firestorm",
+   "ability": "Fire Magic",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2005,
+   "name": "Flame Cloak",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2017,
+   "name": "Flame Hex",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8155,
+   "name": "Flaming Breath",
+   "ability": "Dragon Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2009,
+   "name": "Flaming Orb",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8147,
+   "name": "Fowl Fortune",
+   "ability": "Chicken Taming",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 135,
    "name": "Freeze",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 164, rank 25: 3855, top: 9960",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8156,
+   "name": "Freezing Breath",
+   "ability": "Dragon Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8322,
+   "name": "Frenzied Slashes",
+   "ability": "Tiger Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 45,
+   "name": "Frenzy",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2014,
+   "name": "Frost Arrow",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8319,
+   "name": "Frost Breath",
+   "ability": "Phoenix Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2018,
+   "name": "Frost Hex",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 222,
+   "name": "Frostbite",
+   "ability": "Ice Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 109,
+   "name": "Frozen Spear",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 47,
+   "name": "Giant Swing",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 95,
+   "name": "Gore",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 9,
    "name": "Grasping Roots",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 109, rank 25: 2570, top: 6640",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2022,
+   "name": "Guardian Stance",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2024,
+   "name": "Hasty Attack",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2015,
+   "name": "Heal Injuries",
+   "ability": "First Aid",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8416,
+   "name": "Hellfire",
+   "ability": "Hellsteed Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8470,
+   "name": "Hexbound Pierce",
+   "ability": "Imp Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 17,
+   "name": "Hide",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 111,
+   "name": "Horn Lance",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8062,
+   "name": "Howl",
+   "ability": "Wolf Riding",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 10,
    "name": "Howling Wind",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 225,
+   "name": "Ice Attunement",
+   "ability": "Ice Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 221,
+   "name": "Ice Blast",
+   "ability": "Ice Magic",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 42,
    "name": "Ice Shards",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 11, rank 25: 257, top: 664",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2033,
+   "name": "Immolate",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 98,
+   "name": "Impale",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 133,
    "name": "Incinerate",
+   "ability": "Fire Magic",
    "dataThreat": "rank 1: 38, rank 25: 900, top: 2324",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2026,
+   "name": "Lacerate",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 155,
    "name": "Life Steal",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 7, rank 25: 55, top: 105",
    "flatThreat": null,
    "multiplier": 1
@@ -132,13 +783,47 @@
   {
    "id": 54,
    "name": "Light heal",
+   "ability": "First Aid",
    "dataThreat": "rank 1: 16, rank 25: 386, top: 996",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8177,
+   "name": "Lightning Discharge",
+   "ability": "Elk Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 38,
+   "name": "Lightning Strike",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7911,
+   "name": "Lightning Surge",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 211,
+   "name": "Longshot",
+   "ability": "Ranged Combat",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 139,
    "name": "Lure of Assassins",
+   "ability": "Fire Magic",
    "dataThreat": "rank 1: 21, rank 25: 495, top: 1278",
    "flatThreat": null,
    "multiplier": 1
@@ -146,6 +831,7 @@
   {
    "id": 40,
    "name": "Lure of Fire",
+   "ability": "Fire Magic",
    "dataThreat": "rank 1: 21, rank 25: 495, top: 1278",
    "flatThreat": null,
    "multiplier": 1
@@ -153,6 +839,7 @@
   {
    "id": 140,
    "name": "Lure of Giants",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 21, rank 25: 495, top: 1278",
    "flatThreat": null,
    "multiplier": 1
@@ -160,6 +847,7 @@
   {
    "id": 41,
    "name": "Lure of Ice",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 21, rank 25: 495, top: 1278",
    "flatThreat": null,
    "multiplier": 1
@@ -167,6 +855,7 @@
   {
    "id": 137,
    "name": "Lure of Magic",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 21, rank 25: 495, top: 1278",
    "flatThreat": null,
    "multiplier": 1
@@ -174,48 +863,327 @@
   {
    "id": 138,
    "name": "Lure of Soldiers",
+   "ability": "Fire Magic",
    "dataThreat": "rank 1: 21, rank 25: 495, top: 1278",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 123,
+   "name": "Magic Barrier",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8157,
+   "name": "Magical Breath",
+   "ability": "Dragon Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 20004,
+   "name": "Mark Test Skill",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 55,
    "name": "Meditate",
+   "ability": "First Aid",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 114,
+   "name": "Meteoric Blast",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 113,
+   "name": "Meteoric Scourge",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 117,
+   "name": "Meteoric Smash",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 116,
+   "name": "Meteoric Strike",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2011,
+   "name": "Mighty Blow",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8347,
+   "name": "Mystic Blaze",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7879,
+   "name": "Natural Focus",
+   "ability": "Rabbit Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8366,
+   "name": "Natural Rejuvenation",
+   "ability": "Pig Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 124,
+   "name": "Natures Breath",
+   "ability": "Nature Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 37,
+   "name": "Natures Embrace",
+   "ability": "Nature Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 5,
+   "name": "Natures Touch",
+   "ability": "Nature Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 20022,
+   "name": "Nightmare Bolt",
+   "ability": "Nighmare Steed Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 20021,
+   "name": "Nightmare Flames",
+   "ability": "Nighmare Steed Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 20023,
+   "name": "Nightmare Scream",
+   "ability": "Nighmare Steed Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 20032,
+   "name": "Nightmare Stomp",
+   "ability": "Nighmare Steed Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7447,
+   "name": "Nimble Wing",
+   "ability": "Novelty",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 131,
+   "name": "OVERWRITE",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 141,
+   "name": "OVERWRITE",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 136,
+   "name": "Play Dead",
+   "ability": "Cunning",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 105,
+   "name": "Poison Cloud",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 49,
    "name": "Poison Weapon",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8154,
+   "name": "Poisonous Breath",
+   "ability": "Dragon Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8431,
+   "name": "Polar Shield",
+   "ability": "Reindeer Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2002,
+   "name": "Poultice",
+   "ability": "First Aid",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8061,
+   "name": "Pounce",
+   "ability": "Spider Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2006,
+   "name": "Power Boost",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2027,
+   "name": "Power Shot",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2007,
+   "name": "Power Well",
+   "ability": "Ice Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2,
+   "name": "Protective Stance",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 1,
    "name": "Pummel",
-   "dataThreat": "none (threat only from its damage)",
+   "ability": "Melee Combat",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2008,
+   "name": "Quick Reactions",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 53,
    "name": "Quick Strike",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 38, rank 25: 900, top: 2324",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8038,
+   "name": "Rake",
+   "ability": "Wolf Taming",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 51,
    "name": "Rapid Shot",
+   "ability": "Ranged Combat",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7472,
+   "name": "Reconstruct",
+   "ability": "First Aid",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 3,
    "name": "Recuperate",
+   "ability": "First Aid",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
    "flatThreat": null,
    "multiplier": 1
@@ -223,34 +1191,119 @@
   {
    "id": 18,
    "name": "Rend",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7449,
+   "name": "Rending Talon",
+   "ability": "Novelty",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8063,
+   "name": "Resilience",
+   "ability": "Bear Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 219,
+   "name": "Riposte",
+   "ability": "Cunning",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 214,
+   "name": "Rupture",
+   "ability": "Melee Combat",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 145,
    "name": "Sacrifice",
+   "ability": "Ice Magic",
    "dataThreat": "rank 1: 11, rank 25: 257, top: 664",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 228,
+   "name": "Sanctuary",
+   "ability": "Nature Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 108,
+   "name": "Scorcher",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8198,
+   "name": "Searing Corruption",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2003,
+   "name": "Serrated Arrow",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 192,
+   "name": "Shadowstrike",
+   "ability": "Cunning",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 13,
    "name": "Sharp Shot",
+   "ability": "Ranged Combat",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 218,
+   "name": "Sharpen Weapons",
+   "ability": "Ranged Combat",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 215,
    "name": "Shatter",
-   "dataThreat": "none (threat only from its damage)",
+   "ability": "Melee Combat",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 46,
    "name": "Shield Bash",
+   "ability": "Melee Combat",
    "dataThreat": "rank 1: 83, rank 25: 1928, top: 4980",
    "flatThreat": null,
    "multiplier": 1.3
@@ -258,13 +1311,31 @@
   {
    "id": 36,
    "name": "Shield of Bark",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2028,
+   "name": "Shield of Earth",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 216,
+   "name": "Shield Wall",
+   "ability": "Melee Combat",
+   "dataThreat": "none (only its damage makes threat)",
    "flatThreat": null,
    "multiplier": 1
   },
   {
    "id": 127,
    "name": "Smoke Bomb",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 27, rank 25: 643, top: 1660",
    "flatThreat": null,
    "multiplier": 1
@@ -272,13 +1343,47 @@
   {
    "id": 16,
    "name": "Sneaky Attack",
+   "ability": "Cunning",
    "dataThreat": "rank 1: 44, rank 25: 1028, top: 2656",
    "flatThreat": null,
    "multiplier": 1.4
   },
   {
+   "id": 2034,
+   "name": "Soldiers Hex",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8472,
+   "name": "Soulbound Barrier",
+   "ability": "Imp Taming",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 14,
+   "name": "Steady Aim",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 224,
+   "name": "Stinging Swarm",
+   "ability": "Nature Magic",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
    "id": 134,
    "name": "Storm Touch",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 11, rank 25: 257, top: 664",
    "flatThreat": null,
    "multiplier": 1
@@ -286,6 +1391,7 @@
   {
    "id": 8,
    "name": "Strangling Vines",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 38, rank 25: 900, top: 2324",
    "flatThreat": null,
    "multiplier": 1
@@ -293,34 +1399,87 @@
   {
    "id": 125,
    "name": "Sweeping Blow",
+   "ability": "Melee Combat",
    "dataThreat": "rank 1: 22, rank 25: 514, top: 1328",
    "flatThreat": null,
    "multiplier": 1
   },
   {
+   "id": 2025,
+   "name": "Swiftness",
+   "ability": "Ranged Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 7448,
+   "name": "Swooping Claw",
+   "ability": "Novelty",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
    "id": 33,
-   "name": "Taunt (its damage counts as threat)",
-   "dataThreat": "its damage as threat",
+   "name": "Taunt",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1.2
   },
   {
    "id": 20005,
    "name": "Test Ignite Skill",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 109, rank 25: 2570, top: 6640",
    "flatThreat": null,
    "multiplier": 1
   },
   {
+   "id": 2016,
+   "name": "Thunderclap",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 8152,
+   "name": "Trample",
+   "ability": "Horse Riding",
+   "dataThreat": "none (only its damage makes threat)",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 106,
+   "name": "Vampire Kiss",
+   "ability": "Cunning",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 107,
+   "name": "Void Blast",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
    "id": 128,
-   "name": "Warcry (its damage counts as threat)",
-   "dataThreat": "its damage as threat",
+   "name": "Warcry",
+   "ability": "Melee Combat",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1.2
   },
   {
    "id": 152,
    "name": "Ward of Assassins",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 9, rank 25: 214, top: 553",
    "flatThreat": null,
    "multiplier": 1
@@ -328,6 +1487,7 @@
   {
    "id": 148,
    "name": "Ward of Fire",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 9, rank 25: 214, top: 553",
    "flatThreat": null,
    "multiplier": 1
@@ -335,6 +1495,7 @@
   {
    "id": 153,
    "name": "Ward of Giants",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 9, rank 25: 214, top: 553",
    "flatThreat": null,
    "multiplier": 1
@@ -342,6 +1503,7 @@
   {
    "id": 149,
    "name": "Ward of Ice",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 9, rank 25: 214, top: 553",
    "flatThreat": null,
    "multiplier": 1
@@ -349,6 +1511,7 @@
   {
    "id": 150,
    "name": "Ward of Magic",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 9, rank 25: 214, top: 553",
    "flatThreat": null,
    "multiplier": 1
@@ -356,7 +1519,40 @@
   {
    "id": 151,
    "name": "Ward of Soldiers",
+   "ability": "Nature Magic",
    "dataThreat": "rank 1: 9, rank 25: 214, top: 553",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 118,
+   "name": "Warp Bolt",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2019,
+   "name": "Wild Embrace",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 2020,
+   "name": "Wild Touch",
+   "ability": "Nature Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
+   "flatThreat": null,
+   "multiplier": 1
+  },
+  {
+   "id": 121,
+   "name": "Withering Beam",
+   "ability": "Fire Magic",
+   "dataThreat": "rank 1: 1, rank 25: 1, top: 1",
    "flatThreat": null,
    "multiplier": 1
   }

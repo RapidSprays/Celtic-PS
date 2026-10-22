@@ -1,0 +1,12 @@
+{
+ "_comment": "Treasure Hunter (ability 31) and Scholar (ability 32): each kill rolls a chance to double your gold (Treasure Hunter) and your XP (Scholar). chance % = the ability's level (trained plus gear and pets: the Rings of Golden Fortune and Bloodbound/Hexbound Imps up to +1500, the Rings of Scholarly Wisdom and Festive Reindeer) x percentPerPoint, capped at maxPercent. The live rates are server-only and unpublished, so these are the owner's numbers: 0.01% per point gives 6% at 600, 23% at the 2,300 cap and 38% with a Giant Imp. Restart the server after editing. killGainChance: the chance per kill (0.05 = 5%) that Treasure Hunter and Scholar each go up by one, up to the cap of ten per character level; Elixirs of Wisdom multiply it, as for the other abilities.",
+ "killGainChance": 0.05,
+ "treasureHunter": {
+  "percentPerPoint": 0.01,
+  "maxPercent": 100
+ },
+ "scholar": {
+  "percentPerPoint": 0.01,
+  "maxPercent": 100
+ }
+}

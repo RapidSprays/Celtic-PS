@@ -25,12 +25,16 @@ public sealed partial class GameServer : IDisposable
     private readonly CallForHelpRanges _callForHelp;
     private readonly QuestRewards _questRewards;
     private readonly QuestRequirements _questRequirements;
+    private readonly LuckAbilities _luck;
+    private readonly ChatColours _chatColours;
     private readonly DotDamage _dotDamage;
     private readonly ThreatRules _threat;
     private readonly ZoneTravel _travel;
     private readonly LootTable _loot;
     private readonly OfficialLoot _officialLoot;
     private readonly OfficialMobStats _officialStats;
+    private readonly Dictionary<int, MobCombat> _customCombat = new(); // custom-monsters.json
+    private readonly Dictionary<int, int> _customFlatXp = new();       // custom-monsters.json "xp": the same at every level
     private readonly QuestBook _quests;
     private readonly ShopCatalog _shops;
     private readonly TokenVendorCatalog _tokenVendors;
@@ -66,13 +70,28 @@ public sealed partial class GameServer : IDisposable
         _divineStrike = DivineStrikeDamage.Load(options.DivineStrikePath);
         _callForHelp = CallForHelpRanges.Load(options.CallForHelpPath);
         _questRewards = QuestRewards.Load(options.QuestRewardsPath);
-        _questRequirements = QuestRequirements.Load(options.QuestRequirementsPath);
+        _questRequirements = QuestRequirements.Load(options.QuestRequirementsPath, options.QuestExclusionsPath);
+        _luck = LuckAbilities.Load(options.LuckAbilitiesPath);
+        _chatColours = ChatColours.Load(Path.Combine(Path.GetDirectoryName(options.LuckAbilitiesPath ?? "") ?? "", "chat-colours.json"));
         _dotDamage = DotDamage.Load(options.DotDamagePath);
         _threat = ThreatRules.Load(options.ThreatPath);
         _travel = ZoneTravel.Load(options.ZonePointsPath, balance);
         _loot = new LootTable(balance);
         _officialLoot = OfficialLoot.Load(options.LootPath);
         _officialStats = OfficialMobStats.Load(options.MobStatsPath);
+        var overridesPath = Path.Combine(Path.GetDirectoryName(options.CustomItemsPath ?? "") ?? "", "monster-overrides.json");
+        var mobOverrides = _officialStats.ApplyOverrides(overridesPath);
+        foreach (var o in CustomContent.LoadMonsters(overridesPath))
+            if (o.Scale != 1) _monsterSizes[o.Id] = Math.Max(0.01f, o.Scale);
+        if (mobOverrides > 0) log.LogInformation("Monster overrides: {Count} monsters (monster-overrides.json)", mobOverrides);
+        var contentDir = Path.GetDirectoryName(options.CustomItemsPath ?? "") ?? "";
+        var customMonsters = CustomContent.LoadMonsters(Path.Combine(contentDir, "custom-monsters.json"));
+        foreach (var m in customMonsters)
+        {
+            if (CustomContent.Combat(m, _officialStats.TryGet(m.Base, out var baseCombat) ? baseCombat : null) is { } combat) _customCombat[m.Id] = combat;
+            if (m.Xp is { } flatXp) _customFlatXp[m.Id] = flatXp;
+        }
+        LoadBosses(customMonsters); // their abilities, and the skill/effect copies those show under
         _mobScales = LoadMobScales(options.MobScalesPath);
         _skillTypes = LoadSkillTypes(options.SkillTypesPath);
         _brains = MobBrains.Load(options.MobSkillsPath);
@@ -89,7 +108,10 @@ public sealed partial class GameServer : IDisposable
         _aggroOnSight = options.AggroOnSight ?? LoadAggroOnSight(options.AggroPath);
         _skillAggro = LoadSkillAggro(options.SkillAggroPath);
         _combatAbilityChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "combatChance", 0.01);
-        _criticalAbilityChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "criticalChance", 0.20);
+        var criticalGain = LoadAbilityChance(options.AbilityGainPath, "criticalChance", 0.20);
+        _criticalStrikeGain = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "criticalStrikeChance", criticalGain);
+        _criticalSkillsGain = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "criticalSkillsChance", criticalGain);
+        LoadCritChances(Path.Combine(Path.GetDirectoryName(options.AbilityGainPath ?? "") ?? "", "crit-chances.json"));
         _dotCriticalChance = options.CombatAbilityChance ?? LoadAbilityChance(options.AbilityGainPath, "dotCriticalChance", 0.05);
         _balance.SetBonuses = SetBonusCatalog.Load(options.ItemSetsPath, options.SetAurasPath);
         balance.LoadStatusDetails(options.StatusEffectsPath); // before the overrides, which may change a tick
@@ -97,7 +119,9 @@ public sealed partial class GameServer : IDisposable
             log.LogInformation("Skill overrides: {Count} skills changed (server/content/skill-overrides.json)", overridden);
         _divineStrike.ApplyBuffs(balance); // Dragonlord Wrath and Boon amounts (divine-strike.json offhandBuffs), after the overrides
         _dotDamage.ApplyTypes(balance); // damage types for DoTs the data lacks one for (dot-damage.json), so resists apply
-        _quests = QuestBook.Load(options.WorldPath).WithExtraNpcs(options.NpcExtrasPath).WithRequirements(_questRequirements);
+        _quests = QuestBook.Load(options.WorldPath).WithExtraNpcs(options.NpcExtrasPath)
+            .WithCustomQuests(CustomContent.LoadQuests(Path.Combine(Path.GetDirectoryName(options.CustomItemsPath ?? "") ?? "", "custom-quests.json")))
+            .WithRequirements(_questRequirements);
         _shops = new ShopCatalog(balance, ShopCatalog.Load(options.WorldPath), ShopCatalog.LoadExtras(options.ShopExtrasPath), ShopCatalog.LoadReplaced(options.ShopExtrasPath))
         {
             GrimoirePrices = ShopCatalog.LoadPrices(options.ItemPricesPath),
@@ -634,6 +658,7 @@ public sealed partial class GameServer : IDisposable
         s.Blocked.UnionWith(_store.ListBlocked(character.Id));
         s.ClanId = _store.GetMembership(character.Id)?.ClanId;
         LoadQuests(s);
+        DropBlockingQuests(s, sheet.Level);
         Send(s, Opcode.StartGameReply, sheet.StartGame(_options.WorldId, s.Teleports.Order().ToList(), CompletedQuestIds(s), ActiveQuests(s)).Write);
         // StartGameReply drops most of the stats block on the client (CCharacterDetails.CopyDetailsFrom), so resend it in full.
         s.Effects.Clear();
@@ -651,6 +676,7 @@ public sealed partial class GameServer : IDisposable
         if (s.Effects.Count > 0) SendEffects(s);
         SendSkillToggles(s);
         SendWeaponDelaySkills(s); // the client mod's casting circle (P18) for Shatter, Rend, Barbed Shot, Double Attack…
+        SendAggroMeterStyle(s); // the aggro meter's look (content/aggro-meter.json)
         RecountQuestItems(s); // items already in the bags (traded or mailed earlier) count for open "collect" stages
         DiscoverLeystones(s);
         QuestMove(s);

@@ -1,0 +1,7 @@
+{
+ "_comment": "Base crit chances (0.08 = 8%), before the ability level: chance = base x (ability + 40) / (ability + 40 + 10 x (target level + 3)), plus the passive tree's crit bonus. critStrike: auto-attacks with Critical Strike. critSkill: skill hits with Critical Skills. critDot: damage-over-time ticks (bleeds, poisons, burns) with Critical Skills. critHeal: heals and heal-over-time ticks with Critical Skills, against the healed player's level. The live game: 8% and 12%. The chances to level up Critical Strike and Critical Skills are in ability-gain.json. Edit with ch-tool.cmd (Crits tab). Restart the server after editing.",
+ "critStrike": 0.08,
+ "critSkill": 0.12,
+ "critDot": 0.12,
+ "critHeal": 0.12
+}

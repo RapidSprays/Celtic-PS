@@ -249,6 +249,30 @@ public sealed partial class GameServer
         }
     }
 
+    /// <summary>
+    /// <c>.invite &lt;name&gt;</c> and <c>.trade &lt;name&gt;</c>: a party invite or trade request to anyone in your zone, however
+    /// far (owner's rule, 2026-10-18), for when the game's own buttons want the player close by.
+    /// </summary>
+    private void InviteOrTradeCommand(Session s, string verb, string[] args)
+    {
+        if (args.Length == 0)
+        {
+            Tell(s, $"Usage: .{verb} <player name>");
+            return;
+        }
+        var name = string.Join(' ', args);
+        var other = Online.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (other is null || IsBlockedBy(s, other))
+        {
+            Tell(s, $"{name} is not online.");
+            return;
+        }
+        if (verb == "invite") InviteToParty(s, other.CharacterId);
+        else RequestTrade(s, other.CharacterId);
+        if (verb == "invite" ? other.PartyInvites.Contains(s.CharacterId) : other.TradeRequests.Contains(s.CharacterId))
+            Tell(s, verb == "invite" ? $"Invited {other.Name} to your party." : $"Asked {other.Name} to trade.");
+    }
+
     private void InviteToParty(Session s, int inviteeId)
     {
         var invitee = OnlineByCharacter(inviteeId);

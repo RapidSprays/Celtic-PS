@@ -180,6 +180,15 @@ public sealed partial class GameServer
             NextTickAt = caster is Session && (EffectType)info.Type == EffectType.Dot ? now : now + TickOf(info), // PvP: first tick on the hit
             AbilityLevel = abilityLevel, StatRatio = statRatio, Caster = caster,
         };
+        // A player's healing skill that leaves health regen (Nature's Embrace): a heal over time with heal numbers and
+        // crits (owner's rule, 2026-10-18), not silent regen. Pet melodies (no ability) stay regen.
+        if (caster is Session healer && healer.Sheet is { } hs && (EffectType)info.Type == EffectType.HealthRegen && skill.AbilityId >= 0 && effect.Amount > 0)
+            effect = new ActiveEffect
+            {
+                Info = effect.Info, LevelIndex = effect.LevelIndex, ExpiresAt = effect.ExpiresAt, NextTickAt = effect.NextTickAt,
+                AbilityLevel = abilityLevel, StatRatio = statRatio, Caster = caster, HealSkillId = skill.Id,
+                HealPerTick = Math.Max(1, (int)(effect.Amount * hs.HealFactor(skill.Id))),
+            };
         if (EffectModifiers.IsShield(effect.Type)) effect.ShieldRemaining = Math.Max(1, effect.Amount);
         s.Effects.Add(effect);
         // Rapid Shot and other attack-speed buffs take effect on the very next swing, not the one after.
@@ -210,6 +219,25 @@ public sealed partial class GameServer
             PlayerHitsPlayer(zone, caster, s, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
             TrainAbility(caster, CriticalSkills, _dotCriticalChance * Modifiers(caster).AbilityGainMultiplier);
             if (s.Dead) return;
+        }
+        // Heals over time from a player's skill (Nature's Embrace): each tick heals with a heal number, and can crit.
+        foreach (var hot in s.Effects.Where(e => e.HealPerTick is not null && now >= e.NextTickAt && now < e.ExpiresAt).ToList())
+        {
+            hot.NextTickAt = now + TickOf(hot.Info);
+            var healer = hot.Caster as Session;
+            var heal = hot.HealPerTick!.Value;
+            var crit = healer is { Sheet: not null } && Random.Shared.NextDouble() < HealCritChance(healer, s);
+            if (crit) heal = (int)(heal * healer!.Sheet!.CritMultiplier);
+            var gained = Math.Min(heal, s.MaxHealth - s.Health);
+            s.Health = Math.Min(s.MaxHealth, s.Health + heal);
+            if (healer?.Character is { } hc) _store.AddStat(hc.Id, "heal", gained);
+            // As a status effect's tick (its effect id), like damage over time: the heal number shows, but not the skill's
+            // cast animation, which plays only when the skill is cast (owner's report, 2026-10-20).
+            SendPlayerDamage(zone, s, new DamageEntry(DamageDirection.PlayerToPlayer, healer?.CharacterId ?? s.CharacterId, s.CharacterId, AttackKind.StatusEffect,
+                hot.Info.Id, -heal, s.Health, Reaction.SkillHitPositive, ++_damageId, crit));
+            if (crit && healer is not null) PartyLine(healer, HealCritLine(healer, hot.HealSkillId, heal));
+            // Like damage-over-time ticks, every heal tick can train the healer's Critical Skills (dotCriticalChance).
+            if (healer is { Sheet: not null }) TrainAbility(healer, CriticalSkills, _dotCriticalChance * Modifiers(healer).AbilityGainMultiplier);
         }
         // Damage over time a monster's skill left on the player (bleeds, poisons, burns).
         foreach (var dot in s.Effects.Where(e => e.Type == EffectType.Dot && e.Caster is Mob && now >= e.NextTickAt && now < e.ExpiresAt).ToList())
@@ -269,6 +297,24 @@ public sealed partial class GameServer
     }
 
     /// <summary>
+    /// skill-overrides.json damageAsDot (Pounce): the hit's damage in equal ticks, the first now, under the status effect
+    /// shown on the monster.
+    /// </summary>
+    private void ApplyDamageAsDot(Mob mob, Session caster, (int Effect, int Ticks, double Seconds) dot, int damage, double now)
+    {
+        if (!_balance.StatusEffects.TryGetValue(dot.Effect, out var info)) return;
+        var every = dot.Seconds / dot.Ticks;
+        mob.Effects.RemoveAll(e => e.Info.Id == info.Id && ReferenceEquals(e.Caster, caster));
+        mob.Effects.Add(new ActiveEffect
+        {
+            Info = info, LevelIndex = 0, Caster = caster, NextTickAt = now, TickSeconds = every,
+            ExpiresAt = now + (dot.Ticks - 1) * every + every / 2, // the last tick lands before it ends
+            FixedAmount = (int)Math.Ceiling(damage / (double)dot.Ticks),
+        });
+        if (_zones.TryGetValue(caster.Position.Zone, out var zone)) BroadcastMobEffects(zone, mob);
+    }
+
+    /// <summary>
     /// What players' debuffs do to a monster: attack (Howling Wind and other ChangeAttack/AttackPercent effects, which
     /// lower its chance to hit), defence (ChangeDefence, DefencePercent: raise players' chance to hit it),
     /// attack speed (any slow halves its attack rate; see below) and stuns (Stun, Stun2, Frozen, Stasis: no attacks).
@@ -312,11 +358,17 @@ public sealed partial class GameServer
         if (mob.Effects.RemoveAll(e => now >= e.ExpiresAt) > 0) BroadcastMobEffects(zone, mob);
         foreach (var dot in mob.Effects.Where(e => e.Type == EffectType.Dot && now >= e.NextTickAt).ToList())
         {
-            dot.NextTickAt = now + TickOf(dot.Info);
+            dot.NextTickAt = now + (dot.TickSeconds ?? TickOf(dot.Info));
+            if (dot.FixedAmount is { } fixedTick && dot.Caster is Session owner && zone.Players.Contains(owner) && mob.State != MobState.Dead)
+            {
+                PlayerHits(zone, owner, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, fixedTick), now, allowMiss: false); // damageAsDot: same total as the hit
+                TrainAbility(owner, CriticalSkills, _dotCriticalChance * Modifiers(owner).AbilityGainMultiplier);
+                continue;
+            }
             if (dot.Caster is Session caster && zone.Players.Contains(caster) && mob.State != MobState.Dead)
             {
                 // Dragonlord Spite's own range (divine-strike.json), else the tick with the owner's variance (dot-damage.json).
-                double tick = _divineStrike.Offhand(dot.Info.Id, Random.Shared) ?? Math.Max(1, dot.Amount) * _dotDamage.Factor(dot.Info.Id, Random.Shared);
+                double tick = _divineStrike.Offhand(dot.Info.Id, Random.Shared) ?? Math.Max(1, dot.Amount) * _dotDamage.Factor(dot.Info.Id, Random.Shared, mob.Level - caster.Sheet!.Level);
                 if (dot.Info.DamageType is { } type && mob.Combat is { } c) tick = c.AfterResist(type, tick, caster.Sheet!.Level, MobResistChange(mob.Effects, type));
                 PlayerHits(zone, caster, mob, AttackKind.StatusEffect, dot.Info.Id, Math.Max(1, (int)tick), now, allowMiss: false);
                 // Owner's rule (2026-10-15): every damage-over-time tick from a player's skill can train Critical Skills.

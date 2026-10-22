@@ -1,7 +1,15 @@
 {
  "_comment": "Token vendors the world data lacks, or yours over it (restart the server after editing). Key: the TOKENVENDOR id the NPC's conversation opens. Each stock entry gives qty (default 1) of template for its cost, a list of items handed in. name is only a label for you. Made 2026-10-16 for Remus the Mount Vendor and James the Mount Breeder: War Wolf/Bear/Silver Elk breeding, mount exchanges, and the Hellsteed and Nightmare Steeds (upgraded at James, shops 486/488/489/534; Dark/Nightmare Essence: buy for 1, upgrade with the current steed and 1 more, sell back for as many as went in). Spirit pets and mounts (owner's rules): a Spirit from two of the top tier of the top colour (colour-specific pets: two Giants of their colour), Spirit II from two Spirit, Spirit III from two Spirit II; a Spirit sells for what its two top-tier pets or mounts would, a Spirit II or III for one of the tier below. Special pets (Phoenix: Phoenix Egg, Seedling: Corrupted Seed, Festive Reindeer: Magical Bell, Imp: Cursed Coin), as their shop texts say: the Tiny one for 1, each size up for the pet and 1 more, exchanged back for as many as went in. Holtz the Peddler (Otherworld hunt, shops 17-20): the Minor armlet for 1 Contraption Piece; each tier after it for the tier before plus Pieces (2, 3, 4, 5) and from Mighty on Contraption Cores (1 to 5) with 5 Pieces.",
  "vendors": {
-  "182": {
+  "9200": {
+   "title": "Heretic Ring Exchange (Ysolde the Ringwright, Lir's Reach; owner, 2026-10-21: two of a ring for the next)",
+   "stock": [
+    { "template": 90111, "name": "Heretic's Band of Venom", "cost": [ { "template": 90110, "qty": 2 } ] },
+    { "template": 90112, "name": "Heretic's Seal of Frostvenom", "cost": [ { "template": 90111, "qty": 2 } ] },
+    { "template": 90113, "name": "Heretic's Signet of the Morrigan", "cost": [ { "template": 90112, "qty": 2 } ] }
+   ]
+  },
+ "182": {
    "title": "Upgrade Wolf Mount Colour 1",
    "stock": [
     {
