@@ -168,16 +168,6 @@ for o in optional("monster-overrides.json").get("monsters", []):  # the game's o
     if o.get("colour"):
         extras.append(f"TINT|{o['id']}|{o['colour']}")
         print(f"  colour {o['colour']} on {o.get('name') or o['id']}")
-conv_files = {x["ConversationId"]: x["Filename"] for x in entries("ConversationLookupsTemplates")}
-for n in optional("npc-extras.json").get("npcs", []):  # the owner's trade NPCs: their conversation becomes a greeting and trades
-    if not n.get("trades"): continue
-    if n["conversation"] >= 20000: file = f"#{n['conversation']}"  # a made-up conversation id (the mod adds it)
-    else:
-        file = conv_files.get(n["conversation"])
-        if not file: fail(f"npc-extras.json, {n.get('name')}: conversation {n['conversation']} isn't one of the game's")
-    trades = "|".join(f"{clean(t['text'])}|{t['vendor']}" for t in n["trades"])
-    extras.append(f"TRADER|{file}|{clean(n.get('greeting', 'Hello, [name].'))}|{trades}")
-    print(f"  trader {n.get('name')} ({file}): " + ", ".join(t["text"] for t in n["trades"]))
 for q in optional("custom-quests.json").get("quests", []):
     if q["base"] not in quest_ids: fail(f"custom-quests.json: base {q['base']} isn't a quest")
     if q["id"] in quest_ids: fail(f"custom-quests.json: id {q['id']} is already one of the game's quests")

@@ -27,55 +27,6 @@
   },
   "gear": [
     {
-      "id": 90100,
-      "name": "Ring of the Fortunate",
-      "type": "ring",
-      "description": "A ring for those who seek gold and wisdom.",
-      "level": 100,
-      "stats": {
-        "Dexterity": 20,
-        "Focus": 20
-      },
-      "bonuses": {
-        "Health": 150,
-        "Energy": 100
-      },
-      "resists": {
-        "Cold": 15,
-        "Heat": 15
-      },
-      "abilities": {
-        "Treasure Hunter": 800,
-        "Scholar": 800
-      }
-    },
-    {
-      "id": 90101,
-      "name": "Blade of the First Hero",
-      "look": "Sword of the Shining Sun",
-      "description": "Forged for the first hero of this realm.",
-      "level": 120,
-      "classes": [
-        "Warrior"
-      ],
-      "damage": {
-        "Slash": 260,
-        "Heat": 80
-      },
-      "stats": {
-        "Strength": 40
-      },
-      "abilities": {
-        "Sword": 60,
-        "Critical Strike": 60
-      },
-      "proc": {
-        "skill": "Fire Bolt",
-        "level": 20,
-        "chance": 5
-      }
-    },
-    {
       "id": 90150,
       "name": "Gilthral's Medal",
       "look": 34870,
@@ -83,66 +34,16 @@
       "tradeable": false
     },
     {
-      "id": 90110,
-      "name": "Heretic's Ring of Venom",
-      "type": "ring",
-      "level": 90,
-      "description": "A ring taken from Denya the Heretic's servants, still slick with venom.",
-      "stats": {
-        "Strength": 30,
-        "Dexterity": 30
-      },
-      "damage": {
-        "Poison": 40
-      },
-      "skillDamage": {
-        "Double Shot": 50
-      }
-    },
-    {
-      "id": 90111,
-      "name": "Heretic's Band of Venom",
-      "type": "ring",
-      "level": 100,
-      "description": "A ring taken from Denya the Heretic's servants, still slick with venom.",
-      "stats": {
-        "Strength": 40,
-        "Dexterity": 40
-      },
-      "damage": {
-        "Poison": 60
-      },
-      "skillDamage": {
-        "Double Shot": 75
-      }
-    },
-    {
-      "id": 90112,
-      "name": "Heretic's Seal of Frostvenom",
-      "type": "ring",
-      "level": 115,
-      "description": "A seal of Denya the Heretic, cold to the touch and dripping venom.",
-      "stats": {
-        "Strength": 60,
-        "Dexterity": 60
-      },
-      "bonuses": {
-        "Attack": 200
-      },
-      "damage": {
-        "Poison": 70,
-        "Cold": 100
-      },
-      "skillDamage": {
-        "Double Shot": 100
-      }
-    },
-    {
       "id": 90113,
       "name": "Heretic's Signet of the Morrigan",
       "type": "ring",
       "level": 130,
       "description": "Denya the Heretic's own signet, burning with frost, flame and venom.",
+      "damage": {
+        "Poison": 100,
+        "Cold": 150,
+        "Heat": 150
+      },
       "stats": {
         "Strength": 80,
         "Dexterity": 80,
@@ -151,18 +52,81 @@
       "bonuses": {
         "Attack": 300
       },
-      "damage": {
-        "Poison": 100,
-        "Cold": 150,
-        "Heat": 150
+      "regen": {
+        "health": 25,
+        "energy": 25
       },
       "skillDamage": {
         "Double Shot": 125
       },
-      "regen": {
-        "health": 25,
-        "energy": 25
-      }
+      "classes": [
+        "Ranger"
+      ]
+    },
+    {
+      "id": 90111,
+      "name": "Heretic's Band of Venom",
+      "type": "ring",
+      "level": 100,
+      "description": "A ring taken from Denya the Heretic's servants, still slick with venom.",
+      "damage": {
+        "Poison": 60
+      },
+      "stats": {
+        "Strength": 40,
+        "Dexterity": 40
+      },
+      "skillDamage": {
+        "Double Shot": 75
+      },
+      "classes": [
+        "Ranger"
+      ]
+    },
+    {
+      "id": 90112,
+      "name": "Heretic's Seal of Frostvenom",
+      "type": "ring",
+      "look": 50560,
+      "level": 115,
+      "description": "A seal of Denya the Heretic, cold to the touch and dripping venom.",
+      "damage": {
+        "Poison": 70,
+        "Cold": 100
+      },
+      "stats": {
+        "Strength": 60,
+        "Dexterity": 60
+      },
+      "bonuses": {
+        "Attack": 200
+      },
+      "skillDamage": {
+        "Double Shot": 100
+      },
+      "classes": [
+        "Ranger"
+      ]
+    },
+    {
+      "id": 90110,
+      "name": "Heretic's Ring of Venom",
+      "type": "ring",
+      "level": 90,
+      "description": "A ring taken from Denya the Heretic.",
+      "damage": {
+        "Poison": 40
+      },
+      "stats": {
+        "Strength": 30,
+        "Dexterity": 30
+      },
+      "skillDamage": {
+        "Double Shot": 50
+      },
+      "classes": [
+        "Ranger"
+      ]
     },
     {
       "id": 92000,
@@ -172,7 +136,7 @@
       "level": 110,
       "description": "This Charm was mended by the almighty BigBlackChicken",
       "damage": {
-        "Crush": 200
+        "Crush": 20
       },
       "stats": {
         "Strength": 50,

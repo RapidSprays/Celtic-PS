@@ -2,18 +2,6 @@
   "_comment": "NPCs the world data doesn't place (owner's additions). Each needs its mob template, conversation, zone, position and facing; stand on the spot in game and type .where to get them. They're kept through Grimoire imports. Restart the server after editing. adjust: changes to NPCs the world data places, by mob template (direction, x, y, z).",
   "npcs": [
     {
-      "name": "[Ring Exchange] Ysolde the Ringwright (owner, 2026-10-21: trades two Heretic rings for the next; custom-monsters.json 90303, a copy of Ron Pearlman; token vendor 9200)",
-      "template": 90303,
-      "conversation": 20000,
-      "zone": 2,
-      "x": -99.0,
-      "y": -3.7,
-      "z": -6.0,
-      "direction": 235,
-      "greeting": "Well met, [name]. The heretic's rings hum with a power that grows when two are joined.\\n\\nBring me [FFFF33]two of the same ring[-] and I'll forge them into the next: a [00CC00]Ring of Venom[-] becomes a [00CC00]Band[-], two Bands a [00CC00]Seal[-], and two Seals the [CC00FF]Signet of the Morrigan[-].",
-      "trades": [ { "text": "Trade up Heretic rings.", "vendor": 9200 } ]
-    },
-    {
       "name": "The Scavenger (Otherworld, from live 2026-10-16)",
       "template": 177,
       "conversation": 181,

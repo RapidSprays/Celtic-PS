@@ -39,43 +39,6 @@ namespace CHPrivateMods
         }
 
         private static List<Swap> _mobs, _quests, _convs, _skills, _effects;
-        private static readonly Dictionary<string, (string Greeting, List<(string Text, int Vendor)> Choices)> _traders =
-            new Dictionary<string, (string, List<(string, int)>)>();
-
-        /// <summary>
-        /// The conversation file every made-up trader conversation loads (the beta pearl ring vendor, which no NPC uses);
-        /// the mod then rewrites it for the trader being talked to.
-        /// </summary>
-        internal const string TraderFile = "cv_sr_pearl_ring_vendor";
-
-        /// <summary>The made-up conversation ids (TRADER|#id lines) the game's conversation lookups get (TraderLookups).</summary>
-        internal static IEnumerable<int> TraderIds()
-        {
-            Load();
-            foreach (var key in _traders.Keys)
-                if (key.StartsWith("#") && int.TryParse(key.Substring(1), out var id)) yield return id;
-        }
-
-        /// <summary>
-        /// A trader's greeting and trade windows (ConversationExtras.MakeTrader): for the trader file, the one whose made-up
-        /// conversation id the NPC being talked to has (CGame._currentMob.m_conversation_id); else by file name.
-        /// </summary>
-        internal static (string Greeting, List<(string Text, int Vendor)> Choices)? Trader(string convName)
-        {
-            Load();
-            if (convName == TraderFile)
-            {
-                var controller = R.Field(R.GameType("CController"), "instance")?.GetValue(null);
-                var npc = R.Get(R.Get(controller, "m_game"), "_currentMob");
-                if (R.Get(npc, "m_conversation_id") is int id && _traders.TryGetValue("#" + id, out var mine))
-                {
-                    ModLog.Once($"trader: conversation {id} opened");
-                    return mine;
-                }
-                ModLog.Once($"trader: {convName} opened for conversation {(R.Get(npc, "m_conversation_id") ?? "?")}, no trader listed");
-            }
-            return _traders.TryGetValue(convName, out var t) ? t : ((string, List<(string, int)>)?)null;
-        }
 
         private static void Load()
         {
@@ -94,15 +57,6 @@ namespace CHPrivateMods
                     var f = line.Split('|');
                     if (f.Length == 3 && f[0] == "TINT" && int.TryParse(f[1], out var tinted)) MobTint.Add(tinted, f[2]); // a monster's colour (MobTint.cs)
                     if (f.Length == 3 && f[0] == "LOOK" && int.TryParse(f[1], out var looked)) MobPetBody.Add(looked, f[2]); // drawn as a pet (MobPetBody.cs)
-                    if (f.Length >= 5 && f[0] == "TRADER") // TRADER|convFile|greeting|choice text|vendor id[|choice text|vendor id…]
-                    {
-                        var choices = new List<(string, int)>();
-                        for (var k = 3; k + 1 < f.Length; k += 2)
-                            if (int.TryParse(f[k + 1], out var vendor)) choices.Add((f[k], vendor));
-                        _traders[f[1]] = (f[2], choices);
-                        if (f[1].StartsWith("#")) TraderLookups.Start();
-                        continue;
-                    }
                     if (f.Length < 4) continue;
                     var s = new Swap();
                     switch (f[0])

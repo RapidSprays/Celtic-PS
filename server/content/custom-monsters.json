@@ -100,13 +100,6 @@
    },
    "colour": "#454545",
    "petLook": "pet_chicken_black_6"
-  },
-  {
-   "id": 90303,
-   "base": 918,
-   "name": "[Ring Exchange] Ysolde the Ringwright",
-   "level": 100,
-   "health": 10000
   }
  ]
 }

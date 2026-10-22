@@ -13,7 +13,11 @@ public sealed class CustomGearTests
     [Fact]
     public void A_custom_ring_and_sword_carry_only_their_own_numbers()
     {
-        var balance = Balance.Load(BalancePath, Path.Combine(Content, "custom-items.json"));
+        if (!File.Exists(BalancePath)) return;
+        // the two examples custom-gear.json first shipped with (the owner has since deleted them there)
+        var dir = Directory.CreateTempSubdirectory().FullName;
+        File.WriteAllText(Path.Combine(dir, "custom-gear.json"), """{"gear": [{"id": 90100, "name": "Ring of the Fortunate", "type": "ring", "description": "A ring for those who seek gold and wisdom.", "level": 100, "stats": {"Dexterity": 20, "Focus": 20}, "bonuses": {"Health": 150, "Energy": 100}, "resists": {"Cold": 15, "Heat": 15}, "abilities": {"Treasure Hunter": 800, "Scholar": 800}}, {"id": 90101, "name": "Blade of the First Hero", "look": "Sword of the Shining Sun", "description": "Forged for the first hero of this realm.", "level": 120, "classes": ["Warrior"], "damage": {"Slash": 260, "Heat": 80}, "stats": {"Strength": 40}, "abilities": {"Sword": 60, "Critical Strike": 60}, "proc": {"skill": "Fire Bolt", "level": 20, "chance": 5}}]}""");
+        var balance = Balance.Load(BalancePath, Path.Combine(dir, "custom-items.json"));
         var ring = balance.Items[90100];
         Assert.Equal("Ring of the Fortunate", ring.Name);
         Assert.Equal(EquipSlot.RingR1, ring.Slot);
@@ -159,15 +163,15 @@ public sealed class CustomGearTests
     }
 
     [Fact]
-    public void Ysolde_at_the_lirs_reach_leystones_trades_two_heretic_rings_for_the_next()
+    public void Custom_armour_copies_a_pieces_look_and_slot_with_its_own_numbers()
     {
         if (!File.Exists(BalancePath)) return;
-        var world = Path.Combine(Path.GetDirectoryName(BalancePath)!, "world.json");
-        var vendor = TokenVendorCatalog.Load(world, Path.Combine(Content, "token-vendor-extras.json")).Vendors[9200];
-        Assert.Equal([(90111, 90110), (90112, 90111), (90113, 90112)], vendor.Stock.Select(x => (x.Template, x.Cost.Single().Template)).ToList());
-        Assert.All(vendor.Stock, x => Assert.Equal(2, x.Cost.Single().Quantity));
-        var npc = QuestBook.Load(world).WithExtraNpcs(Path.Combine(Content, "npc-extras.json")).Npcs.Single(n => n.Template == 90303);
-        Assert.Equal((2, 20000), (npc.Zone, npc.Conversation));
-        Assert.Equal("[Ring Exchange] Ysolde the Ringwright", Balance.Load(BalancePath, Path.Combine(Content, "custom-items.json")).Mobs[90303].Name);
+        var dir = Directory.CreateTempSubdirectory().FullName;
+        File.WriteAllText(Path.Combine(dir, "custom-gear.json"), """{"gear": [{"id": 90190, "name": "Heretic Breastplate", "look": 15361, "level": 130, "armour": 200, "resists": {"Heat": 90}, "classes": ["Warrior"]}]}""");
+        var balance = Balance.Load(BalancePath, Path.Combine(dir, "custom-items.json"));
+        var chest = balance.Items[90190];
+        Assert.Equal((balance.Items[15361].Slot, 200, 130), (chest.Slot, chest.Armour, chest.LevelRequirement));
+        Assert.Equal([("HeatResist", 90)], chest.Bonuses);
+        Assert.Equal(["Warrior"], chest.Classes);
     }
 }

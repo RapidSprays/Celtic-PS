@@ -10,8 +10,6 @@ Tabs:
                  raid bosses...): level, health, attack, defence, resists, evasion, XP, gold, size; drops in spawn-tuning.json.
   Crits & skills  server/content/crit-chances.json and ability-gain.json: crit chances and how fast the crit abilities
                  train; skill-overrides.json: how often a skill lands on monsters (evasionPercent, minLandChance).
-  Trades    server/content/token-vendor-extras.json: what trade NPCs (Ysolde the Ringwright) give for what, e.g. two
-            of a ring for the next one.
   Gear      server/content/custom-gear.json: rings, necklaces, bracelets, charms, armour, weapons.
   Install   puts gear, monsters and quests into the game copy (scripts/install-custom-gear.py).
 
@@ -20,7 +18,7 @@ server after changes; Install needs the game closed.
 """
 import datetime, json, os, re, shutil, sqlite3, subprocess, sys
 import tkinter as tk
-from tkinter import ttk, messagebox, colorchooser, simpledialog
+from tkinter import ttk, messagebox, colorchooser
 try:
     from PIL import Image, ImageTk  # the zone maps (Master's Grimoire's Resources/Maps)
 except ImportError:
@@ -42,11 +40,6 @@ LOOT = os.path.join(ROOT, "grimoire-world", "loot.json")
 OVERRIDES = os.path.join(CONTENT, "monster-overrides.json")
 CRITS = os.path.join(CONTENT, "crit-chances.json")
 SKILL_OVERRIDES = os.path.join(CONTENT, "skill-overrides.json")
-VENDORS = os.path.join(CONTENT, "token-vendor-extras.json")
-NPC_EXTRAS = os.path.join(CONTENT, "npc-extras.json")
-# Trade NPCs get made-up conversation ids from here up (kept in npc-extras.json); the client mod adds them to the game's
-# conversation lookups and builds each one's greeting and trades (TRADER lines).
-FIRST_TRADER_CONVERSATION = 20000
 ABILITY_GAIN = os.path.join(CONTENT, "ability-gain.json")
 # Raid bosses (the test copies 200182/200183 left out)
 RAID_BOSSES = [70722, 73000, 73708, 100002, 102982, 141103, 141966, 142027]
@@ -64,6 +57,9 @@ TEMPLATES = [
     ("Main hand - Great Hammer", 72030), ("Main hand - Staff", 72035), ("Main hand - Wand", 72421), ("Main hand - Totem", 72412),
     ("Offhand - Dagger", 72038), ("Offhand - Blade", 34996), ("Offhand - Quiver", 63404), ("Offhand - Shield", 72040),
     ("Offhand - Grimoire", 63406),
+    ("Armour - Head", ("slot", "Head")), ("Armour - Chest", ("slot", "Chest")), ("Armour - Legs", ("slot", "Leg")),
+    ("Armour - Hands", ("slot", "Hands")), ("Armour - Feet", ("slot", "Feet")), ("Offhand - any (choose)", ("slot", "Offhand")),
+    ("Main hand - any weapon (choose)", ("slot", "Weapon")),
     ("Jewellery - Ring", "ring"), ("Jewellery - Amulet", "necklace"), ("Jewellery - Bracer", "bracelet"), ("Jewellery - Misc (charm)", "charm"),
 ]
 
@@ -121,6 +117,8 @@ class Game:
         self.mobs = {int(k): v["Name"] for k, v in b["MobTemplates"].items() if isinstance(v, dict)}
         self.items = {int(k): v["Name"] for k, v in b["ItemTemplates"].items() if isinstance(v, dict)}
         self.item_slot = {int(k): v.get("EquipSlot") for k, v in b["ItemTemplates"].items() if isinstance(v, dict)}
+        self.item_raw = {int(k): v for k, v in b["ItemTemplates"].items() if isinstance(v, dict)}  # for "Start from a game item"
+        self.abilities = {a["Id"]: a["Name"] for a in ent("Abilities") if "Id" in a and "Name" in a}
         self.skills = {int(k): v.get("Name", "") for k, v in b["SkillTemplates"].items() if isinstance(v, dict)}
         self.effects = {v["Id"] for v in ent("StatusEffects")}
         # pets a monster can be drawn as (client mod MobPetBody): prefab -> name
@@ -202,14 +200,12 @@ class App(tk.Tk):
         self.monsters = MonstersTab(nb, self)
         self.game_mobs = GameMonstersTab(nb, self)
         self.crits = CritsTab(nb, self)
-        self.trades = TradesTab(nb, self)
         self.gear = GearTab(nb, self)
         self.install = InstallTab(nb, self)
         nb.add(self.spawns, text="Spawns")
         nb.add(self.monsters, text="Monsters")
         nb.add(self.game_mobs, text="Game monsters")
         nb.add(self.crits, text="Crits & skills")
-        nb.add(self.trades, text="Trades")
         nb.add(self.gear, text="Gear")
         nb.add(self.install, text="Install")
 
@@ -535,7 +531,7 @@ class MonstersTab(ttk.Frame):
         self.app = app
         left = ttk.Frame(self)
         left.pack(side="left", fill="y", padx=6, pady=6)
-        self.list = tk.Listbox(left, width=34, height=30)
+        self.list = tk.Listbox(left, width=34, height=16)
         self.list.pack(fill="y", expand=True)
         self.list.bind("<<ListboxSelect>>", self.load_selected)
         ttk.Button(left, text="New monster (copy one)…", command=self.new).pack(fill="x", pady=2)
@@ -857,12 +853,26 @@ class MonstersTab(ttk.Frame):
         sel = self.list.curselection()
         if not sel: return
         m = self.items[sel[0]]
-        if not messagebox.askyesno("Delete monster", f"Delete {m['name']} ({m['id']})? Its spawns stay in the Spawns list until you delete them."): return
+        if not messagebox.askyesno("Delete monster", f"Delete {m['name']} ({m['id']})? Its drops and Divine Strike setting go too."): return
         d = self.data()
         d["monsters"] = [x for x in d["monsters"] if x["id"] != m["id"]]
         save_json(MONSTERS, d)
+        t = lenient_load(TUNING, {"monsters": []})
+        if any(x["id"] == m["id"] for x in t.get("monsters", [])):
+            t["monsters"] = [x for x in t["monsters"] if x["id"] != m["id"]]
+            save_json(TUNING, t)
+        spawns = self.app.spawns
+        try:
+            with spawns.db() as db: count = db.execute("select count(*) from spawns where template_id = ?", (m["id"],)).fetchone()[0]
+        except Exception:
+            count = 0
+        if count and messagebox.askyesno("Delete monster", f"{m['name']} is placed at {count} spawn(s). Delete those spawns too?"):
+            backup(DB)
+            with spawns.db(write=True) as db: db.execute("delete from spawns where template_id = ?", (m["id"],))
+            spawns.refresh()
         self.clear()
         self.refresh()
+        messagebox.showinfo("Delete monster", f"Deleted {m['name']}. Install (game closed) and restart the server.")
 
 
 # ---------------------------------------------------------------- the game's own monsters
@@ -889,7 +899,7 @@ class GameMonstersTab(ttk.Frame):
         self.search = tk.StringVar()
         ttk.Entry(left, textvariable=self.search).pack(fill="x", pady=4)
         self.search.trace_add("write", lambda *_: self.refresh())
-        self.list = tk.Listbox(left, width=40, height=30)
+        self.list = tk.Listbox(left, width=40, height=16)
         self.list.pack(fill="y", expand=True)
         self.list.bind("<<ListboxSelect>>", self.load_selected)
 
@@ -1278,360 +1288,9 @@ class CritsTab(ttk.Frame):
         messagebox.showinfo("Crits", "Saved. Restart the server to use them.")
 
 
-# ---------------------------------------------------------------- trades
-class TradesTab(ttk.Frame):
-    """The trade windows of the owner's trade NPCs (npc-extras.json "trades"; stock in token-vendor-extras.json)."""
-
-    def __init__(self, parent, app):
-        super().__init__(parent)
-        self.app = app
-        top = ttk.Frame(self)
-        top.pack(fill="x", padx=8, pady=6)
-        ttk.Label(top, text="Trade window").pack(side="left")
-        self.vendor = ttk.Combobox(top, state="readonly", width=60)
-        self.vendor.pack(side="left", padx=6)
-        self.vendor.bind("<<ComboboxSelected>>", lambda *_: self.load())
-        ttk.Button(top, text="New trade NPC…", command=lambda: TraderDialog(self, self.app, None)).pack(side="left", padx=(12, 2))
-        ttk.Button(top, text="Edit NPC…", command=self.edit_npc).pack(side="left", padx=2)
-        ttk.Button(top, text="Delete NPC", command=self.delete_npc).pack(side="left", padx=2)
-        body = ttk.Frame(self)
-        body.pack(fill="both", expand=True, padx=8)
-        left = ttk.LabelFrame(body, text="What it trades (top to bottom, as the window shows it)")
-        left.pack(side="left", fill="both", expand=True)
-        self.list = tk.Listbox(left, height=20, font=("Consolas", 9))
-        self.list.pack(fill="both", expand=True, padx=4, pady=4)
-        self.list.bind("<<ListboxSelect>>", self.select)
-        bar = ttk.Frame(left)
-        bar.pack(fill="x", padx=4, pady=4)
-        ttk.Button(bar, text="Add a ring chain…", command=self.add_chain).pack(side="left")
-        ttk.Button(bar, text="Add one trade…", command=self.add_one).pack(side="left", padx=4)
-        ttk.Button(bar, text="Delete", command=self.delete).pack(side="left")
-        ttk.Button(bar, text="Up", command=lambda: self.move(-1)).pack(side="left", padx=(12, 2))
-        ttk.Button(bar, text="Down", command=lambda: self.move(1)).pack(side="left")
-
-        right = ttk.LabelFrame(body, text="Selected trade")
-        right.pack(side="left", fill="y", padx=(8, 0))
-        self.gives = ttk.Label(right, text="-", width=46, wraplength=330)
-        self.gives.pack(anchor="w", padx=4, pady=4)
-        ttk.Button(right, text="Change what it gives…", command=self.change_gives).pack(anchor="w", padx=4)
-        ttk.Label(right, text="It costs (all of these, from the backpack):").pack(anchor="w", padx=4, pady=(10, 0))
-        self.costs = tk.Listbox(right, height=8, width=46)
-        self.costs.pack(fill="x", padx=4, pady=4)
-        cbar = ttk.Frame(right)
-        cbar.pack(fill="x", padx=4)
-        self.qty = tk.StringVar(value="2")
-        ttk.Label(cbar, text="How many").pack(side="left")
-        ttk.Entry(cbar, textvariable=self.qty, width=5).pack(side="left", padx=4)
-        ttk.Button(cbar, text="Add item…", command=self.add_cost).pack(side="left")
-        ttk.Button(cbar, text="Remove", command=self.remove_cost).pack(side="left", padx=4)
-        ttk.Button(right, text="Set how many of the selected cost", command=self.set_qty).pack(anchor="w", padx=4, pady=4)
-
-        ttk.Button(self, text="Save trades", command=self.save).pack(fill="x", padx=8, pady=6)
-        ttk.Label(self, text="Trades are server-side: restart the server after saving. A new or changed NPC (name, look, greeting) also needs Install (game closed).",
-                  foreground="gray").pack(anchor="w", padx=8)
-        self.data = None
-        self.stock = []
-        self.refresh_vendors()
-
-    def refresh_vendors(self, select=None):
-        npcs = lenient_load(NPC_EXTRAS, {"npcs": []}).get("npcs", [])
-        self.vendors = []  # (vendor id, label, npc template)
-        for n in npcs:
-            for t in n.get("trades") or []:
-                self.vendors.append((t["vendor"], f"{t['vendor']}: {n.get('name', '?').split(' (')[0]} - {t['text']}", n["template"]))
-        self.vendor["values"] = [label for _, label, _ in self.vendors]
-        if self.vendors:
-            ids = [v for v, _, _ in self.vendors]
-            self.vendor.current(ids.index(select) if select in ids else 0)
-            self.load()
-        else:
-            self.vendor.set("")
-            self.stock = []
-            self.show()
-
-    def selected_npc(self):
-        i = self.vendor.current()
-        if i < 0: return None
-        template = self.vendors[i][2]
-        return next((n for n in lenient_load(NPC_EXTRAS, {"npcs": []}).get("npcs", []) if n["template"] == template), None)
-
-    def edit_npc(self):
-        n = self.selected_npc()
-        if n: TraderDialog(self, self.app, n)
-
-    def delete_npc(self):
-        n = self.selected_npc()
-        if not n: return
-        name = n.get("name", "?").split(" (")[0]
-        if not messagebox.askyesno("Delete NPC", f"Delete {name} and its trade window(s)?"): return
-        d = lenient_load(NPC_EXTRAS, {"npcs": []})
-        d["npcs"] = [x for x in d["npcs"] if x is not n and x["template"] != n["template"]]
-        save_json(NPC_EXTRAS, d, indent=2)
-        v = lenient_load(VENDORS, {"vendors": {}})
-        for t in n.get("trades") or []: v.get("vendors", {}).pop(str(t["vendor"]), None)
-        save_json(VENDORS, v)
-        m = lenient_load(MONSTERS, {"monsters": []})
-        m["monsters"] = [x for x in m["monsters"] if x["id"] != n["template"]]
-        save_json(MONSTERS, m)
-        self.app.monsters.refresh()
-        self.refresh_vendors()
-        messagebox.showinfo("Delete NPC", f"Deleted {name}. Install (game closed) and restart the server.")
-
-    def vendor_id(self):
-        i = self.vendor.current()
-        return str(self.vendors[i][0]) if i >= 0 else None
-
-    def load(self):
-        self.data = lenient_load(VENDORS, {"vendors": {}})
-        v = self.data.setdefault("vendors", {}).get(self.vendor_id(), {"title": "", "stock": []})
-        self.stock = [dict(e, cost=[dict(c) for c in e.get("cost", [])]) for e in v.get("stock", [])]
-        self.show()
-
-    def name(self, iid):
-        return self.app.monsters.item_name(iid)
-
-    def describe(self, e):
-        gives = f"{e.get('qty', 1)} x " if e.get("qty", 1) != 1 else ""
-        cost = " + ".join(f"{c.get('qty', 1)} x {self.name(c['template'])}" for c in e["cost"]) or "nothing"
-        return f"{gives}{self.name(e['template'])}   <-   {cost}"
-
-    def show(self, keep=None):
-        self.list.delete(0, "end")
-        for e in self.stock: self.list.insert("end", self.describe(e))
-        if keep is not None and 0 <= keep < len(self.stock):
-            self.list.selection_set(keep)
-            self.list.see(keep)
-        self.select()
-
-    def current(self):
-        sel = self.list.curselection()
-        return sel[0] if sel else None
-
-    def select(self, *_):
-        i = self.current()
-        self.costs.delete(0, "end")
-        if i is None:
-            self.gives.config(text="-"); return
-        e = self.stock[i]
-        self.gives.config(text=f"Gives: {self.name(e['template'])} ({e['template']})")
-        for c in e["cost"]: self.costs.insert("end", f"{c.get('qty', 1)} x {self.name(c['template'])} ({c['template']})")
-
-    def ask_qty(self):
-        try:
-            q = int(self.qty.get())
-            if q < 1: raise ValueError
-            return q
-        except ValueError:
-            messagebox.showerror("Trades", "How many is a whole number, 1 or more."); return None
-
-    def add_chain(self):
-        """Pick items lowest first; each one after the first costs N of the one before."""
-        q = simpledialog.askinteger("Ring chain", "How many of each ring trade up to the next?", initialvalue=2, minvalue=1, parent=self)
-        if not q: return
-        chain = []
-        while True:
-            got = pick(self, f"Ring {len(chain) + 1} of the chain (lowest first). Close this window when done.", self.app.monsters.item_choices())
-            if not got: break
-            chain.append(got[0])
-        if len(chain) < 2:
-            messagebox.showinfo("Ring chain", "A chain needs at least two items."); return
-        for low, high in zip(chain, chain[1:]):
-            self.stock.append({"template": high, "name": self.name(high), "cost": [{"template": low, "qty": q}]})
-        self.show(len(self.stock) - 1)
-
-    def add_one(self):
-        got = pick(self, "What does the trade give?", self.app.monsters.item_choices())
-        if not got: return
-        cost = pick(self, f"What does {self.name(got[0])} cost? (more items can be added after)", self.app.monsters.item_choices())
-        q = self.ask_qty()
-        if not q: return
-        self.stock.append({"template": got[0], "name": self.name(got[0]), "cost": [{"template": cost[0], "qty": q}] if cost else []})
-        self.show(len(self.stock) - 1)
-
-    def change_gives(self):
-        i = self.current()
-        if i is None: return
-        got = pick(self, "What does the trade give?", self.app.monsters.item_choices())
-        if got:
-            self.stock[i].update(template=got[0], name=self.name(got[0]))
-            self.show(i)
-
-    def add_cost(self):
-        i = self.current()
-        if i is None: return
-        got = pick(self, "Which item does it cost?", self.app.monsters.item_choices())
-        q = self.ask_qty()
-        if got and q:
-            self.stock[i]["cost"].append({"template": got[0], "qty": q})
-            self.show(i)
-
-    def remove_cost(self):
-        i, sel = self.current(), self.costs.curselection()
-        if i is not None and sel:
-            del self.stock[i]["cost"][sel[0]]
-            self.show(i)
-
-    def set_qty(self):
-        i, sel = self.current(), self.costs.curselection()
-        q = self.ask_qty()
-        if i is not None and sel and q:
-            self.stock[i]["cost"][sel[0]]["qty"] = q
-            self.show(i)
-
-    def delete(self):
-        i = self.current()
-        if i is not None:
-            del self.stock[i]
-            self.show(min(i, len(self.stock) - 1))
-
-    def move(self, step):
-        i = self.current()
-        if i is None or not 0 <= i + step < len(self.stock): return
-        self.stock[i], self.stock[i + step] = self.stock[i + step], self.stock[i]
-        self.show(i + step)
-
-    def save(self):
-        vid = self.vendor_id()
-        if vid is None: return
-        if any(not e["cost"] for e in self.stock):
-            messagebox.showerror("Trades", "Every trade needs at least one item it costs."); return
-        data = lenient_load(VENDORS, {"vendors": {}})
-        v = data.setdefault("vendors", {}).setdefault(vid, {"title": self.vendor.get(), "stock": []})
-        v["title"] = v.get("title") or self.vendor.get()
-        v["stock"] = [{"template": e["template"], "name": self.name(e["template"]), **({"qty": e["qty"]} if e.get("qty", 1) != 1 else {}),
-                       "cost": [{"template": c["template"], "qty": c.get("qty", 1)} for c in e["cost"]]} for e in self.stock]
-        save_json(VENDORS, data)
-        messagebox.showinfo("Trades", f"Saved {len(self.stock)} trade(s). Restart the server to use them.")
-
-
-class TraderDialog(tk.Toplevel):
-    """A trade NPC: its look and name (custom-monsters.json), where it stands, greeting and trade window (npc-extras.json)."""
-
-    def __init__(self, tab, app, npc):
-        super().__init__(tab)
-        self.tab, self.app, self.npc = tab, app, npc
-        self.title("Trade NPC" if npc else "New trade NPC")
-        self.transient(tab)
-        mons = {m["id"]: m for m in lenient_load(MONSTERS, {"monsters": []}).get("monsters", [])}
-        me = mons.get(npc["template"], {}) if npc else {}
-        trade = (npc.get("trades") or [{}])[0] if npc else {}
-        self.v = {k: tk.StringVar() for k in ("name", "base", "zone", "x", "y", "z", "direction", "trade", "copy")}
-        self.v["name"].set(me.get("name") or (npc or {}).get("name", "").split(" (")[0] or "[Ring Exchange] ")
-        self.v["base"].set(str(me.get("base", 918)))
-        for k in ("zone", "x", "y", "z", "direction"): self.v[k].set(str((npc or {}).get(k, {"zone": 2, "direction": 0}.get(k, ""))))
-        self.v["trade"].set(trade.get("text", "Trade up rings."))
-        f = ttk.Frame(self)
-        f.pack(fill="both", expand=True, padx=10, pady=8)
-        r = 0
-        form_row(f, r, "Name (shown over its head)", self.v["name"], width=44); r += 1
-        ttk.Label(f, text="Looks like").grid(row=r, column=0, sticky="w", padx=4)
-        self.look = ttk.Label(f, text="", width=40)
-        self.look.grid(row=r, column=1, sticky="w")
-        ttk.Button(f, text="Choose…", command=self.choose_look).grid(row=r, column=2, padx=4); r += 1
-        for key, label in (("zone", "Zone id"), ("x", "X"), ("y", "Y (height)"), ("z", "Z"), ("direction", "Facing (0-360)")):
-            form_row(f, r, label, self.v[key], width=12); r += 1
-        pos = ttk.Frame(f)
-        pos.grid(row=r, column=1, columnspan=2, sticky="w", pady=4); r += 1
-        self.char = ttk.Combobox(pos, values=list(app.spawns.chars), state="readonly", width=16)
-        if app.spawns.chars: self.char.current(0)
-        self.char.pack(side="left")
-        ttk.Button(pos, text="Use where this character stands", command=self.use_character).pack(side="left", padx=4)
-        ttk.Button(pos, text="Pick on map…", command=self.pick_map).pack(side="left")
-        form_row(f, r, "Trade choice text", self.v["trade"], width=44); r += 1
-        ttk.Label(f, text="Greeting").grid(row=r, column=0, sticky="nw", padx=4)
-        self.greeting = tk.Text(f, width=56, height=6, wrap="word")
-        self.greeting.grid(row=r, column=1, columnspan=2, sticky="w", pady=2); r += 1
-        self.greeting.insert("1.0", (npc or {}).get("greeting", "Well met, [name]. Bring me two of the same ring and I'll forge them into the next.").replace("\\n", "\n"))
-        ttk.Label(f, text="[name] [class] [race] fill in; colours like [FFFF33]yellow[-].", foreground="gray").grid(row=r, column=1, columnspan=2, sticky="w"); r += 1
-        if not npc:
-            ttk.Label(f, text="Copy the trades of").grid(row=r, column=0, sticky="w", padx=4)
-            choices = ["(none: start empty)"] + [label for _, label, _ in tab.vendors]
-            self.copy = ttk.Combobox(f, values=choices, state="readonly", width=56)
-            self.copy.current(1 if len(choices) > 1 else 0)
-            self.copy.grid(row=r, column=1, columnspan=2, sticky="w"); r += 1
-        ttk.Button(f, text="Save NPC", command=self.save).grid(row=r, column=0, columnspan=3, sticky="we", pady=8)
-        self.show_look()
-        self.grab_set()
-
-    def show_look(self):
-        try: b = int(self.v["base"].get())
-        except ValueError: b = 0
-        self.look.config(text=f"{self.app.game.mobs.get(b, '?')} ({b})")
-
-    def choose_look(self):
-        got = pick(self, "Look like which NPC or monster?", sorted(self.app.game.mobs.items(), key=lambda x: x[1].lower()))
-        if got:
-            self.v["base"].set(str(got[0]))
-            self.show_look()
-
-    def use_character(self):
-        c = self.app.spawns.chars.get(self.char.get())
-        if not c: return
-        _, zone, x, y, z, d = c
-        for k, val in (("zone", zone), ("x", f"{x:.2f}"), ("y", f"{y:.2f}"), ("z", f"{z:.2f}"), ("direction", f"{d:.0f}")): self.v[k].set(val)
-
-    def pick_map(self):
-        def got(zone, x, y, z):
-            for k, val in (("zone", zone), ("x", x), ("y", y), ("z", z)): self.v[k].set(str(val))
-        try: zone = int(self.v["zone"].get())
-        except ValueError: zone = None
-        MapPicker(self, self.app, got, zone)
-
-    def save(self):
-        try:
-            name = self.v["name"].get().strip()
-            if not name: raise ValueError("it needs a name")
-            base = int(self.v["base"].get())
-            if base not in self.app.game.mobs: raise ValueError("choose what it looks like")
-            zone = int(self.v["zone"].get())
-            x, y, z, d = (float(self.v[k].get()) for k in ("x", "y", "z", "direction"))
-            text = self.v["trade"].get().strip() or "Trade."
-            greeting = self.greeting.get("1.0", "end").strip().replace("\n", "\\n")
-            if "|" in name + text + greeting: raise ValueError("the | character can't be used")
-        except ValueError as e:
-            messagebox.showerror("Trade NPC", f"Check the fields: {e}", parent=self); return
-        npcs = lenient_load(NPC_EXTRAS, {"npcs": []})
-        mons = lenient_load(MONSTERS, {"monsters": []})
-        vendors = lenient_load(VENDORS, {"vendors": {}})
-        if self.npc:
-            template, conversation = self.npc["template"], self.npc["conversation"]
-            vendor = (self.npc.get("trades") or [{"vendor": None}])[0]["vendor"]
-        else:
-            used_ids = {m["id"] for m in mons["monsters"]} | set(self.app.game.mobs)
-            template = next(i for i in range(90303, 99999) if i not in used_ids)
-            taken = {n["conversation"] for n in npcs["npcs"]}
-            conversation = next(c for c in range(FIRST_TRADER_CONVERSATION, 10**6) if c not in taken)
-            vendor = None
-        if vendor is None:
-            vendor = next(i for i in range(9200, 99999) if str(i) not in vendors["vendors"] and
-                          all(t.get("vendor") != i for n in npcs["npcs"] for t in n.get("trades") or []))
-        mons["monsters"] = [m for m in mons["monsters"] if m["id"] != template]
-        old = {}
-        if self.npc: old = next((m for m in lenient_load(MONSTERS, {"monsters": []})["monsters"] if m["id"] == template), {})
-        mons["monsters"].append({**{k: v for k, v in old.items() if k not in ("id", "base", "name")}, "id": template, "base": base, "name": name,
-                                 "level": old.get("level", 100), "health": old.get("health", 10000)})
-        entry = {"name": name + " (trade NPC, made with ch-tool)", "template": template, "conversation": conversation, "zone": zone,
-                 "x": round(x, 2), "y": round(y, 2), "z": round(z, 2), "direction": round(d), "greeting": greeting,
-                 "trades": [{"text": text, "vendor": vendor}] + ((self.npc.get("trades") or [])[1:] if self.npc else [])}
-        npcs["npcs"] = [n for n in npcs["npcs"] if n["template"] != template] + [entry]
-        if str(vendor) not in vendors["vendors"]:
-            stock = []
-            if not self.npc and self.copy.current() > 0:
-                src = str(self.tab.vendors[self.copy.current() - 1][0])
-                stock = [dict(e) for e in vendors["vendors"].get(src, {}).get("stock", [])]
-            vendors["vendors"][str(vendor)] = {"title": f"{name} - {text}", "stock": stock}
-        save_json(MONSTERS, mons)
-        save_json(NPC_EXTRAS, npcs, indent=2)
-        save_json(VENDORS, vendors)
-        self.app.monsters.refresh()
-        self.tab.refresh_vendors(select=vendor)
-        messagebox.showinfo("Trade NPC", f"Saved {name}. Install with the game closed, then restart the server.", parent=self)
-        self.destroy()
-
-
 # ---------------------------------------------------------------- gear
 class GearTab(ttk.Frame):
-    FIELDS = [("id", "Id (new: 90100+)"), ("name", "Name"), ("type", "Type: ring, necklace, bracelet, charm (or blank)"),
+    FIELDS = [("id", "Id (new: 90100+)"), ("name", "Name"), ("type", "Type: ring, necklace, bracelet, charm (blank for armour/weapons)"),
               ("look", "Look: an item id or exact name (armour/weapons)"), ("level", "Level"), ("description", "Description"),
               ("armour", "Armour"), ("damage", "Damage (Slash: 300, Cold: 100)"), ("speed", "Weapon speed ms (blank = look's)"),
               ("stats", "Stats (Strength: 40, Dexterity: 40)"), ("bonuses", "Bonuses (Health: 500, Attack: 100)"),
@@ -1647,11 +1306,12 @@ class GearTab(ttk.Frame):
         self.app = app
         left = ttk.Frame(self)
         left.pack(side="left", fill="y", padx=6, pady=6)
-        self.list = tk.Listbox(left, width=40, height=30)
+        self.list = tk.Listbox(left, width=40, height=16)
         self.list.pack(fill="y", expand=True)
         self.list.bind("<<ListboxSelect>>", self.load_selected)
         ttk.Button(left, text="New gear", command=self.new).pack(fill="x", pady=2)
         ttk.Button(left, text="Copy selected as new", command=self.copy).pack(fill="x")
+        ttk.Button(left, text="Start from a game item…", command=self.from_game_item).pack(fill="x", pady=2)
         ttk.Button(left, text="Delete selected", command=self.delete).pack(fill="x", pady=2)
         form = ttk.LabelFrame(self, text="Gear")
         form.pack(side="left", fill="both", expand=True, padx=6, pady=6)
@@ -1710,17 +1370,61 @@ class GearTab(ttk.Frame):
 
     def use_template(self, *_):
         target = dict(TEMPLATES).get(self.template.get())
-        if isinstance(target, str):  # jewellery: the type's default look
+        if isinstance(target, tuple):  # armour and "any" slots: choose an item of that slot to copy the look of
+            self.v["type"].set("")
+            self.choose_look(target[1])
+        elif isinstance(target, str):  # jewellery: the type's default look
             self.v["type"].set(target)
             self.v["look"].set("")
         elif target:
             self.v["type"].set("")
             self.v["look"].set(str(target))
 
-    def choose_look(self):
-        got = pick(self, "Copy the look of which item?", sorted(((i, n) for i, n in self.app.game.items.items()
-                                                                 if self.app.game.item_slot.get(i) not in ("Unequipable", "None")), key=lambda x: x[1].lower()))
+    def choose_look(self, slot=None):
+        slots = self.app.game.item_slot
+        got = pick(self, f"Copy the look of which {slot.lower() + ' ' if slot else ''}item?",
+                   sorted(((i, f"{n}  [{slots.get(i)}]") for i, n in self.app.game.items.items()
+                           if (slots.get(i) == slot if slot else slots.get(i) not in ("Unequipable", "None"))), key=lambda x: x[1].lower()))
         if got: self.v["look"].set(str(got[0]))
+
+    # names the server reads (CustomGear.cs) for the game data's bonus and damage names
+    GAME_NAMES = {"HealthBonus": "Health", "EnergyBonus": "Energy", "AttackBonus": "Attack", "DefenceBonus": "Defence",
+                  "ConcentrationBonus": "Concentration", "HeatResist": "Heat", "ColdResist": "Cold", "MagicResist": "Magic",
+                  "PoisonResist": "Poison", "DivineResist": "Divine", "ChaosResist": "Chaos", "PiercingResist": "Pierce",
+                  "SlashingResist": "Slash", "CrushingResist": "Crush", "PiercingDamage": "Pierce", "SlashingDamage": "Slash",
+                  "CrushingDamage": "Crush", "HeatDamage": "Heat", "ColdDamage": "Cold", "MagicDamage": "Magic",
+                  "PoisonDamage": "Poison", "DivineDamage": "Divine", "ChaosDamage": "Chaos", "TrueDamage": "True"}
+
+    def from_game_item(self):
+        """A new gear entry with a game item's look and numbers, ready to change (armour, weapons, anything wearable)."""
+        slots = self.app.game.item_slot
+        got = pick(self, "Start from which item? (its look and numbers are filled in)",
+                   sorted(((i, f"{n}  [{slots.get(i)}]") for i, n in self.app.game.items.items()
+                           if slots.get(i) not in ("Unequipable", "None", None) and not str(slots.get(i)).startswith("Fash")), key=lambda x: x[1].lower()))
+        if not got: return
+        it = self.app.game.item_raw[got[0]]
+        self.new()
+        self.v["type"].set("")
+        self.v["look"].set(str(got[0]))
+        self.v["name"].set(it.get("Name", "") + " (custom)")
+        self.v["description"].set(it.get("Description", ""))
+        level = next((r["Amount"] for r in it.get("RequirementTypes") or [] if r.get("RequirementType") == "LevelRequirement"), None)
+        if level: self.v["level"].set(str(level))
+        if it.get("Armour"): self.v["armour"].set(str(it["Armour"]))
+        if slots.get(got[0]) == "Weapon" and it.get("Speed"): self.v["speed"].set(str(it["Speed"]))
+        name = lambda k: self.GAME_NAMES.get(k)
+        dmg = {name(d["DamageType"]): d["Amount"] for d in it.get("DamageTypes") or [] if name(d["DamageType"])}
+        bonuses = {name(b["BonusType"]): b["Amount"] for b in it.get("BonusTypes") or [] if b["BonusType"].endswith("Bonus") and name(b["BonusType"])}
+        resists = {name(b["BonusType"]): b["Amount"] for b in it.get("BonusTypes") or [] if b["BonusType"].endswith("Resist") and name(b["BonusType"])}
+        stats = {b["PrimaryStatType"]: b["Amount"] for b in it.get("PrimaryStatBonuses") or [] if b.get("PrimaryStatType") in STATS}
+        abilities = {self.app.game.abilities.get(b["AbilityType"], str(b["AbilityType"])): b["Amount"] for b in it.get("AbilityBonuses") or []}
+        avoid = {EVASIONS[b["AbilityType"]]: b["Amount"] for b in it.get("AvoidanceBonuses") or [] if 0 <= b.get("AbilityType", -1) < len(EVASIONS)}
+        for k, d in (("damage", dmg), ("bonuses", bonuses), ("resists", resists), ("stats", stats), ("abilities", abilities), ("avoidance", avoid)):
+            self.v[k].set(kv_text(d))
+        for c in it.get("ClassTypes") or []:
+            if c in self.classes: self.classes[c].set(True)
+        if it.get("StarLevel", -1) > 0: self.v["stars"].set(str(it["StarLevel"]))
+        messagebox.showinfo("Gear", f"Filled in from {it.get('Name')}. Change the name and numbers, then Save gear.")
 
     def load_selected(self, *_):
         sel = self.list.curselection()
